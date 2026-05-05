@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .env
 data/wishlist.db
+test_ai_engine.py
+test-ai_engine.py

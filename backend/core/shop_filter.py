@@ -50,9 +50,9 @@ def filter_shops_by_keywords(keywords):
     for shop in shops:
         searchable_text = " ".join([
             shop.get("name", ""),
-            shop.get("category", ""),
-            shop.get("address", ""),
-            shop.get("description_raw", "")
+            shop.get("description", ""),
+            shop.get("items", ""),
+            " ".join(shop.get("keywords", []))
         ])
 
         searchable_text = normalize_text(searchable_text)
