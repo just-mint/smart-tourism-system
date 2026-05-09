@@ -53,6 +53,16 @@ class TSPSolver:
         """ Tính tổng quãng đường của một lộ trình dựa trên ma trận có sẵn """
         return sum(distance_matrix[tour[i]][tour[i+1]] for i in range(len(tour)-1))
 
+    @staticmethod
+    def reorder_shops(original_shops: list[dict], path_indexes: list[int]) -> list[dict]:
+        """ Sắp xếp lại danh sách shop thực tế theo mảng Index từ thuật toán TSP """
+        ordered_shops = []
+        for idx in path_indexes:
+            if idx == 0:
+                continue # Bỏ qua index 0 vì đó là điểm xuất phát (User)
+            ordered_shops.append(original_shops[idx - 1])
+        return ordered_shops
+
     @classmethod
     def nearest_neighbor(cls, distance_matrix: list[list[float]]):
         """ Bước 2: Khởi tạo lộ trình ban đầu bằng Local Search (Greedy/Nearest Neighbor) """

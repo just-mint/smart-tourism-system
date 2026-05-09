@@ -65,3 +65,20 @@ class RankingAlgorithm:
             item['final_score'] = round(final_score, 4)
             
         return sorted(items, key=lambda x: x['final_score'], reverse=True)
+
+    @classmethod
+    def calculate_total_metrics(cls, ordered_shops: list[dict], distance_matrix: list[list[float]]) -> dict:
+        """ Tính tổng chi phí và tổng quãng đường của lộ trình đã sắp xếp """
+        total_price = sum(int(shop.get('price', 0)) for shop in ordered_shops)
+        
+        total_distance_km = 0.0
+        # Ước tính khoảng cách thực tế giữa các shop trong lộ trình thông qua Haversine
+        for i in range(len(ordered_shops) - 1):
+            lat1, lon1 = ordered_shops[i]['coords']['lat'], ordered_shops[i]['coords']['lng']
+            lat2, lon2 = ordered_shops[i+1]['coords']['lat'], ordered_shops[i+1]['coords']['lng']
+            total_distance_km += cls.haversine_distance_km(lat1, lon1, lat2, lon2)
+            
+        return {
+            "total_price": total_price,
+            "total_distance_km": round(total_distance_km, 2)
+        }

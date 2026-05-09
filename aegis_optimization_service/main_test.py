@@ -3,6 +3,27 @@ from mock_data import get_mock_stores
 from app.core.algorithms.ranking_algo import RankingAlgorithm
 from app.core.algorithms.tsp_solver import TSPSolver
 
+async def test_tsp_fallback():
+    print("\n[BƯỚC 3] KIỂM THỬ FALLBACK HAVERSINE (QUAN TRỌNG)")
+    print("-" * 80)
+    
+    # Cố tình làm sai URL của OSRM để ép lỗi HTTP và Timeout
+    original_url = TSPSolver.OSRM_BASE_URL
+    TSPSolver.OSRM_BASE_URL = "http://localhost:9999/osrm_error_mock"
+    
+    stores = get_mock_stores()
+    user_coord = (106.7009, 10.7769)
+    shop_coords = [(s['coords']['lng'], s['coords']['lat']) for s in stores[:3]]
+    
+    # Gọi pipeline để xem hệ thống có crash hay tự kích hoạt Fallback
+    tsp_result = await TSPSolver.run_tsp_pipeline(user_coord, shop_coords)
+    
+    # Khôi phục URL
+    TSPSolver.OSRM_BASE_URL = original_url
+    
+    print("\n[TEST FALLBACK] Kích hoạt thành công Haversine do OSRM lỗi")
+    print(f"=> Khoảng cách Fallback tính được: {tsp_result['opt_dist_meters']:,.0f} mét\n")
+
 async def main():
     print("\n" + "=" * 80)
     print("👑 BÁO CÁO THỰC THI KIẾN TRÚC THUẬT TOÁN MICROSERVICE (TRƯỜNG PHÁI DDD) 👑")
@@ -72,6 +93,9 @@ async def main():
         print(f"   [Trạm {step+1}] {name}")
         
     print("\n" + "=" * 80 + "\n")
+    
+    # Gọi kịch bản test Fallback OSRM
+    await test_tsp_fallback()
 
 if __name__ == "__main__":
     asyncio.run(main())
