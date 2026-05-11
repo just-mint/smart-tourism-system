@@ -233,6 +233,21 @@ export const InventoryAPI = {
 
   triggerRelease: () =>
     aegisClient.post<{ message: string }>("/inventory/trigger-release"),
+
+  comparePrices: (productId: number, storeId: number, lat?: number, lon?: number) =>
+    aegisClient.get<PriceComparison[]>(`/inventory/products/${productId}/compare`, {
+      params: { store_id: storeId, lat, lon },
+    }),
+}
+
+export interface PriceComparison {
+  store_id: number
+  store_name: string
+  address: string | null
+  price: number
+  stock: number
+  is_current: boolean
+  category: string | null
 }
 
 // ===================== VISION API =====================
@@ -258,6 +273,27 @@ export const VisionAPI = {
 
   getMyCloset: () =>
     aegisClient.get<ClosetItemResponse[]>("/vision/closet"),
+
+  getMixMatch: (closetItemId: number) =>
+    aegisClient.get<MixMatchResponse>(`/vision/closet/${closetItemId}/matches`),
+}
+
+export interface MixMatchProduct {
+  product_id: number
+  name: string
+  description?: string
+  price: number
+  original_price?: number
+  image_url?: string
+  match_score: number
+  stock: number
+  store_id?: number
+}
+
+export interface MixMatchResponse {
+  closet_item_id: number
+  matches: MixMatchProduct[]
+  total_matches: number
 }
 
 export interface TelemetryStats {
@@ -269,6 +305,88 @@ export interface TelemetryStats {
 
 export const TelemetryAPI = {
   getStats: () => aegisClient.get<TelemetryStats>("/utils/telemetry/"),
+}
+
+// ===================== PLANNER API =====================
+export interface PlannerWeightConfig {
+  rating: number
+  distance: number
+  price: number
+}
+
+export interface PlannerRequest {
+  current_lat: number
+  current_lon: number
+  radius: number
+  keywords: string
+  weights: PlannerWeightConfig
+  top_n: number
+  local_hour?: number
+  max_budget?: number
+}
+
+export interface ProductInRoute {
+  product_id: number
+  name: string
+  price: number
+  image_url?: string
+}
+
+export interface StopInRoute {
+  order: number
+  store_id?: number
+  name: string
+  category?: string
+  address?: string
+  lat: number
+  lon: number
+  rating?: number
+  distance_km?: number
+  final_score?: number
+  products: ProductInRoute[]
+}
+
+export interface RouteMetrics {
+  total_price: number
+  total_distance_km: number
+  routing_fallback_used: boolean
+}
+
+export interface WeatherInfo {
+  temperature?: number
+  condition?: string
+  code?: number
+}
+
+export interface RouteGeometry {
+  geojson: {
+    type: "LineString"
+    coordinates: [number, number][]  // [lon, lat] pairs — OSRM format
+  }
+  duration_minutes?: number
+}
+
+export interface ContextInfo {
+  time_slot: string
+  time_description: string
+  weather_condition: string
+  weather_reason: string
+  hour_used: number
+}
+
+export interface PlannerResponse {
+  status: string
+  optimized_route: StopInRoute[]
+  metrics: RouteMetrics
+  route_geometry?: RouteGeometry
+  weather?: WeatherInfo
+  context_applied?: ContextInfo
+  total_candidates: number
+}
+
+export const PlannerAPI = {
+  generate: (data: PlannerRequest) =>
+    aegisClient.post<PlannerResponse>("/planner/generate", data),
 }
 
 export default aegisClient

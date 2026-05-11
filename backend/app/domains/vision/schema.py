@@ -22,3 +22,22 @@ class ClosetItemResponse(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+
+class MixMatchProduct(BaseModel):
+    product_id: int
+    name: str
+    description: Optional[str] = None
+    price: int
+    original_price: Optional[int] = None
+    image_url: Optional[str] = None
+    match_score: float        # 0-100%
+    stock: int = 0
+    store_id: Optional[int] = None
+
+
+class MixMatchResponse(BaseModel):
+    closet_item_id: int
+    matches: List[MixMatchProduct]
+    total_matches: int
+

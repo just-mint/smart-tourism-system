@@ -80,3 +80,20 @@ def add_virtual_closet(
 @router.get("/closet", response_model=list[schema.ClosetItemResponse])
 def my_closet(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return service.get_user_closet(db=db, user_id=current_user.id)
+
+
+@router.get("/closet/{item_id}/matches", response_model=schema.MixMatchResponse)
+def get_mix_match(item_id: int, db: Session = Depends(get_db)):
+    """
+    AI Mix & Match: Tìm sản phẩm trong catalog có visual similarity cao nhất
+    so với một item trong tủ đồ ảo. Dùng pgvector cosine_distance trên CLIP 512D embeddings.
+    """
+    matches, error = service.find_similar_products_for_closet(db=db, closet_item_id=item_id, top_n=5)
+    if matches is None:
+        raise HTTPException(status_code=404, detail=error)
+    return schema.MixMatchResponse(
+        closet_item_id=item_id,
+        matches=matches,
+        total_matches=len(matches),
+    )
+

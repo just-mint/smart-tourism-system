@@ -7,6 +7,7 @@ import {
   ScanFace,
   Settings,
   Users,
+  Route,
 } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
@@ -24,6 +25,7 @@ import { User } from "./User"
 const mainItems: Item[] = [
   { icon: LayoutDashboard, title: "Dashboard", path: "/" },
   { icon: Map, title: "Spatial Operations", path: "/spatial" },
+  { icon: Route, title: "Smart Planner", path: "/itinerary" },
   { icon: Landmark, title: "Culture & Heritage", path: "/culture" },
   { icon: PackageOpen, title: "Inventory & O2O", path: "/inventory" },
   { icon: ScanFace, title: "Vision & Closet", path: "/vision" },

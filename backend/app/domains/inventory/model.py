@@ -32,6 +32,10 @@ class Product(Base):
     original_price: Mapped[int | None] = mapped_column(Integer, nullable=True)
     image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     embedding: Mapped[list | None] = mapped_column(Vector(512), nullable=True)
+    # [v2] Thuộc tính sản phẩm — phục vụ lọc cá nhân hóa
+    size: Mapped[str | None] = mapped_column(String(20), nullable=True)     # S, M, L, XL, Free
+    color: Mapped[str | None] = mapped_column(String(50), nullable=True)    # Đỏ, Xanh, Trắng
+    tags: Mapped[str | None] = mapped_column(Text, nullable=True)           # "giá tốt,gần du lịch,quà"
     created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
 class Inventory(Base):

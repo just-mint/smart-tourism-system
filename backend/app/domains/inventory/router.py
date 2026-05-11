@@ -39,3 +39,18 @@ def release_expired(db: Session = Depends(get_db)):
     """API Dọn dẹp Cronjob trả lại hàng vào Database khi thời lượng Redis bốc hơi"""
     count = service.check_and_release_expired_locks(db=db)
     return {"message": f"Hệ thống đã tự động hoàn trả tồn kho cho {count} giao dịch không thanh toán."}
+
+
+@router.get("/products/{product_id}/compare")
+def compare_prices(
+    product_id: int,
+    store_id: int,
+    lat: float | None = None,
+    lon: float | None = None,
+    db: Session = Depends(get_db),
+):
+    """So sánh giá sản phẩm tại nhiều cửa hàng gần nhau — dùng cho PriceCompareModal"""
+    return service.compare_product_prices(
+        db=db, product_id=product_id, current_store_id=store_id,
+        lat=lat, lon=lon,
+    )

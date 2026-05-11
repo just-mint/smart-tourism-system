@@ -51,6 +51,52 @@ def get_products_by_store(db: Session, store_id: int):
     return products
 
 
+def compare_product_prices(db: Session, product_id: int, current_store_id: int, lat: float = None, lon: float = None, radius: int = 5000):
+    """
+    So sánh giá sản phẩm tại cửa hàng hiện tại vs các cửa hàng khác trong bán kính.
+    Trả về list[dict] gồm store info + price + stock.
+    """
+    from sqlalchemy import func
+    
+    product = db.query(Product).filter(Product.product_id == product_id).first()
+    if not product:
+        return []
+
+    # Tìm tất cả stores bán sản phẩm này
+    query = db.query(Inventory, Store).join(
+        Store, Inventory.store_id == Store.store_id
+    ).filter(
+        Inventory.product_id == product_id,
+        Inventory.stock > 0,
+    )
+    
+    # Filter theo bán kính nếu có tọa độ
+    if lat and lon:
+        point = f"SRID=4326;POINT({lon} {lat})"
+        query = query.filter(
+            func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), radius)
+        )
+    
+    rows = query.limit(10).all()
+    
+    comparisons = []
+    for inv, store in rows:
+        comparisons.append({
+            "store_id": store.store_id,
+            "store_name": store.name,
+            "address": store.address,
+            "price": product.price,
+            "stock": inv.stock - inv.locked_stock,
+            "is_current": store.store_id == current_store_id,
+            "category": store.category,
+        })
+    
+    # Sort: current store first, then by price ascending
+    comparisons.sort(key=lambda x: (0 if x["is_current"] else 1, x["price"]))
+    
+    return comparisons
+
+
 async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: int):
     from app.core.config import settings
     lock_key = f"lock:prod:{request.product_id}"

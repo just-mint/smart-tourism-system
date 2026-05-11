@@ -18,6 +18,7 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutVisionRouteImport } from './routes/_layout/vision'
 import { Route as LayoutSpatialRouteImport } from './routes/_layout/spatial'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutItineraryRouteImport } from './routes/_layout/itinerary'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutInventoryRouteImport } from './routes/_layout/inventory'
 import { Route as LayoutCultureRouteImport } from './routes/_layout/culture'
@@ -67,6 +68,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutItineraryRoute = LayoutItineraryRouteImport.update({
+  id: '/itinerary',
+  path: '/itinerary',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
   id: '/items',
   path: '/items',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/culture': typeof LayoutCultureRoute
   '/inventory': typeof LayoutInventoryRoute
   '/items': typeof LayoutItemsRoute
+  '/itinerary': typeof LayoutItineraryRoute
   '/settings': typeof LayoutSettingsRoute
   '/spatial': typeof LayoutSpatialRoute
   '/vision': typeof LayoutVisionRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/culture': typeof LayoutCultureRoute
   '/inventory': typeof LayoutInventoryRoute
   '/items': typeof LayoutItemsRoute
+  '/itinerary': typeof LayoutItineraryRoute
   '/settings': typeof LayoutSettingsRoute
   '/spatial': typeof LayoutSpatialRoute
   '/vision': typeof LayoutVisionRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/_layout/culture': typeof LayoutCultureRoute
   '/_layout/inventory': typeof LayoutInventoryRoute
   '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/itinerary': typeof LayoutItineraryRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/spatial': typeof LayoutSpatialRoute
   '/_layout/vision': typeof LayoutVisionRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/culture'
     | '/inventory'
     | '/items'
+    | '/itinerary'
     | '/settings'
     | '/spatial'
     | '/vision'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/culture'
     | '/inventory'
     | '/items'
+    | '/itinerary'
     | '/settings'
     | '/spatial'
     | '/vision'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/_layout/culture'
     | '/_layout/inventory'
     | '/_layout/items'
+    | '/_layout/itinerary'
     | '/_layout/settings'
     | '/_layout/spatial'
     | '/_layout/vision'
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/itinerary': {
+      id: '/_layout/itinerary'
+      path: '/itinerary'
+      fullPath: '/itinerary'
+      preLoaderRoute: typeof LayoutItineraryRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/items': {
       id: '/_layout/items'
       path: '/items'
@@ -287,6 +306,7 @@ interface LayoutRouteChildren {
   LayoutCultureRoute: typeof LayoutCultureRoute
   LayoutInventoryRoute: typeof LayoutInventoryRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutItineraryRoute: typeof LayoutItineraryRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutSpatialRoute: typeof LayoutSpatialRoute
   LayoutVisionRoute: typeof LayoutVisionRoute
@@ -298,6 +318,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutCultureRoute: LayoutCultureRoute,
   LayoutInventoryRoute: LayoutInventoryRoute,
   LayoutItemsRoute: LayoutItemsRoute,
+  LayoutItineraryRoute: LayoutItineraryRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutSpatialRoute: LayoutSpatialRoute,
   LayoutVisionRoute: LayoutVisionRoute,

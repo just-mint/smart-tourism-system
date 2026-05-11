@@ -62,6 +62,21 @@ TOOLS = [
                     },
                     "required": ["lat", "lon"]
                 }
+            },
+            {
+                "name": "create_itinerary",
+                "description": "Tự động tạo lộ trình mua sắm tối ưu O2O từ vị trí và nhu cầu của khách. Gọi khi khách muốn lên kế hoạch đi mua sắm, tìm đường, hoặc hỏi nên đi đâu mua gì.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "lat": {"type": "NUMBER", "description": "Vĩ độ vị trí xuất phát"},
+                        "lon": {"type": "NUMBER", "description": "Kinh độ vị trí xuất phát"},
+                        "keywords": {"type": "STRING", "description": "Từ khóa mua sắm, vd: lụa, nón lá, café"},
+                        "radius": {"type": "NUMBER", "description": "Bán kính tìm kiếm mét (mặc định 3000)"},
+                        "max_budget": {"type": "NUMBER", "description": "Ngân sách tối đa VNĐ (optional)"}
+                    },
+                    "required": ["lat", "lon", "keywords"]
+                }
             }
         ]
     }
@@ -145,6 +160,50 @@ async def execute_tool(db: Session, function_name: str, args: dict):
             result.append({"store_id": s.store_id, "name": s.name, "category": s.category, "address": s.address})
         return {"status": "success", "stores": result}
         
+    elif function_name == "create_itinerary":
+        lat = args.get("lat")
+        lon = args.get("lon")
+        keywords = args.get("keywords", "")
+        radius = int(args.get("radius", 3000))
+        max_budget = args.get("max_budget")
+        
+        from app.domains.planner.service import generate_smart_itinerary
+        from app.domains.planner.schema import PlannerRequest
+        
+        try:
+            req = PlannerRequest(
+                current_lat=lat, current_lon=lon,
+                radius=radius, keywords=keywords,
+                top_n=5,
+                max_budget=int(max_budget) if max_budget else None,
+            )
+            result = await generate_smart_itinerary(db, req)
+            
+            if not result.optimized_route:
+                return {"status": "no_results", "message": "Không tìm thấy cửa hàng phù hợp trong khu vực."}
+            
+            stops = []
+            for stop in result.optimized_route:
+                stops.append({
+                    "order": stop.order,
+                    "name": stop.name,
+                    "category": stop.category,
+                    "rating": stop.rating,
+                    "distance_km": stop.distance_km,
+                    "products_count": len(stop.products),
+                })
+            
+            return {
+                "status": "success",
+                "total_stops": len(stops),
+                "total_distance_km": result.metrics.total_distance_km,
+                "stops": stops,
+                "weather": result.weather.condition if result.weather else None,
+                "message": "Lộ trình đã được tạo! Khách có thể xem chi tiết trên tab Itinerary."
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Lỗi tạo lộ trình: {str(e)}"}
+        
     return {"error": f"Unknown tool: {function_name}"}
 
 async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
@@ -159,7 +218,7 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     # Ép Gemini tuân thủ tư duy O2O Agent
-    sys_instruction_text = "Bạn là AEGIS AI, chuyên gia du lịch và gợi ý mua sắm O2O. Nếu khách hỏi địa danh, BẮT BUỘC gọi hàm search_culture để xem nó ở đâu trước. Nếu khách muốn mua sắm, BẮT BUỘC gọi hàm search_products để tìm sản phẩm, hoặc find_stores_near để tìm cửa hàng gần đó. Luôn khuyến khích khách hàng 'Giữ hàng (Lock)' qua giao diện O2O."
+    sys_instruction_text = "Bạn là AEGIS AI, chuyên gia du lịch và gợi ý mua sắm O2O tại Việt Nam. Nếu khách hỏi địa danh, BẮT BUỘC gọi hàm search_culture. Nếu khách muốn mua sắm, BẮT BUỘC gọi search_products hoặc find_stores_near. Nếu khách muốn lên kế hoạch, tìm đường đi mua sắm, hoặc hỏi 'nên đi đâu', BẮT BUỘC gọi create_itinerary với tọa độ và từ khóa. Luôn khuyến khích khách 'Giữ hàng (Lock)' qua giao diện O2O và xem lộ trình trên tab Itinerary."
     system_instruction = {"parts": [{"text": sys_instruction_text}]}
     
     history = [
