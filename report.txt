@@ -1,0 +1,88 @@
+BÁO CÁO ĐỒ ÁN: HỆ THỐNG DU LỊCH THÔNG MINH
+Chủ đề: Hệ thống hỗ trợ mua sắm trong chuyến du lịch
+Giảng viên hướng dẫn: Bùi Văn Thạch, Lê Đức Khoan
+
+1. MỞ ĐẦU VÀ BỐI CẢNH DỰ ÁN
+Trong bối cảnh du lịch hiện đại, trải nghiệm mua sắm là một phần không thể thiếu của du khách. Tuy nhiên, qua quá trình nghiên cứu, nhóm phát hiện ra những rào cản lớn mà du khách thường gặp phải:
+
+Vấn đề về thời gian: Du khách có quỹ thời gian hạn hẹp, khó khăn trong việc tìm kiếm và di chuyển đến các địa điểm mua sắm phù hợp.
+
+Khó khăn trong việc diễn đạt nhu cầu: Rào cản ngôn ngữ hoặc không nắm rõ thông tin địa phương khiến du khách khó diễn đạt chính xác món đồ mình muốn tìm.
+
+Thiếu gợi ý cá nhân hóa: Thiếu các hệ thống hỗ trợ gợi ý chuyên sâu như mix&match (phối đồ) hay cung cấp thông tin văn hóa đằng sau các sản phẩm bản địa.
+
+2. TỔNG QUAN VÀ MỤC TIÊU HỆ THỐNG
+Để giải quyết các vấn đề trên, đồ án đề xuất xây dựng "Hệ thống hỗ trợ mua sắm du lịch O2O nhận thức ngữ cảnh" (Context-aware O2O system). Mục tiêu cốt lõi của hệ thống bao gồm:
+
+Tối ưu hóa nguồn lực: Tiết kiệm thời gian và chi phí di chuyển cho du khách.
+
+Cá nhân hóa trải nghiệm: Đưa ra các gợi ý phù hợp với sở thích, ngân sách và tủ đồ riêng của từng cá nhân.
+
+Tôn vinh giá trị văn hóa bản địa: Lồng ghép các câu chuyện lịch sử, văn hóa vào trải nghiệm mua sắm sản phẩm địa phương.
+
+3. LUỒNG HOẠT ĐỘNG CỦA HỆ THỐNG (INPUT / OUTPUT)
+3.1. Input (Đầu vào)
+Hệ thống tiếp nhận thông tin từ người dùng thông qua hai nhóm chính:
+
+Định danh nhu cầu: Tiếp nhận các truy vấn đa phương thức (văn bản, hình ảnh, giọng nói...) và danh sách mục tiêu mua sắm của người dùng.
+
+Ngữ cảnh ràng buộc: Căn cứ vào không gian (vị trí hiện tại), tài chính (ngân sách), và các thông tin cá nhân hóa (như dữ liệu từ "Tủ đồ ảo").
+
+3.2. Output (Đầu ra)
+Sau khi xử lý, hệ thống trả về 3 giá trị chính cho người dùng:
+
+Sàng lọc & Đề xuất: Đưa ra danh sách Top các cửa hàng khớp chính xác với yêu cầu (size, màu sắc...) và đảm bảo không vượt quá ngân sách.
+
+Tối ưu hóa lộ trình O2O: Cung cấp bản đồ vạch ra tuyến đường ngắn nhất từ vị trí hiện tại đi qua tất cả các shop cần đến.
+
+Trải nghiệm văn hóa & thẩm mỹ: Trực quan hóa cách phối đồ và cung cấp các câu chuyện lịch sử liên quan đến sản phẩm/địa phương.
+
+4. PHÂN TÍCH VÀ XỬ LÝ DỮ LIỆU
+Để hệ thống hoạt động hiệu quả, dữ liệu thực tế được xử lý qua các bước:
+
+Phân rã và nhận diện mẫu: Hệ thống chia thành các module độc lập (xử lý đầu vào, tìm kiếm, cá nhân hóa, định tuyến...). Đồng thời, nhận diện các hành vi phổ biến của du khách như: thói quen xem review, so sánh giá, mua theo bộ, ưu tiên mua sắm gần điểm lưu trú/tham quan, và sự thay đổi nhu cầu theo thời gian/thời tiết.
+
+Trừu tượng hóa dữ liệu: Dữ liệu thực tế rời rạc từ cửa hàng/mạng xã hội được rút gọn để máy tính dễ xử lý:
+
+Sản phẩm: Chỉ giữ lại ảnh, giá, size, màu, tồn kho.
+
+Cửa hàng: Giữ tên, địa chỉ, GPS, rating, loại hình shop.
+
+Review: Tóm tắt thành các tag ngắn gọn (VD: "giá tốt", "gần điểm du lịch", "phù hợp mua quà").
+
+5. THIẾT KẾ KIẾN TRÚC VÀ THUẬT TOÁN (TẦNG 1)
+Hệ thống được thiết kế theo mô hình Kiến trúc Phân tầng (Tiered Architecture) có khả năng mở rộng (Scale-up). Hiện tại, đồ án tập trung giải quyết Tầng 1 (Thuật toán lõi chạy bản Prototype).
+
+5.1. Gợi ý Cá nhân hóa & Ngữ cảnh Đa biến (AI Vision & KNN)
+Hệ thống không dùng bộ lọc cứng nhắc mà sử dụng cơ chế vector hóa và chấm điểm linh hoạt dựa trên: Giá tiền + Khoảng cách + Mix&Match tủ đồ.
+
+Sử dụng thuật toán KNN và AI Vision để phân tích và đề xuất sản phẩm có độ tương đồng cao.
+
+Nhận thức ngữ cảnh (Context-Aware): Tích hợp OpenWeatherMap API để cập nhật trọng số theo thời gian thực. (Ví dụ: Nếu trời mưa, thuật toán tự động tăng trọng số, đưa các cửa hàng trong Trung tâm thương mại lên Top gợi ý, giảm trọng số các cửa hàng vỉa hè).
+
+5.2. Tối ưu Lộ trình (O2O Routing)
+Để giải quyết bài toán định tuyến đa điểm (TSP), hệ thống xử lý qua 2 bước:
+
+Bước 1 - Gom cụm (K-Means): Sử dụng công thức tính khoảng cách Haversine/Euclid để gộp các shop nằm gần nhau thành một "Khu vực mua sắm".
+
+Bước 2 - Định tuyến (TSP Algorithm): Tính toán ma trận để vạch ra thứ tự di chuyển qua các shop với quãng đường ngắn nhất, triệt tiêu tình trạng đi đường vòng vèo.
+
+6. BIỂU DIỄN GIẢI PHÁP (LUỒNG XỬ LÝ TỔNG THỂ)
+Để vận hành trơn tru các công nghệ và thuật toán trên, giải pháp của hệ thống được biểu diễn qua luồng xử lý gồm 6 bước khép kín:
+
+Nhập dữ liệu: Thu thập nhu cầu đầu vào và ngữ cảnh hiện tại của du khách.
+
+Lọc cửa hàng: Sàng lọc sơ bộ các điểm đến không đáp ứng tiêu chí cơ bản (hết hàng, sai kích cỡ, vượt ngân sách).
+
+Chấm điểm và cá nhân hóa: Ứng dụng AI để đánh giá độ phù hợp của sản phẩm/cửa hàng với hồ sơ của người dùng.
+
+Tối ưu lộ trình: Chạy thuật toán để tìm ra tuyến đường O2O thuận tiện nhất.
+
+Hiển thị tương tác O2O: Cung cấp giao diện trực quan cho người dùng.
+
+Cập nhật Realtime: Liên tục theo dõi vị trí và trạng thái mua hàng để cập nhật lộ trình. Đặc biệt, trong bước này, hệ thống sẽ ưu tiên đề xuất các Local Brand (thương hiệu địa phương) hoặc các shop có độ uy tín cao.
+
+Tóm tắt cốt lõi: Người dùng chỉ cần đưa nhu cầu vào, hệ thống sẽ tự động xử lý và trả ra danh sách shop phù hợp cùng lộ trình tốt nhất, sau đó tiếp tục đồng hành và cập nhật liên tục khi vị trí hoặc trạng thái mua hàng của người dùng thay đổi.
+
+7. KẾT LUẬN
+Đồ án "Hệ thống hỗ trợ mua sắm trong chuyến du lịch" mang đến một giải pháp toàn diện (O2O) giúp cá nhân hóa sâu sắc trải nghiệm của du khách. Việc kết hợp giữa thuật toán AI (gợi ý, nhận thức thời tiết) và tối ưu hóa toán học (định tuyến TSP) cùng luồng xử lý realtime thông minh hứa hẹn tạo ra một trợ lý du lịch đắc lực. Hệ thống không chỉ tối ưu thời gian, chi phí mà còn ưu tiên quảng bá Local Brand, nâng tầm trải nghiệm văn hóa bản địa. Hướng phát triển (Tầng 2) sẽ là triển khai Production để đáp ứng dữ liệu thực tế với quy mô hàng nghìn cửa hàng.

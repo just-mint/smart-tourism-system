@@ -35,7 +35,6 @@ function VisionCloset() {
   const [taskId, setTaskId] = useState("")
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
   const [isPolling, setIsPolling] = useState(false)
-  const [matchedProducts, setMatchedProducts] = useState<ProductResponse[]>([])
   // Closet
   const [closetItems, setClosetItems] = useState<ClosetItemResponse[]>([])
   const [isLoadingCloset, setIsLoadingCloset] = useState(false)
@@ -83,22 +82,6 @@ function VisionCloset() {
     }, 2000)
     return () => clearInterval(interval)
   }, [isPolling, taskId])
-
-  // Fetch matched products details
-  useEffect(() => {
-    const fetchMatchedProducts = async () => {
-      if (taskStatus?.status === "completed" && taskStatus.matched_product_ids?.length) {
-        try {
-          const promises = taskStatus.matched_product_ids.map(id => InventoryAPI.getProduct(id).then(res => res.data));
-          const products = await Promise.all(promises);
-          setMatchedProducts(products.filter(p => p !== null));
-        } catch (e) {
-          console.error("Failed to fetch matched products", e);
-        }
-      }
-    };
-    fetchMatchedProducts();
-  }, [taskStatus]);
 
   // Load Closet
   const loadCloset = useCallback(async () => {
@@ -354,52 +337,37 @@ function VisionCloset() {
                   </span>
                 </div>
 
-                {/* Detected Objects */}
-                {taskStatus.detected_objects && (
+                {/* Similar Items Grid */}
+                {taskStatus.detected_objects?.similar_items && (
                   <div className="glass-card p-4">
-                    <h4 className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-2">
-                      Detected Objects
+                    <h4 className="text-[10px] font-mono text-purple-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" /> Recommended Matches
                     </h4>
-                    <pre className="text-xs text-emerald-300 font-mono whitespace-pre-wrap bg-black/30 rounded-lg p-3 max-h-[200px] overflow-y-auto custom-scrollbar">
-                      {JSON.stringify(taskStatus.detected_objects, null, 2)}
-                    </pre>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {taskStatus.detected_objects.similar_items.map((prod: any) => (
+                        <div key={prod.product_id} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden flex flex-col transition-transform hover:scale-[1.02]">
+                          <div className="w-full h-[150px] bg-zinc-800 relative">
+                            <img src={prod.image_url || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=200"} alt={prod.name} className="w-full h-full object-cover" />
+                            <div className="absolute top-2 right-2 bg-purple-500/80 backdrop-blur text-white text-[10px] px-2 py-1 rounded font-bold">
+                              {prod.match_score}% Match
+                            </div>
+                          </div>
+                          <div className="p-3 flex flex-col justify-between flex-1">
+                            <div>
+                              <h5 className="text-white text-sm font-bold line-clamp-1">{prod.name}</h5>
+                            </div>
+                            <div className="flex items-center justify-between mt-3">
+                              <span className="text-emerald-400 font-mono font-bold">{prod.price.toLocaleString()}₫</span>
+                              <button className="px-3 py-1.5 text-[10px] bg-purple-500 hover:bg-purple-600 text-white font-bold rounded flex items-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.4)] transition-all">
+                                <Shirt className="w-3 h-3" /> Thêm tủ đồ
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-
-                {/* Matched Products */}
-                {taskStatus.matched_product_ids &&
-                  taskStatus.matched_product_ids.length > 0 && (
-                    <div className="glass-card p-4">
-                      <h4 className="text-[10px] font-mono text-purple-400 uppercase tracking-wider mb-4">
-                        O2O Matched Products
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {matchedProducts.length > 0 ? (
-                          matchedProducts.map((prod) => (
-                            <div key={prod.product_id} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden flex flex-col md:flex-row h-[120px] transition-transform hover:scale-[1.02]">
-                              <div className="w-full md:w-[120px] h-[120px] shrink-0 bg-zinc-800">
-                                <img src={prod.image_url || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=200"} alt={prod.name} className="w-full h-full object-cover" />
-                              </div>
-                              <div className="p-3 flex flex-col justify-between flex-1 min-w-0">
-                                <div>
-                                  <h5 className="text-white text-sm font-bold truncate">{prod.name}</h5>
-                                  <p className="text-zinc-400 text-[10px] line-clamp-2 mt-0.5">{prod.description}</p>
-                                </div>
-                                <div className="flex items-center justify-between mt-2">
-                                  <span className="text-emerald-400 font-mono font-bold text-sm">${prod.price.toLocaleString()}</span>
-                                  <button className="px-3 py-1 text-[10px] bg-purple-500 hover:bg-purple-600 text-white font-bold rounded shadow-[0_0_10px_rgba(168,85,247,0.4)] transition-all">Mua O2O</button>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="col-span-2 flex items-center justify-center py-4">
-                            <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
               </div>
             )}
           </div>

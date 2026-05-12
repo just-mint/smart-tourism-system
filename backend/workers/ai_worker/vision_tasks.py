@@ -1,15 +1,9 @@
 from workers.ai_worker.celery_app import celery_app
 from sentence_transformers import SentenceTransformer
 from PIL import Image
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 import os
 import logging
-
-# Cấu hình DB
-DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
+from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -45,19 +39,32 @@ def process_image(task_id: str, image_path: str):
             return {"status": "error", "message": "Task not found"}
 
         # 2. Tìm SP tương tự bằng PGVECTOR Cosine Similarity (<=>)
-        # Giả sử chúng ta tìm 3 sản phẩm có Vector giống món đồ chụp nhất
-        # (Chỉ khi Product có chứa vector_embedding)
-        similar_products = db.query(Product).filter(
+        similar_products = db.query(
+            Product,
+            Product.embedding.cosine_distance(img_emb).label("distance")
+        ).filter(
             Product.embedding.is_not(None)
         ).order_by(
             Product.embedding.cosine_distance(img_emb)
-        ).limit(3).all()
+        ).limit(4).all()
 
-        matched_ids = [p.product_id for p in similar_products]
+        similar_items = []
+        matched_ids = []
+        for product, distance in similar_products:
+            similarity = round((1.0 - float(distance) / 2.0) * 100, 1)
+            similar_items.append({
+                "product_id": product.product_id,
+                "name": product.name,
+                "description": product.description,
+                "price": product.price,
+                "image_url": product.image_url,
+                "match_score": similarity
+            })
+            matched_ids.append(product.product_id)
 
         # Update
         task.matched_product_ids = matched_ids
-        task.detected_objects = {"type": "clip_image_search", "confidence": 0.99}
+        task.detected_objects = {"similar_items": similar_items}
         task.status = "completed"
         db.commit()
         db.close()
