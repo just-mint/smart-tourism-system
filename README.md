@@ -10,6 +10,47 @@ AEGIS O2O (Online-to-Offline) is a modern full-stack application designed for hi
 
 ---
 
+## 🚀 Dành cho Developer mới (Hướng dẫn Setup)
+
+Đồng đội clone code về hãy làm theo 4 bước sau để môi trường có đủ bảng và dữ liệu thật:
+
+**Bước 1:** Clone code về máy
+```bash
+git clone <repository_url> aegis-o2o
+cd aegis-o2o
+```
+
+**Bước 2:** Cấu hình biến môi trường
+Copy file `.env.example` thành `.env` (tại thư mục gốc hoặc `backend/`) và điền thông tin Database PostgreSQL của bạn.
+
+**Bước 3:** Chạy DB và nạp toàn bộ Dữ Liệu
+Chạy script dưới đây. Kịch bản này sẽ tự động bật Database Container (qua Docker) và nạp toàn bộ cấu trúc bảng, dữ liệu mẫu, vector AI từ file `travel_app_full_data.sql`:
+```bash
+bash setup_local.sh
+```
+> **Lưu ý:** Bạn cần phải cài đặt Docker và bật Docker Desktop trước khi chạy lệnh này.
+
+**Bước 4:** Tạo môi trường ảo (venv) và chạy ứng dụng
+Sau khi Database đã có đủ dữ liệu, bạn chỉ việc cài môi trường và chạy code:
+```bash
+# 1. Tạo và kích hoạt venv
+python -m venv venv
+source venv/bin/activate  # (Trên Windows dùng: venv\Scripts\activate)
+
+# 2. Cài đặt thư viện Backend
+cd backend
+pip install -r requirements.txt  # Hoặc: uv sync
+uv run fastapi dev app/main.py   # Chạy Backend ở localhost:8000
+```
+```bash
+# 3. Mở tab Terminal khác cho Frontend
+cd frontend
+bun install
+bun run dev                      # Chạy Frontend ở localhost:5173
+```
+
+---
+
 ## 🛠️ How To Run the Project
 
 You can run the project either fully containerized via Docker (easiest), or natively on your local machine for active development.
