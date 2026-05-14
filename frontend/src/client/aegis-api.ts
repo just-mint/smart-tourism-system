@@ -4,8 +4,10 @@
  * Uses axios with auth token interceptor.
  */
 import axios from "axios"
+import { handleUnauthorizedSession } from "@/lib/auth-session"
 
-export const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "" : "http://localhost:8000");
+export const API_BASE =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "" : "http://localhost:8000")
 
 const aegisClient = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api/v1` : "/api/v1",
@@ -13,14 +15,15 @@ const aegisClient = axios.create({
   withCredentials: true,
 })
 
-// Attach auth token to every request - DEPRECATED: now using httpOnly cookies
-// aegisClient.interceptors.request.use((config) => {
-//   const token = localStorage.getItem("access_token")
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`
-//   }
-//   return config
-// })
+aegisClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+      handleUnauthorizedSession()
+    }
+    return Promise.reject(error)
+  },
+)
 
 // ===================== TYPES =====================
 
@@ -109,12 +112,21 @@ export interface ClusterItem {
 export interface ClusterResponse {
   clusters: ClusterItem[]
 }
+export interface WeatherContext {
+  condition?: string
+  temperature?: number
+}
+
+export interface RoutePolyline {
+  coordinates?: [number, number][]
+}
+
 export interface RoutePlanResponse {
   total_distance_meters: number
   waypoints: Array<{ lat: number; lon: number; name?: string; order?: number }>
-  polyline?: string
+  polyline?: RoutePolyline | string
   optimized_order: number[]
-  weather_context?: Record<string, unknown>
+  weather_context?: WeatherContext
 }
 
 export interface ProductCompactResponse {

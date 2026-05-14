@@ -1,15 +1,22 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-import { Search, Bell, Fingerprint, Send, Loader2, ChevronRight } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
-
-import AppSidebar from "@/components/Sidebar/AppSidebar"
 import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { isLoggedIn } from "@/hooks/useAuth"
-import useAuth from "@/hooks/useAuth"
+  createFileRoute,
+  Outlet,
+  Link as RouterLink,
+  redirect,
+} from "@tanstack/react-router"
+import {
+  Bell,
+  ChevronRight,
+  Fingerprint,
+  Loader2,
+  LogOut,
+  Search,
+  Send,
+  Settings as SettingsIcon,
+} from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { AgentAPI } from "@/client/aegis-api"
+import AppSidebar from "@/components/Sidebar/AppSidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -19,10 +26,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sheet as SheetComp, SheetContent as SheetContentComp, SheetHeader as SheetHeaderComp, SheetTitle as SheetTitleComp, SheetTrigger as SheetTriggerComp } from "@/components/ui/sheet"
-import { AgentAPI } from "@/client/aegis-api"
-import { LogOut, Settings as SettingsIcon } from "lucide-react"
-import { Link as RouterLink } from "@tanstack/react-router"
+import {
+  Sheet as SheetComp,
+  SheetContent as SheetContentComp,
+  SheetHeader as SheetHeaderComp,
+  SheetTitle as SheetTitleComp,
+  SheetTrigger as SheetTriggerComp,
+} from "@/components/ui/sheet"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -39,14 +55,14 @@ export const Route = createFileRoute("/_layout")({
 const TypewriterLogo = () => {
   const text = "AEGIS_O2O"
   const [displayText, setDisplayText] = useState("")
-  
+
   useEffect(() => {
-    let currentIndex = 0;
-    setDisplayText("");
+    let currentIndex = 0
+    setDisplayText("")
     const interval = setInterval(() => {
       if (currentIndex <= text.length) {
         setDisplayText(text.slice(0, currentIndex))
-        currentIndex++;
+        currentIndex++
       } else {
         clearInterval(interval)
       }
@@ -90,7 +106,11 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
     const query = input.trim()
     if (!query || isLoading) return
 
-    const userMsg: ChatMessage = { role: "user", text: query, timestamp: new Date() }
+    const userMsg: ChatMessage = {
+      role: "user",
+      text: query,
+      timestamp: new Date(),
+    }
     setMessages((prev) => [...prev, userMsg])
     setInput("")
     setIsLoading(true)
@@ -108,7 +128,11 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "agent", text: "⚠ Không thể kết nối tới AEGIS Agent. Kiểm tra backend.", timestamp: new Date() },
+        {
+          role: "agent",
+          text: "⚠ Không thể kết nối tới AEGIS Agent. Kiểm tra backend.",
+          timestamp: new Date(),
+        },
       ])
     } finally {
       setIsLoading(false)
@@ -120,7 +144,7 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
       <div className="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4 relative">
         {/* Background Glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(34,211,238,0.03),transparent_70%)] pointer-events-none"></div>
-        
+
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-zinc-500 relative">
             <div className="relative w-24 h-24 flex items-center justify-center mb-8">
@@ -129,13 +153,20 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
               <div className="absolute inset-4 rounded-full border border-cyan-500/60 shadow-[0_0_15px_rgba(34,211,238,0.3)] animate-pulse"></div>
               <Fingerprint className="w-8 h-8 text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
             </div>
-            <p className="font-mono text-sm tracking-widest uppercase animate-pulse text-cyan-500/70">AEGIS Agent Ready</p>
-            <p className="text-xs text-zinc-600 mt-2 max-w-[250px] text-center">Hỏi về địa danh, thời tiết, gợi ý mua sắm...</p>
+            <p className="font-mono text-sm tracking-widest uppercase animate-pulse text-cyan-500/70">
+              AEGIS Agent Ready
+            </p>
+            <p className="text-xs text-zinc-600 mt-2 max-w-[250px] text-center">
+              Hỏi về địa danh, thời tiết, gợi ý mua sắm...
+            </p>
           </div>
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-up`}>
+          <div
+            key={i}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-up`}
+          >
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === "user"
@@ -146,9 +177,14 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
               <p className="whitespace-pre-wrap">{msg.text}</p>
               {msg.actions && msg.actions.length > 0 && (
                 <div className="mt-3 pt-2 border-t border-white/10">
-                  <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider mb-1">Internal Actions</p>
+                  <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider mb-1">
+                    Internal Actions
+                  </p>
                   {msg.actions.map((action, j) => (
-                    <div key={j} className="text-[11px] text-cyan-400/70 font-mono flex items-center gap-1">
+                    <div
+                      key={j}
+                      className="text-[11px] text-cyan-400/70 font-mono flex items-center gap-1"
+                    >
                       <ChevronRight className="w-3 h-3" /> {action}
                     </div>
                   ))}
@@ -165,7 +201,9 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
           <div className="flex justify-start animate-slide-up">
             <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
               <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-              <span className="text-xs text-zinc-400 font-mono animate-pulse">Processing...</span>
+              <span className="text-xs text-zinc-400 font-mono animate-pulse">
+                Processing...
+              </span>
             </div>
           </div>
         )}
@@ -175,7 +213,10 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
       {/* Input */}
       <div className="p-4 border-t border-white/10 bg-black/60 backdrop-blur-xl">
         <form
-          onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleSend()
+          }}
           className="flex gap-2"
         >
           <input
@@ -201,7 +242,7 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
 
 function Layout() {
   const { user: currentUser, logout } = useAuth()
-  
+
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [initialChatMessage, setInitialChatMessage] = useState("")
 
@@ -213,13 +254,19 @@ function Layout() {
         setInitialChatMessage(customEvent.detail.message)
       }
     }
-    document.addEventListener('open-agent-chat', handleOpenChatEvent)
-    return () => document.removeEventListener('open-agent-chat', handleOpenChatEvent)
+    document.addEventListener("open-agent-chat", handleOpenChatEvent)
+    return () =>
+      document.removeEventListener("open-agent-chat", handleOpenChatEvent)
   }, [])
 
-  const initials = currentUser?.full_name 
-    ? currentUser.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-    : currentUser?.email?.substring(0, 2).toUpperCase() || 'AL'
+  const initials = currentUser?.full_name
+    ? currentUser.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+    : currentUser?.email?.substring(0, 2).toUpperCase() || "AL"
 
   return (
     <div className="dark min-h-screen bg-black text-zinc-50 font-sans relative overflow-hidden z-0">
@@ -228,7 +275,7 @@ function Layout() {
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-600/20 blur-[120px] rounded-full mix-blend-screen animate-[pulse_8s_ease-in-out_infinite]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse]"></div>
         <div className="absolute top-[40%] left-[30%] w-[40%] h-[40%] bg-emerald-600/10 blur-[120px] rounded-full mix-blend-screen animate-[pulse_12s_ease-in-out_infinite]"></div>
-        
+
         {/* Scanlines overlay */}
         <div className="absolute inset-0 z-[-1] opacity-10 bg-[linear-gradient(rgba(0,0,0,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none"></div>
       </div>
@@ -236,7 +283,6 @@ function Layout() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="bg-transparent flex flex-col h-screen overflow-hidden relative">
-          
           {/* 🌟 Glassmorphism Navbar */}
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/5 bg-white/5 backdrop-blur-xl px-4 sm:px-6 relative z-20 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
             <div className="flex items-center gap-4">
@@ -248,9 +294,9 @@ function Layout() {
             <div className="flex items-center gap-4 sm:gap-6">
               <div className="hidden md:flex relative group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-cyan-400 transition-colors" />
-                <input 
-                  type="text" 
-                  placeholder="Query system..." 
+                <input
+                  type="text"
+                  placeholder="Query system..."
                   className="w-64 pl-10 pr-12 py-1.5 bg-black/40 border border-white/10 rounded-full text-sm text-zinc-200 outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all font-mono placeholder:text-zinc-600 shadow-inner"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -265,19 +311,28 @@ function Layout() {
                   <Bell className="w-5 h-5" />
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-500 border border-black shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
                 </button>
-                
+
                 <div className="h-6 w-px bg-white/10 hidden sm:block"></div>
-                
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <div className="p-0.5 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 animate-[spin_4s_linear_infinite] hover:scale-110 transition-transform">
                       <Avatar className="h-8 w-8 cursor-pointer border-2 border-black rounded-full animate-[spin_4s_linear_infinite_reverse]">
-                        <AvatarImage src="" alt={currentUser?.full_name || "User"} className="rounded-full" />
-                        <AvatarFallback className="bg-zinc-900 text-zinc-300 text-xs font-mono rounded-full">{initials}</AvatarFallback>
+                        <AvatarImage
+                          src=""
+                          alt={currentUser?.full_name || "User"}
+                          className="rounded-full"
+                        />
+                        <AvatarFallback className="bg-zinc-900 text-zinc-300 text-xs font-mono rounded-full">
+                          {initials}
+                        </AvatarFallback>
                       </Avatar>
                     </div>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 bg-black/80 backdrop-blur-xl border border-white/10 text-zinc-200 mt-2" align="end">
+                  <DropdownMenuContent
+                    className="w-56 bg-black/80 backdrop-blur-xl border border-white/10 text-zinc-200 mt-2"
+                    align="end"
+                  >
                     <DropdownMenuLabel className="font-mono text-cyan-400">
                       {currentUser?.full_name || currentUser?.email || "Agent"}
                     </DropdownMenuLabel>
@@ -288,7 +343,7 @@ function Layout() {
                         <span>Settings</span>
                       </DropdownMenuItem>
                     </RouterLink>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-red-300 font-mono focus:bg-red-500/10 focus:text-red-300"
                       onClick={() => logout()}
                     >
@@ -300,7 +355,7 @@ function Layout() {
               </div>
             </div>
           </header>
-          
+
           {/* Main Content Area */}
           <main className="flex-1 overflow-auto bg-transparent relative z-10 custom-scrollbar">
             <Outlet />
@@ -317,11 +372,12 @@ function Layout() {
             <SheetContentComp className="w-[400px] sm:w-[450px] border-l border-white/10 bg-black/40 backdrop-blur-3xl text-zinc-100 p-0 flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.8)]">
               <SheetHeaderComp className="p-6 border-b border-white/10 bg-gradient-to-b from-cyan-950/20 to-transparent">
                 <SheetTitleComp className="flex items-center gap-3 text-zinc-100 text-xl font-bold tracking-wide font-mono">
-                  <Fingerprint className="w-6 h-6 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" /> AEGIS_AGENT
+                  <Fingerprint className="w-6 h-6 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />{" "}
+                  AEGIS_AGENT
                 </SheetTitleComp>
                 <p className="text-xs text-cyan-400 font-mono mt-1 flex items-center gap-2">
-                   <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
-                   LINK SECURED // GEMINI ACTIVE
+                  <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
+                  LINK SECURED // GEMINI ACTIVE
                 </p>
               </SheetHeaderComp>
               <AgentChatPanel initialMessage={initialChatMessage} />

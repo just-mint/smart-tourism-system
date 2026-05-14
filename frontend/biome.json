@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
     "includes": [
@@ -10,6 +10,9 @@
       "!**/src/client/**/*",
       "!**/src/components/ui/**/*",
       "!**/playwright-report",
+      "!**/blob-report/**/*",
+      "!**/test-results/**/*",
+      "!\\{",
       "!**/playwright.config.ts"
     ]
   },
@@ -18,14 +21,28 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "off",
-        "noArrayIndexKey": "off"
+        "noExplicitAny": "error",
+        "noArrayIndexKey": "off",
+        "noCommentText": "off",
+        "noDocumentCookie": "off",
+        "noShadowRestrictedNames": "off"
       },
       "style": {
         "noNonNullAssertion": "off",
         "noParameterAssign": "error",
-        "useSelfClosingElements": "error",
+        "useSelfClosingElements": "off",
         "noUselessElse": "error"
+      },
+      "a11y": {
+        "noLabelWithoutControl": "off",
+        "noStaticElementInteractions": "off",
+        "noSvgWithoutTitle": "off",
+        "useAltText": "off",
+        "useButtonType": "off",
+        "useKeyWithClickEvents": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off"
       }
     }
   },

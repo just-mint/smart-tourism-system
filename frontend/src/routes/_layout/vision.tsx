@@ -13,11 +13,11 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+  API_BASE,
   type ClosetItemResponse,
   type MixMatchProduct,
   type TaskStatus,
   VisionAPI,
-  API_BASE,
 } from "@/client/aegis-api"
 import {
   Sheet,
@@ -226,12 +226,13 @@ function VisionCloset() {
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
               data-testid="vision-upload-zone"
-              className={`flex-1 min-h-[280px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isDragging
+              className={`flex-1 min-h-[280px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
+                isDragging
                   ? "border-emerald-400 bg-emerald-500/10 scale-[1.02]"
                   : scanPreview
                     ? "border-white/10 bg-transparent"
                     : "border-white/10 bg-white/[0.02] hover:border-emerald-400/30 hover:bg-white/[0.04]"
-                }`}
+              }`}
             >
               {scanPreview ? (
                 <img
@@ -371,6 +372,7 @@ function VisionCloset() {
                                 }
                                 alt={prod.name}
                                 className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
                               />
                               <div className="absolute top-2 right-2 bg-purple-500/80 backdrop-blur text-white text-[10px] px-2 py-1 rounded font-bold">
                                 {prod.match_score}% Match
@@ -461,8 +463,9 @@ function VisionCloset() {
                       src={`${API_BASE}/${item.image_path}`}
                       alt={`Closet item ${item.id}`}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
-                        ; (e.target as HTMLImageElement).style.display = "none"
+                        ;(e.target as HTMLImageElement).style.display = "none"
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -533,6 +536,7 @@ function VisionCloset() {
                   <img
                     src={`${API_BASE}/${selectedClosetItem.image_path}`}
                     className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-2 w-full text-center text-[10px] font-mono text-purple-300">
@@ -570,6 +574,7 @@ function VisionCloset() {
                           }
                           alt={prod.name}
                           className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
                         />
                       </div>
                       <div className="flex-1 flex flex-col justify-between min-w-0">
@@ -586,12 +591,13 @@ function VisionCloset() {
                             {prod.price.toLocaleString()}₫
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${prod.match_score >= 90
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                              prod.match_score >= 90
                                 ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
                                 : prod.match_score >= 70
                                   ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
                                   : "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                              }`}
+                            }`}
                           >
                             Match: {prod.match_score}%
                           </span>

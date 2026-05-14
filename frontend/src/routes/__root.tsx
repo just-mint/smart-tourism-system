@@ -1,5 +1,5 @@
-import React, { Suspense } from "react"
 import { createRootRoute, HeadContent, Outlet } from "@tanstack/react-router"
+import React, { Suspense } from "react"
 import ErrorComponent from "@/components/Common/ErrorComponent"
 import NotFound from "@/components/Common/NotFound"
 
@@ -33,4 +33,3 @@ export const Route = createRootRoute({
   notFoundComponent: () => <NotFound />,
   errorComponent: () => <ErrorComponent />,
 })
-

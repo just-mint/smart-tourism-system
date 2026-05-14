@@ -10,6 +10,8 @@ setup("authenticate", async ({ page }) => {
   await page.getByPlaceholder("••••••••").fill(firstSuperuserPassword)
   await page.getByRole("button", { name: /Đăng nhập/i }).click()
   await page.waitForURL("/")
-  await page.evaluate(() => localStorage.setItem("is_logged_in", "true"))
+  await page.evaluate(() => {
+    document.cookie = "aegis_logged_in=true; path=/; SameSite=Lax"
+  })
   await page.context().storageState({ path: authFile })
 })
