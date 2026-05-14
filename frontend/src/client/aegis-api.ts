@@ -55,17 +55,21 @@ export interface PlaceDetailWithAI extends PlaceResponse {
   ai_story?: string
 }
 export interface ReviewCreate {
-  author_name: string
   rating: number
   text: string
 }
+export type ReviewStatus = "pending" | "approved" | "rejected"
 export interface ReviewResponse {
   id: number
   place_id: string
+  user_id?: string
   author_name: string
   rating: number
   text: string
   time_posted: string
+  status: ReviewStatus
+  report_count: number
+  moderation_note?: string
 }
 
 // Spatial
@@ -192,6 +196,18 @@ export const CultureAPI = {
 
   addPlaceReview: (id: number, review: ReviewCreate) =>
     aegisClient.post<ReviewResponse>(`/culture/places/${id}/reviews`, review),
+
+  reportReview: (reviewId: number, reason?: string) =>
+    aegisClient.post<ReviewResponse>(`/culture/reviews/${reviewId}/report`, { reason }),
+
+  getModerationReviews: (status: ReviewStatus | "all" = "pending") =>
+    aegisClient.get<ReviewResponse[]>("/culture/reviews/moderation", { params: { status } }),
+
+  moderateReview: (reviewId: number, status: "approved" | "rejected", moderation_note?: string) =>
+    aegisClient.patch<ReviewResponse>(`/culture/reviews/${reviewId}/moderation`, {
+      status,
+      moderation_note,
+    }),
 }
 
 // ===================== SPATIAL API =====================

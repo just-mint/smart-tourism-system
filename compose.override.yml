@@ -10,8 +10,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "8001:80"
-      - "8090:8080"
+      - "${PROXY_HTTP_PORT:-8008}:80"
+      - "${PROXY_DASHBOARD_PORT:-8091}:8080"
     # Duplicate the command from compose.yml to add --api.insecure=true
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
@@ -48,23 +48,21 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
-    ports:
-      - "6380:6379"
 
   db:
     restart: "no"
     ports:
-      - "5433:5432"
+      - "${POSTGRES_HOST_PORT:-5434}:5432"
 
   adminer:
     restart: "no"
     ports:
-      - "8080:8080"
+      - "${ADMINER_HOST_PORT:-8081}:8080"
 
   backend:
     restart: "no"
     ports:
-      - "8000:8000"
+      - "${BACKEND_HOST_PORT:-18000}:8000"
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -96,18 +94,18 @@ services:
   mailcatcher:
     image: schickling/mailcatcher
     ports:
-      - "1080:1080"
-      - "1025:1025"
+      - "${MAILCATCHER_HTTP_PORT:-1081}:1080"
+      - "${MAILCATCHER_SMTP_HOST_PORT:-1026}:1025"
 
   frontend:
     restart: "no"
     ports:
-      - "5173:80"
+      - "${FRONTEND_DEV_PORT:-5173}:80"
     build:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        - VITE_API_URL=http://localhost:8000
+        - VITE_API_URL=http://localhost:${BACKEND_HOST_PORT:-18000}
         - NODE_ENV=development
 
   playwright:
@@ -133,7 +131,7 @@ services:
       - ./frontend/blob-report:/app/frontend/blob-report
       - ./frontend/test-results:/app/frontend/test-results
     ports:
-      - 9323:9323
+      - "${PLAYWRIGHT_REPORT_PORT:-9323}:9323"
 
 networks:
   traefik-public:

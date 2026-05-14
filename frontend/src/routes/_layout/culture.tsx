@@ -8,8 +8,10 @@ import {
   Command,
   Compass,
   Globe,
+  Flag,
   Landmark,
   Loader2,
+  Lock,
   MapPin,
   Navigation,
   Send,
@@ -23,12 +25,14 @@ import {
   X,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import {
   CultureAPI,
   type PlaceDetailWithAI,
   type PlaceResponse,
   type ReviewResponse,
 } from "@/client/aegis-api"
+import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/culture")({
   component: CultureHeritage,
@@ -90,6 +94,7 @@ const TRENDING_HERITAGES = [
 ]
 
 function CultureHeritage() {
+  const { user: currentUser } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [places, setPlaces] = useState<PlaceResponse[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -100,7 +105,6 @@ function CultureHeritage() {
   const [isLoadingStory, setIsLoadingStory] = useState(false)
   const [_isLoadingReviews, setIsLoadingReviews] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [reviewAuthor, setReviewAuthor] = useState("")
   const [reviewText, setReviewText] = useState("")
   const [reviewRating, setReviewRating] = useState(5)
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
@@ -185,20 +189,59 @@ function CultureHeritage() {
   }
 
   const handleSubmitReview = async () => {
-    if (!selectedPlace || !reviewAuthor.trim() || !reviewText.trim()) return
+    const trimmedText = reviewText.trim()
+    if (!selectedPlace) return
+    if (!currentUser) {
+      toast.error("Bạn cần đăng nhập để gửi đánh giá.")
+      return
+    }
+    if (reviewRating < 1 || reviewRating > 5) {
+      toast.error("Rating phải nằm trong khoảng 1-5 sao.")
+      return
+    }
+    if (trimmedText.length < 10) {
+      toast.error("Nội dung đánh giá cần ít nhất 10 ký tự.")
+      return
+    }
+    if (trimmedText.length > 1000) {
+      toast.error("Nội dung đánh giá tối đa 1000 ký tự.")
+      return
+    }
     setIsSubmittingReview(true)
     try {
       const res = await CultureAPI.addPlaceReview(selectedPlace.id, {
-        author_name: reviewAuthor,
         rating: reviewRating,
-        text: reviewText,
+        text: trimmedText,
       })
-      setReviews((prev) => [...prev, res.data])
-      setReviewAuthor("")
+      setReviews((prev) => [res.data, ...prev])
       setReviewText("")
       setReviewRating(5)
+      toast.success("Đánh giá đã gửi và đang chờ duyệt.")
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
+      } else if (error?.response?.status === 422) {
+        toast.error("Nội dung hoặc rating chưa hợp lệ.")
+      } else {
+        toast.error("Không thể gửi đánh giá lúc này.")
+      }
     } finally {
       setIsSubmittingReview(false)
+    }
+  }
+
+  const handleReportReview = async (reviewId: number) => {
+    try {
+      const res = await CultureAPI.reportReview(
+        reviewId,
+        "Reported from Culture review UI",
+      )
+      setReviews((prev) =>
+        prev.map((review) => (review.id === reviewId ? res.data : review)),
+      )
+      toast.success("Đã gửi báo cáo để admin kiểm duyệt.")
+    } catch {
+      toast.error("Không thể báo cáo đánh giá này.")
     }
   }
 
@@ -719,6 +762,11 @@ function CultureHeritage() {
                               <span className="text-[10px] text-white/40 font-mono block">
                                 {r.time_posted}
                               </span>
+                              {r.status !== "approved" && (
+                                <span className="mt-1 inline-flex rounded-full border border-amber-400/40 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-amber-200">
+                                  {r.status === "pending" ? "Chờ duyệt" : "Đã từ chối"}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex">
@@ -735,6 +783,16 @@ function CultureHeritage() {
                         <p className="text-white/70 text-sm font-sans line-clamp-4">
                           {r.text}
                         </p>
+                        {r.status === "approved" && (
+                          <button
+                            type="button"
+                            onClick={() => handleReportReview(r.id)}
+                            className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/35 hover:text-amber-300"
+                          >
+                            <Flag className="w-3 h-3" />
+                            Báo cáo
+                          </button>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -746,14 +804,18 @@ function CultureHeritage() {
 
                 {/* Review Form - Expandable */}
                 <div className="mt-8 p-6 bg-[#050B14] border border-white/10 rounded-xl">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <input
-                      type="text"
-                      value={reviewAuthor}
-                      onChange={(e) => setReviewAuthor(e.target.value)}
-                      placeholder="Tên của bạn"
-                      className="bg-transparent border-b border-white/20 px-2 py-2 text-white font-sans placeholder:text-white/30 focus:outline-none focus:border-[#D4AF37]"
-                    />
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/40">
+                        Người đánh giá
+                      </p>
+                      <p className="mt-1 truncate text-sm font-semibold text-white">
+                        {currentUser?.full_name || currentUser?.email || "Chưa đăng nhập"}
+                      </p>
+                      <p className="mt-1 text-xs text-white/40">
+                        Đánh giá mới sẽ ở trạng thái chờ duyệt trước khi hiển thị công khai.
+                      </p>
+                    </div>
                     <div className="flex items-center gap-2 px-2">
                       <span className="text-sm text-white/50 font-sans">
                         Đánh giá:
@@ -775,15 +837,24 @@ function CultureHeritage() {
                     rows={3}
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
-                    placeholder="Trải nghiệm tuyệt vời nhất của bạn..."
+                    maxLength={1000}
+                    placeholder="Trải nghiệm của bạn, tối thiểu 10 ký tự..."
                     className="w-full bg-transparent border-b border-white/20 px-2 py-2 text-white font-sans placeholder:text-white/30 focus:outline-none focus:border-[#D4AF37] resize-none mb-6"
                   />
+                  <div className="mb-4 flex items-center justify-between text-xs font-mono text-white/40">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Lock className="h-3 w-3" />
+                      Authenticated review · Audit by user account
+                    </span>
+                    <span>{reviewText.trim().length}/1000</span>
+                  </div>
                   <button
                     onClick={handleSubmitReview}
                     disabled={
                       isSubmittingReview ||
-                      !reviewAuthor.trim() ||
-                      !reviewText.trim()
+                      !currentUser ||
+                      reviewText.trim().length < 10 ||
+                      reviewText.trim().length > 1000
                     }
                     className="px-8 py-3 bg-white text-[#0B132B] font-bold font-sans text-sm rounded hover:bg-[#D4AF37] transition-colors disabled:opacity-50 disabled:hover:bg-white flex items-center justify-center gap-2 float-right"
                   >
