@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 """
 DEPRECATED — Không dùng trong production.
 
@@ -18,3 +19,9 @@ if __name__ == "__main__":
         "Xem: backend/app/alembic/versions/b3c7e9f1a2d4_create_domain_tables.py"
     )
     sys.exit(1)
+=======
+import sys
+
+print("DEPRECATED: Please use 'alembic upgrade head' instead of this script.")
+sys.exit(1)
+>>>>>>> Stashed changes
