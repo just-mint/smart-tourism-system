@@ -56,6 +56,14 @@ export interface PlaceResponse {
 }
 export interface PlaceDetailWithAI extends PlaceResponse {
   ai_story?: string
+  story_source?: string
+  story_cached?: boolean
+  content_sources?: string[]
+  opening_hours?: string
+  ticket_price?: string
+  rules?: string[]
+  images?: string[]
+  image_source?: string
 }
 export interface ReviewCreate {
   rating: number

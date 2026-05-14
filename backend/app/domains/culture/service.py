@@ -35,15 +35,15 @@ def get_culture_metadata(db: Session):
     }
 
 
-def _fallback_image_for_category(category: str | None) -> str:
+def _fallback_image_for_category(category: str | None) -> str | None:
     normalized = (category or "").lower()
     if "ẩm" in normalized or "food" in normalized:
-        return "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200"
+        return None
     if "chợ" in normalized or "shopping" in normalized:
-        return "https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1200"
+        return None
     if "công viên" in normalized or "park" in normalized:
-        return "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200"
-    return "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1200"
+        return None
+    return None
 
 
 async def get_wikipedia_image(title: str, category: str | None = None):
@@ -135,6 +135,20 @@ async def get_wikipedia_image(title: str, category: str | None = None):
 async def generate_place_story(db: Session, place_id: int):
     place = db.query(Place).filter(Place.id == place_id).first()
     if not place: return None
+
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    cache_key = f"culture:story:{place.id}"
+    redis: Redis | None = None
+    try:
+        redis = Redis.from_url(redis_url, decode_responses=True)
+        cached = await redis.get(cache_key)
+        if cached:
+            cached_payload = json.loads(cached)
+            cached_payload["story_cached"] = True
+            await redis.aclose()
+            return cached_payload
+    except Exception:
+        redis = None
     
     # Lập Prompt theo đúng yêu cầu
     prompt = f"Bạn là hướng dẫn viên du lịch, hãy kể một câu chuyện ngắn 100 từ về {place.name} thuộc loại hình {place.category or 'văn hóa'} cho du khách."
@@ -144,6 +158,8 @@ async def generate_place_story(db: Session, place_id: int):
     # Nội dung Fallback cứng phòng trường hợp Timeout hoặc LLM API bị sập
     bot_story = f"[{place.name}] là một biểu tượng nổi bật thuộc nhóm {place.category or 'văn hóa'}. Nơi đây lưu giữ nhiều giá trị lịch sử và không gian nghệ thuật chờ bạn khám phá trên bản đồ AEGIS."
     
+    story_source = "fallback"
+
     if api_key:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
@@ -159,11 +175,45 @@ async def generate_place_story(db: Session, place_id: int):
                         parts = content.get("parts", [])
                         if parts and "text" in parts[0]:
                             bot_story = parts[0]["text"]
+                            story_source = "gemini-2.5-flash"
         except Exception:
             # Rơi vào Rate-limit hoặc Timeout -> Im lặng xài bot_story Fallback
             pass
             
-    return {"id": place.id, "place_id": place.place_id, "name": place.name, "category": place.category, "address": place.address, "lat": place.lat, "lon": place.lon, "ai_story": bot_story}
+    images = [place.image_url] if place.image_url else []
+    image_source = "place.image_url" if place.image_url else None
+    result = {
+        "id": place.id,
+        "place_id": place.place_id,
+        "name": place.name,
+        "category": place.category,
+        "address": place.address,
+        "lat": float(place.lat) if place.lat else 0.0,
+        "lon": float(place.lon) if place.lon else 0.0,
+        "rating": float(place.rating) if place.rating else None,
+        "review_count": place.review_count,
+        "ai_story": bot_story,
+        "story_source": story_source,
+        "story_cached": False,
+        "content_sources": ["AEGIS places dataset", story_source],
+        "opening_hours": None,
+        "ticket_price": None,
+        "rules": [
+            "Giữ gìn vệ sinh và tuân thủ hướng dẫn tại điểm đến.",
+            "Kiểm tra giờ mở cửa và giá vé chính thức trước khi khởi hành.",
+        ],
+        "images": images,
+        "image_source": image_source,
+    }
+
+    if redis:
+        try:
+            await redis.set(cache_key, json.dumps(result, default=str), ex=60 * 60 * 24)
+            await redis.aclose()
+        except Exception:
+            pass
+
+    return result
 
 def _review_author_name(user: User) -> str:
     return user.full_name or user.email.split("@")[0]

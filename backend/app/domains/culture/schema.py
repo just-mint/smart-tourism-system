@@ -12,6 +12,16 @@ class PlaceDetailWithAI(BaseModel):
     lat: float
     lon: float
     ai_story: Optional[str] = None
+    story_source: str = "fallback"
+    story_cached: bool = False
+    content_sources: list[str] = Field(default_factory=list)
+    opening_hours: Optional[str] = None
+    ticket_price: Optional[str] = None
+    rules: list[str] = Field(default_factory=list)
+    images: list[str] = Field(default_factory=list)
+    image_source: Optional[str] = None
+    rating: Optional[float] = None
+    review_count: Optional[int] = None
 
     class Config:
         from_attributes = True

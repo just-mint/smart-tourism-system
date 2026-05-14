@@ -38,55 +38,43 @@ export const Route = createFileRoute("/_layout/culture")({
 
 // Ảnh nền chất lượng cao, rõ nét
 const BACKGROUND_IMAGE =
-  "https://kinhtevadubao.vn/stores/news_dataimages/kinhtevadubaovn/092018/18/14/5-ve-dep-co-do-hue-tao-ne-su-hap-dan-dac-biet-khi-ghe-tham-07-.7434.jpg"
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Crect width='1200' height='800' fill='%23050b14'/%3E%3Cg fill='none' stroke='%23d4af37' stroke-opacity='.28'%3E%3Cpath d='M140 620h920M220 620V300l380-150 380 150v320M300 620V360h600v260M390 620V410M510 620V410M630 620V410M750 620V410M870 620V410'/%3E%3C/g%3E%3Ctext x='600' y='705' text-anchor='middle' fill='%23d4af37' fill-opacity='.8' font-family='Arial' font-size='36'%3EAEGIS Heritage%3C/text%3E%3C/svg%3E"
 
 const TRENDING_HERITAGES = [
   {
     name: "Vịnh Hạ Long",
     subtitle: "Kỳ quan thiên nhiên thế giới",
     desc: "Hòn Trống Mái, Động Thiên Cung, vẻ đẹp huyền ảo",
-    image:
-      "https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=1200",
     query: "Vịnh Hạ Long",
   },
   {
     name: "Cố đô Huế",
     subtitle: "Kiến trúc triều Nguyễn độc đáo",
     desc: "Sự giao thoa văn hóa lịch sử",
-    image:
-      "https://kinhtevadubao.vn/stores/news_dataimages/kinhtevadubaovn/092018/18/14/5-ve-dep-co-do-hue-tao-ne-su-hap-dan-dac-biet-khi-ghe-tham-08-.5606.jpg",
     query: "Huế",
   },
   {
     name: "Hà Nội",
     subtitle: "Thủ đô ngàn năm văn hiến",
     desc: "Hồ Gươm, 36 phố phường",
-    image:
-      "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1200",
     query: "Hà Nội",
   },
   {
     name: "Phố cổ Hội An",
     subtitle: "Di sản văn hóa thế giới",
     desc: "Đèn lồng, cổ kính, thơ mộng",
-    image:
-      "https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=1200",
     query: "Hội An",
   },
   {
     name: "Ninh Bình",
     subtitle: "Tràng An, Tam Cốc",
     desc: "Vịnh Hạ Long trên cạn",
-    image:
-      "https://images.pexels.com/photos/27356566/pexels-photo-27356566.jpeg",
     query: "Ninh Bình",
   },
   {
     name: "Sapa",
     subtitle: "Thành phố trong sương",
     desc: "Ruộng bậc thang, đỉnh Fansipan",
-    image:
-      "https://booking.muongthanh.com/upload_images/images/H%60/dinh-nui-fansipan.jpg",
     query: "Sapa",
   },
 ]
@@ -270,6 +258,7 @@ function CultureHeritage() {
     places.length === 0 && !isSearching && searchQuery === ""
 
   const [wikiImage, setWikiImage] = useState<string | null>(null)
+  const [wikiImageSource, setWikiImageSource] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -280,16 +269,29 @@ function CultureHeritage() {
 
     CultureAPI.getWikiImage(selectedPlace.name, selectedPlace.category)
       .then((res) => {
-        if (!cancelled) setWikiImage(res.data.image_url || null)
+        if (!cancelled) {
+          setWikiImage(res.data.image_url || null)
+          setWikiImageSource(res.data.source || null)
+        }
       })
       .catch(() => {
-        if (!cancelled) setWikiImage(null)
+        if (!cancelled) {
+          setWikiImage(null)
+          setWikiImageSource(null)
+        }
       })
 
     return () => {
       cancelled = true
     }
   }, [selectedPlace?.name, selectedPlace?.category])
+
+  const placeImages = selectedPlace
+    ? [...(selectedPlace.images || []), ...(wikiImage ? [wikiImage] : [])]
+    : []
+  const heroImage = placeImages[0] || BACKGROUND_IMAGE
+  const imageSource =
+    selectedPlace?.image_source || wikiImageSource || "AEGIS placeholder"
 
   useEffect(() => {
     let cancelled = false
@@ -455,12 +457,10 @@ function CultureHeritage() {
                     onClick={() => handleTrendingClick(item.query)}
                     className="group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 hover:scale-105 hover:z-10 transform-gpu perspective-1000 border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.8)] hover:border-white/30 hover:shadow-[0_8px_30px_rgba(255,255,255,0.15)]"
                   >
-                    <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-110">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 bg-[#050B14]">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Landmark className="h-16 w-16 text-[#D4AF37]/40" />
+                      </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
                     </div>
                     <div className="relative p-6 h-72 flex flex-col justify-end">
@@ -531,7 +531,7 @@ function CultureHeritage() {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={wikiImage || BACKGROUND_IMAGE}
+              src={heroImage}
               alt="Hero"
               className="w-full h-full object-cover opacity-50"
             />
@@ -549,6 +549,9 @@ function CultureHeritage() {
               <div className="w-24 h-1 bg-[#D4AF37] mb-6 shadow-[0_0_10px_#D4AF37]" />
               <p className="text-white/80 font-mono text-sm tracking-[0.2em] uppercase">
                 Trải nghiệm Di sản · O2O Shopping Ecosystem
+              </p>
+              <p className="mt-3 text-xs text-white/50 font-mono">
+                Nguồn ảnh: {imageSource}
               </p>
             </div>
           </div>
@@ -583,6 +586,15 @@ function CultureHeritage() {
                     </p>
                   </div>
                 )}
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-white/50 font-mono">
+                  <div>Nguồn nội dung: {selectedPlace?.story_source || "AEGIS"}</div>
+                  <div>
+                    Cache: {selectedPlace?.story_cached ? "đã dùng bản lưu" : "bản mới"}
+                  </div>
+                  <div>
+                    Provenance: {(selectedPlace?.content_sources || []).join(" · ") || "AEGIS places dataset"}
+                  </div>
+                </div>
                 <div className="pt-8 flex items-center gap-2 text-white/50 text-sm font-mono border-t border-white/10">
                   <MapPin className="w-4 h-4" /> {selectedPlace?.address}
                 </div>
@@ -590,26 +602,26 @@ function CultureHeritage() {
 
               {/* Right: Gallery */}
               <div className="grid grid-cols-2 gap-4">
-                <img
-                  src="https://images.unsplash.com/photo-1540483761890-a1f7be05ce34?auto=format&fit=crop&w=800"
-                  className="w-full h-48 object-cover rounded-2xl shadow-xl hover:scale-105 transition-transform duration-500"
-                  alt="Gallery 1"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1555921015-5532091f6026?auto=format&fit=crop&w=800"
-                  className="w-full h-64 object-cover rounded-2xl shadow-xl hover:scale-105 transition-transform duration-500 -mt-8"
-                  alt="Gallery 2"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1504457047772-27faf1c00561?auto=format&fit=crop&w=800"
-                  className="w-full h-64 object-cover rounded-2xl shadow-xl hover:scale-105 transition-transform duration-500"
-                  alt="Gallery 3"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1582650507323-96cb34407b46?auto=format&fit=crop&w=800"
-                  className="w-full h-48 object-cover rounded-2xl shadow-xl hover:scale-105 transition-transform duration-500"
-                  alt="Gallery 4"
-                />
+                {[0, 1, 2, 3].map((slot) => {
+                  const image = placeImages[slot]
+                  const heightClass = slot === 1 || slot === 2 ? "h-64" : "h-48"
+                  const offsetClass = slot === 1 ? "-mt-8" : ""
+                  return image ? (
+                    <img
+                      key={slot}
+                      src={image}
+                      className={`w-full ${heightClass} ${offsetClass} object-cover rounded-2xl shadow-xl hover:scale-105 transition-transform duration-500`}
+                      alt={`${selectedPlace?.name || "Di sản"} ${slot + 1}`}
+                    />
+                  ) : (
+                    <div
+                      key={slot}
+                      className={`w-full ${heightClass} ${offsetClass} rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center`}
+                    >
+                      <Landmark className="h-10 w-10 text-white/25" />
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -667,6 +679,34 @@ function CultureHeritage() {
                   <p className="text-white/40 text-sm">
                     Tọa độ {selectedPlace?.lat.toFixed(4)}, {selectedPlace?.lon.toFixed(4)}
                   </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 border-t border-white/10">
+                <div className="p-6">
+                  <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">
+                    Giờ mở cửa
+                  </h4>
+                  <p className="mt-2 text-white">
+                    {selectedPlace?.opening_hours || "Chưa có dữ liệu xác thực"}
+                  </p>
+                </div>
+                <div className="p-6">
+                  <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">
+                    Giá vé
+                  </h4>
+                  <p className="mt-2 text-white">
+                    {selectedPlace?.ticket_price || "Chưa có dữ liệu xác thực"}
+                  </p>
+                </div>
+                <div className="p-6">
+                  <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">
+                    Quy định tham quan
+                  </h4>
+                  <ul className="mt-2 space-y-1 text-sm text-white/70">
+                    {(selectedPlace?.rules || []).map((rule) => (
+                      <li key={rule}>• {rule}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
@@ -742,27 +782,30 @@ function CultureHeritage() {
               {/* Expert Quote */}
               <div className="lg:col-span-1 space-y-6">
                 <div className="text-6xl text-[#D4AF37] font-serif leading-none opacity-50">
-                  "
+                  <BookOpen className="h-12 w-12" />
                 </div>
-                <h3 className="text-2xl font-serif text-white italic leading-relaxed">
+                <p className="text-2xl font-serif text-white italic leading-relaxed">
+                  Nội dung ưu tiên dữ liệu thật từ hồ sơ địa điểm, nguồn ảnh có cache
+                  và đánh giá đã qua kiểm duyệt. Trường chưa xác thực được hiển thị
+                  rõ để tránh tạo kỳ vọng sai.
+                </p>
+                <h3 className="sr-only">
                   Một kiệt tác vượt thời gian, nơi từng viên gạch kể lại hàng
                   thế kỷ lịch sử huy hoàng của Việt Nam. Không gian mua sắm O2O
                   tại đây cũng mang tính đột phá.
                 </h3>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden">
-                    <img
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150"
-                      alt="Expert"
-                      className="w-full h-full object-cover"
-                    />
+                    <div className="w-full h-full flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-[#D4AF37]" />
+                    </div>
                   </div>
                   <div>
                     <p className="text-white font-bold font-sans">
-                      Alexander Chen
+                      Nguồn dữ liệu
                     </p>
                     <p className="text-white/50 text-xs font-mono uppercase tracking-widest">
-                      Travel Expert
+                      AEGIS dataset · Moderated reviews
                     </p>
                   </div>
                 </div>
