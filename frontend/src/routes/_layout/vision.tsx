@@ -350,14 +350,14 @@ function VisionCloset() {
                 </div>
 
                 {/* Similar Items Grid */}
-                {(taskStatus.detected_objects as any)?.similar_items && (
+                {taskStatus.detected_objects?.similar_items && (
                   <div className="glass-card p-4">
                     <h4 className="text-[10px] font-mono text-purple-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                       <Sparkles className="w-4 h-4" /> Recommended Matches
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {((taskStatus.detected_objects as any).similar_items as any[]).map(
-                        (prod: any) => (
+                      {taskStatus.detected_objects.similar_items.map(
+                        (prod: MixMatchProduct) => (
                           <div
                             key={prod.product_id}
                             className="bg-white/5 border border-white/10 rounded-xl overflow-hidden flex flex-col transition-transform hover:scale-[1.02]"

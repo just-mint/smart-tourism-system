@@ -38,6 +38,9 @@ import {
   type O2OContextResponse,
   type RoutePlanResponse,
   SpatialAPI,
+  type PlaceResponse,
+  type ClusterItem,
+  type StoreWithProductsResponse,
 } from "@/client/aegis-api"
 
 export const Route = createFileRoute("/_layout/spatial")({
@@ -277,7 +280,7 @@ function RecenterMap({ lat, lon }: { lat: number; lon: number }) {
 }
 
 // MapFlyController: Bridges map instance to parent via ref
-function MapFlyController({ mapRef }: { mapRef: React.MutableRefObject<any> }) {
+function MapFlyController({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
   const map = useMap()
   useEffect(() => {
     mapRef.current = map
@@ -291,13 +294,13 @@ function PanelOmnisearch({
   userLat,
   userLon,
 }: {
-  onSelect: (place: any) => void
-  mapRef: React.MutableRefObject<any>
+  onSelect: (place: PlaceResponse) => void
+  mapRef: React.MutableRefObject<L.Map | null>
   userLat: number
   userLon: number
 }) {
   const [query, setQuery] = useState("")
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<PlaceResponse[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
 
@@ -343,7 +346,7 @@ function PanelOmnisearch({
       </div>
       {showDropdown && results.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-[250px] overflow-y-auto z-50">
-          {results.map((p: any, idx: number) => (
+          {results.map((p: PlaceResponse, idx: number) => (
             <div
               key={p.id}
               onClick={() => {
@@ -393,12 +396,12 @@ function PanelOmnisearch({
   )
 }
 
-function AutoFitNearby({ nearbyData }: { nearbyData: any }) {
+function AutoFitNearby({ nearbyData }: { nearbyData: NearbySearchResponse | null }) {
   const map = useMap()
   useEffect(() => {
     if (nearbyData?.places && nearbyData.places.length > 0) {
-      const lats = nearbyData.places.map((p: any) => p.lat)
-      const lons = nearbyData.places.map((p: any) => p.lon)
+      const lats = nearbyData.places.map((p: PlaceResponse) => p.lat)
+      const lons = nearbyData.places.map((p: PlaceResponse) => p.lon)
       const minLat = Math.min(...lats),
         maxLat = Math.max(...lats)
       const minLon = Math.min(...lons),
@@ -498,7 +501,7 @@ function simplifyDouglasPeucker(
 }
 
 function SpatialOperations() {
-  const mapRef = React.useRef<any>(null)
+  const mapRef = React.useRef<L.Map | null>(null)
   const [lat, setLat] = useState(21.0285)
   const [lon, setLon] = useState(105.8542)
   const [radius, setRadius] = useState(2000)
@@ -530,7 +533,7 @@ function SpatialOperations() {
   const [isLoadingRoute, setIsLoadingRoute] = useState(false)
   const [isLoadingClusters, setIsLoadingClusters] = useState(false)
 
-  const [selectedNodes, setSelectedNodes] = useState<any[]>([])
+  const [selectedNodes, setSelectedNodes] = useState<PlaceResponse[]>([])
   const [mapCenter, setMapCenter] = useState<[number, number]>([
     21.0285, 105.8542,
   ])
@@ -540,7 +543,7 @@ function SpatialOperations() {
     number | string | null
   >(null)
 
-  const handlePlaceClick = async (p: any) => {
+  const handlePlaceClick = async (p: PlaceResponse) => {
     if (routeData) {
       toggleNodeSelection(p)
       return
@@ -548,7 +551,7 @@ function SpatialOperations() {
 
     const toastId = toast.loading("Đang tìm cửa hàng xung quanh...")
     try {
-      const queryId = p.place_id || p.id
+      const queryId = p.place_id || String(p.id)
       const res = await SpatialAPI.getPlaceO2OContext(queryId, radius)
       setO2OContext(res.data)
       toast.success("Đã mở Khu Mua Sắm O2O!", { id: toastId })
@@ -618,7 +621,7 @@ function SpatialOperations() {
     }
   }
 
-  const toggleNodeSelection = useCallback((place: any) => {
+  const toggleNodeSelection = useCallback((place: PlaceResponse) => {
     setSelectedNodes((prev) => {
       const isSelected = prev.some((p) => p.id === place.id)
       if (isSelected) {
@@ -680,10 +683,10 @@ function SpatialOperations() {
 
   const clusterRectangles = useMemo(() => {
     if (!clusterData) return null
-    return clusterData.clusters.map((cluster: any, i: number) => {
+    return clusterData.clusters.map((cluster: ClusterItem, i: number) => {
       const color = CLUSTER_COLORS[i % CLUSTER_COLORS.length]
-      const lats = cluster.places.map((p: any) => p.lat)
-      const lons = cluster.places.map((p: any) => p.lon)
+      const lats = cluster.places.map((p: PlaceResponse) => p.lat)
+      const lons = cluster.places.map((p: PlaceResponse) => p.lon)
       if (lats.length === 0) return null
       const minLat = Math.min(...lats),
         maxLat = Math.max(...lats)
@@ -712,7 +715,7 @@ function SpatialOperations() {
 
   const o2oMarkers = useMemo(() => {
     if (!o2oContext) return null
-    return o2oContext.nearby_stores.map((store: any) => {
+    return o2oContext.nearby_stores.map((store: StoreWithProductsResponse) => {
       return (
         <Marker
           key={`o2o-${store.store_id}`}
@@ -735,8 +738,8 @@ function SpatialOperations() {
 
   const nearbyMarkers = useMemo(() => {
     if (!nearbyData) return null
-    return nearbyData.places.map((p: any) => {
-      const isSelected = selectedNodes.some((n: any) => n.id === p.id)
+    return nearbyData.places.map((p: PlaceResponse) => {
+      const isSelected = selectedNodes.some((n: PlaceResponse) => n.id === p.id)
       let orderIndex = -1
 
       if (routeData?.optimized_order) {
@@ -917,7 +920,7 @@ function SpatialOperations() {
             mapRef={mapRef}
             userLat={lat}
             userLon={lon}
-            onSelect={(p: any) => {
+            onSelect={(p: PlaceResponse) => {
               setHighlightedPlaceId(p.id)
               setTimeout(() => setHighlightedPlaceId(null), 3000)
               handlePlaceClick(p)

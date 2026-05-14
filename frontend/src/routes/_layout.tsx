@@ -206,10 +206,11 @@ function Layout() {
   const [initialChatMessage, setInitialChatMessage] = useState("")
 
   useEffect(() => {
-    const handleOpenChatEvent = (e: any) => {
+    const handleOpenChatEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ message?: string }>
       setIsChatOpen(true)
-      if (e.detail?.message) {
-        setInitialChatMessage(e.detail.message)
+      if (customEvent.detail?.message) {
+        setInitialChatMessage(customEvent.detail.message)
       }
     }
     document.addEventListener('open-agent-chat', handleOpenChatEvent)

@@ -49,6 +49,7 @@ export interface PlaceResponse {
   rating?: number
   review_count?: number
   image_url?: string
+  match_score?: number // Added
 }
 export interface PlaceDetailWithAI extends PlaceResponse {
   ai_story?: string
@@ -115,8 +116,8 @@ export interface StoreWithProductsResponse {
   name: string
   category?: string
   address?: string
-  lat?: number
-  lon?: number
+  lat: number
+  lon: number
   phone?: string
   rating?: number
   products: ProductCompactResponse[]
@@ -153,11 +154,16 @@ export interface VisionUploadResponse {
   task_id: string
   message: string
 }
+export interface DetectedObjects {
+  similar_items?: MixMatchProduct[]
+  [key: string]: unknown
+}
+
 export interface TaskStatus {
   task_id: string
   status: string
   image_path: string
-  detected_objects?: Record<string, unknown>
+  detected_objects?: DetectedObjects
   matched_product_ids?: number[]
 }
 export interface ClosetItemResponse {
