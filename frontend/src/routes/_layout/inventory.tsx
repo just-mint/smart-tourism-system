@@ -221,7 +221,7 @@ function Inventory() {
   const openCheckoutFromLock = (lock: LockResponseItem) => {
     setCheckoutProduct({
       product_id: lock.product_id,
-      name: lock.product_name || `Product #${lock.product_id}`,
+      name: lock.product_name || `Sản phẩm #${lock.product_id}`,
       price: lock.product_price || 0,
       image_url: lock.product_image_url,
       store_id: lock.store_id,
@@ -262,7 +262,7 @@ function Inventory() {
               <PackageOpen className="w-5 h-5" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-white hidden md:block">
-              O2O Market
+              Chợ O2O
             </h1>
           </div>
 
@@ -271,7 +271,7 @@ function Inventory() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search hubs, brands, apparels..."
+              placeholder="Tìm cửa hàng, thương hiệu, sản phẩm..."
               className="w-full bg-zinc-900/50 border-white/10 h-12 pl-12 rounded-2xl text-white placeholder:text-zinc-500 focus-visible:ring-amber-500/50 focus-visible:border-amber-500/50 transition-all text-base"
             />
             {isLoading && (
@@ -304,7 +304,7 @@ function Inventory() {
         {/* 2. LEFT COL: HUB LIST */}
         <aside className="w-full lg:w-[350px] shrink-0 space-y-4">
           <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-6">
-            <Store className="w-4 h-4" /> Nearby Hubs
+            <Store className="w-4 h-4" /> Cửa hàng gần bạn
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
             {stores.map((store) => {
@@ -326,11 +326,11 @@ function Inventory() {
                     </h3>
                     <p className="text-xs text-zinc-500 truncate flex items-center gap-1 mt-1">
                       <MapPin className="w-3 h-3" />
-                      {store.address || "Location pending"}
+                      {store.address || "Chưa có địa chỉ"}
                     </p>
                     {store.rating && (
                       <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1 font-medium">
-                        Rating {store.rating}
+                        Đánh giá {store.rating}
                       </p>
                     )}
                   </div>
@@ -345,7 +345,7 @@ function Inventory() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <ScanLine className="w-6 h-6 text-amber-500" />
-              {searchQuery ? "Search Results" : "Inventory Catalog"}
+              {searchQuery ? "Kết quả tìm kiếm" : "Danh mục sản phẩm"}
             </h2>
           </div>
 
@@ -361,7 +361,7 @@ function Inventory() {
           ) : products.length === 0 ? (
             <div className="h-80 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-3xl">
               <Package className="w-12 h-12 text-zinc-700 mb-2" />
-              <p className="text-zinc-500">No products found.</p>
+              <p className="text-zinc-500">Không tìm thấy sản phẩm.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -393,7 +393,7 @@ function Inventory() {
                       <div className="absolute top-3 left-3 flex flex-col gap-2">
                         {stock > 0 && stock <= 5 && (
                           <span className="bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider backdrop-blur-md">
-                            Almost Gone
+                            Sắp hết
                           </span>
                         )}
                       </div>
@@ -413,12 +413,12 @@ function Inventory() {
                       <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
                         <div className="flex flex-col">
                           <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-1">
-                            Stock
+                            Tồn kho
                           </span>
                           <span
                             className={`text-xs font-mono font-bold ${isOut ? "text-zinc-600" : "text-emerald-400"}`}
                           >
-                            {stock} left
+                            Còn {stock}
                           </span>
                         </div>
                         <button
@@ -455,7 +455,7 @@ function Inventory() {
               <div className="w-full md:w-[400px] bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
                 <div>
                   <h2 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-6">
-                    Order Summary
+                    Tóm tắt đơn hàng
                   </h2>
                   {checkoutProduct.image_url ? (
                     <img
@@ -479,8 +479,8 @@ function Inventory() {
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
                     <Clock className="w-5 h-5 text-amber-500" />
                     <p className="text-sm text-amber-500/90 leading-relaxed font-medium">
-                      Item is locked for 15 minutes. Please complete your
-                      checkout.
+                      Sản phẩm đã được giữ trong 15 phút. Vui lòng hoàn tất
+                      thanh toán.
                     </p>
                   </div>
                 </div>
@@ -495,7 +495,7 @@ function Inventory() {
                       <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Order Created!
+                      Đã tạo đơn hàng!
                     </h2>
                     <p className="text-zinc-400 mb-8 font-mono">
                       Code:{" "}
@@ -512,15 +512,15 @@ function Inventory() {
                       />
                     </div>
                     <p className="text-sm text-zinc-500 max-w-xs">
-                      Scan with any banking app to complete payment. Your order
-                      will be shipped soon.
+                      Quét mã bằng ứng dụng ngân hàng để hoàn tất thanh toán.
+                      Đơn hàng sẽ được xử lý sau khi thanh toán.
                     </p>
 
                     <button
                       onClick={closeCheckout}
                       className="mt-8 px-8 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl font-bold text-white transition-colors"
                     >
-                      Continue Shopping
+                      Tiếp tục mua sắm
                     </button>
                   </div>
                 ) : (
@@ -530,14 +530,14 @@ function Inventory() {
                     className="flex flex-col h-full"
                   >
                     <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-2">
-                      <CreditCard className="w-6 h-6 text-amber-500" /> Shipping
-                      Details
+                      <CreditCard className="w-6 h-6 text-amber-500" /> Thông
+                      tin giao hàng
                     </h2>
 
                     <div className="space-y-5 flex-1">
                       <div>
                         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                          Full Name
+                          Họ và tên
                         </label>
                         <Input
                           required
@@ -549,12 +549,12 @@ function Inventory() {
                             })
                           }
                           className="bg-zinc-900/50 border-white/10 text-white h-12 rounded-xl"
-                          placeholder="John Doe"
+                          placeholder="Nguyễn Văn A"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                          Phone Number
+                          Số điện thoại
                         </label>
                         <Input
                           required
@@ -572,7 +572,7 @@ function Inventory() {
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                          Delivery Address
+                          Địa chỉ nhận hàng
                         </label>
                         <textarea
                           required
@@ -584,7 +584,7 @@ function Inventory() {
                             })
                           }
                           className="w-full bg-zinc-900/50 border border-white/10 text-white p-4 rounded-xl min-h-[100px] resize-none focus:outline-none focus:border-amber-500/50"
-                          placeholder="123 Main St..."
+                          placeholder="Số nhà, đường, phường/xã, quận/huyện..."
                         />
                       </div>
                     </div>
@@ -599,7 +599,7 @@ function Inventory() {
                       ) : (
                         <Zap className="w-5 h-5" />
                       )}
-                      {isOrdering ? "Processing..." : "Place Order via VietQR"}
+                      {isOrdering ? "Đang xử lý..." : "Đặt hàng qua VietQR"}
                     </button>
                   </form>
                 )}
@@ -619,7 +619,7 @@ function Inventory() {
           <div className="relative w-full max-w-md bg-zinc-900 border-l border-white/5 shadow-2xl flex flex-col animate-in slide-in-from-right">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-zinc-950">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-amber-500" /> Active Locks (
+                <Lock className="w-5 h-5 text-amber-500" /> Đang giữ hàng (
                 {locks.length})
               </h2>
               <button
@@ -634,7 +634,7 @@ function Inventory() {
               {locks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-zinc-500">
                   <ShoppingCart className="w-16 h-16 mb-4 opacity-50" />
-                  <p>No active reservations.</p>
+                  <p>Chưa có sản phẩm đang giữ.</p>
                 </div>
               ) : (
                 locks.map((lock) => (
@@ -645,7 +645,7 @@ function Inventory() {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-white font-bold mb-1">
-                          {lock.product_name || `Product #${lock.product_id}`}
+                          {lock.product_name || `Sản phẩm #${lock.product_id}`}
                         </p>
                         <p className="text-xs text-zinc-500 font-mono">
                           Qty: {lock.quantity} • Lock: {lock.id}
@@ -668,7 +668,7 @@ function Inventory() {
                         className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold py-2.5 transition-colors"
                       >
                         <CreditCard className="w-4 h-4" />
-                        Checkout
+                        Thanh toán
                       </button>
                       <button
                         onClick={() => handleCancelLock(lock.id)}
@@ -680,7 +680,7 @@ function Inventory() {
                         ) : (
                           <X className="w-4 h-4" />
                         )}
-                        Cancel
+                        Hủy
                       </button>
                     </div>
                   </div>

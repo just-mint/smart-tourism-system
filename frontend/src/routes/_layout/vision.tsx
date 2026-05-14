@@ -192,7 +192,7 @@ function VisionCloset() {
               Vision & Closet
             </h1>
             <p className="text-sm text-emerald-400/70 font-mono mt-0.5 tracking-widest uppercase">
-              AI Scan · Vector Embedding · pgvector
+              Quét AI · Vector Embedding · pgvector
             </p>
           </div>
         </div>
@@ -202,13 +202,13 @@ function VisionCloset() {
             onClick={() => setActiveTab("scan")}
             className={`px-5 py-2 text-xs font-mono tracking-wider uppercase transition-all flex items-center gap-2 ${activeTab === "scan" ? "bg-emerald-500/10 text-emerald-400 border-b-2 border-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}
           >
-            <Eye className="w-3.5 h-3.5" /> AI Scan
+            <Eye className="w-3.5 h-3.5" /> Quét AI
           </button>
           <button
             onClick={() => setActiveTab("closet")}
             className={`px-5 py-2 text-xs font-mono tracking-wider uppercase transition-all flex items-center gap-2 ${activeTab === "closet" ? "bg-purple-500/10 text-purple-400 border-b-2 border-purple-400" : "text-zinc-500 hover:text-zinc-300"}`}
           >
-            <Shirt className="w-3.5 h-3.5" /> Virtual Closet
+            <Shirt className="w-3.5 h-3.5" /> Tủ đồ ảo
           </button>
         </div>
       </div>
@@ -218,7 +218,7 @@ function VisionCloset() {
           {/* Upload Zone */}
           <div className="glass-card p-6 flex flex-col">
             <h3 className="text-xs font-mono text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <UploadCloud className="w-4 h-4" /> Upload for AI Scan
+              <UploadCloud className="w-4 h-4" /> Tải ảnh để quét AI
             </h3>
             <div
               onDragOver={handleDragOver}
@@ -248,7 +248,7 @@ function VisionCloset() {
                     </div>
                     {/* Scan animation */}
                     <div className="absolute inset-0 rounded-2xl overflow-hidden">
-                      <div className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent animate-[scanline_2s_ease-in-out_infinite]" />
+                      <div className="absolute top-1/2 w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
                     </div>
                   </div>
                   <p className="text-sm text-zinc-400 mb-1">
@@ -289,7 +289,7 @@ function VisionCloset() {
                   ) : (
                     <ScanFace className="w-3.5 h-3.5" />
                   )}
-                  {isUploading ? "Uploading..." : "Start AI Scan"}
+                  {isUploading ? "Đang tải..." : "Bắt đầu quét AI"}
                 </button>
               </div>
             )}
@@ -298,33 +298,32 @@ function VisionCloset() {
           {/* Results Panel */}
           <div className="glass-card p-6 flex flex-col">
             <h3 className="text-xs font-mono text-cyan-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Eye className="w-4 h-4" /> Scan Results
+              <Eye className="w-4 h-4" /> Kết quả quét
             </h3>
 
             {!taskId && !taskStatus && (
               <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
                 <div className="relative w-24 h-24 mb-6">
-                  <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-[spin_4s_linear_infinite]" />
-                  <div className="absolute inset-3 rounded-full border border-dashed border-emerald-500/30 animate-[spin_6s_linear_infinite_reverse]" />
+                  <div className="absolute inset-0 rounded-full border border-emerald-500/20" />
+                  <div className="absolute inset-3 rounded-full border border-dashed border-emerald-500/30" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <ScanFace className="w-8 h-8 text-emerald-500/30" />
                   </div>
                 </div>
-                <p className="text-sm font-mono">Awaiting image input...</p>
+                <p className="text-sm font-mono">Đang chờ ảnh...</p>
               </div>
             )}
 
             {isPolling && (
               <div className="flex-1 flex flex-col items-center justify-center">
                 <div className="relative w-24 h-24 mb-6">
-                  <div className="absolute inset-0 rounded-full border-2 border-emerald-500/40 animate-ping" />
                   <div className="absolute inset-0 rounded-full border border-emerald-500/60 animate-[spin_2s_linear_infinite]" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
                   </div>
                 </div>
-                <p className="text-sm text-emerald-400 font-mono animate-pulse">
-                  AI Processing...
+                <p className="text-sm text-emerald-400 font-mono">
+                  AI đang xử lý...
                 </p>
                 <p className="text-[10px] text-zinc-600 font-mono mt-1">
                   Task: {taskId}
@@ -355,7 +354,7 @@ function VisionCloset() {
                 {taskStatus.detected_objects?.similar_items && (
                   <div className="glass-card p-4">
                     <h4 className="text-[10px] font-mono text-purple-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" /> Recommended Matches
+                      <Sparkles className="w-4 h-4" /> Gợi ý phù hợp
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {taskStatus.detected_objects.similar_items.map(
@@ -390,7 +389,7 @@ function VisionCloset() {
                                 </span>
                                 {prod.store_id && (
                                   <span className="px-2 py-1 text-[10px] bg-white/5 border border-white/10 text-zinc-400 font-mono rounded">
-                                    Store #{prod.store_id}
+                                    Cửa hàng #{prod.store_id}
                                   </span>
                                 )}
                               </div>
@@ -441,7 +440,7 @@ function VisionCloset() {
               ) : (
                 <Shirt className="w-3.5 h-3.5" />
               )}
-              Add to Closet
+              Thêm vào tủ đồ
             </button>
             <button
               onClick={loadCloset}
@@ -523,10 +522,10 @@ function VisionCloset() {
           <SheetHeader className="p-6 border-b border-white/10 bg-gradient-to-b from-purple-900/20 to-transparent sticky top-0 z-10 backdrop-blur-md">
             <SheetTitle className="flex items-center gap-3 text-white text-xl font-bold tracking-wide">
               <Sparkles className="w-6 h-6 text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />{" "}
-              AI Style Matcher
+              Gợi ý phối đồ AI
             </SheetTitle>
             <p className="text-xs text-purple-400 font-mono mt-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
               pgvector Cosine Similarity · CLIP 512D
             </p>
           </SheetHeader>
@@ -542,7 +541,7 @@ function VisionCloset() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-2 w-full text-center text-[10px] font-mono text-purple-300">
-                    Target Vector
+                    Vector mục tiêu
                   </div>
                 </div>
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
@@ -551,14 +550,14 @@ function VisionCloset() {
 
             <div>
               <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Shirt className="w-4 h-4 text-cyan-400" /> Recommended Matches
+                <Shirt className="w-4 h-4 text-cyan-400" /> Gợi ý phù hợp
               </h3>
 
               <div className="space-y-4">
                 {isLoadingMixMatch ? (
                   <div className="flex flex-col items-center py-12">
                     <Loader2 className="w-8 h-8 text-purple-400 animate-spin mb-3" />
-                    <p className="text-xs text-purple-300 font-mono animate-pulse">
+                    <p className="text-xs text-purple-300 font-mono">
                       Đang tìm kiếm sản phẩm tương tự...
                     </p>
                   </div>
@@ -601,7 +600,7 @@ function VisionCloset() {
                                   : "bg-blue-500/20 text-blue-300 border-blue-500/30"
                             }`}
                           >
-                            Match: {prod.match_score}%
+                            Phù hợp: {prod.match_score}%
                           </span>
                         </div>
                         {prod.stock <= 0 && (

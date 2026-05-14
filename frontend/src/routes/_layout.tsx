@@ -69,7 +69,7 @@ const TypewriterLogo = () => {
   }, [])
 
   return (
-    <h1 className="text-lg font-bold tracking-widest text-zinc-200 hidden sm:block font-mono border-r-2 border-cyan-400 pr-1 animate-[pulse_1s_infinite]">
+    <h1 className="text-lg font-bold tracking-widest text-zinc-200 hidden sm:block font-mono border-r-2 border-cyan-400 pr-1">
       {displayText}
     </h1>
   )
@@ -146,13 +146,13 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-zinc-500 relative">
             <div className="relative w-24 h-24 flex items-center justify-center mb-8">
-              <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-[spin_4s_linear_infinite]"></div>
-              <div className="absolute inset-2 rounded-full border border-dashed border-cyan-500/40 animate-[spin_6s_linear_infinite_reverse]"></div>
-              <div className="absolute inset-4 rounded-full border border-cyan-500/60 shadow-[0_0_15px_rgba(34,211,238,0.3)] animate-pulse"></div>
+              <div className="absolute inset-0 rounded-full border border-cyan-500/20"></div>
+              <div className="absolute inset-2 rounded-full border border-dashed border-cyan-500/40"></div>
+              <div className="absolute inset-4 rounded-full border border-cyan-500/60 shadow-[0_0_15px_rgba(34,211,238,0.3)]"></div>
               <Fingerprint className="w-8 h-8 text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
             </div>
-            <p className="font-mono text-sm tracking-widest uppercase animate-pulse text-cyan-500/70">
-              AEGIS Agent Ready
+            <p className="font-mono text-sm tracking-widest uppercase text-cyan-500/70">
+              AEGIS Agent sẵn sàng
             </p>
             <p className="text-xs text-zinc-600 mt-2 max-w-[250px] text-center">
               Hỏi về địa danh, thời tiết, gợi ý mua sắm...
@@ -176,7 +176,7 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
               {msg.actions && msg.actions.length > 0 && (
                 <div className="mt-3 pt-2 border-t border-white/10">
                   <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider mb-1">
-                    Internal Actions
+                    Hành động nội bộ
                   </p>
                   {msg.actions.map((action, j) => (
                     <div
@@ -200,7 +200,7 @@ const AgentChatPanel = ({ initialMessage }: { initialMessage?: string }) => {
             <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
               <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
               <span className="text-xs text-zinc-400 font-mono animate-pulse">
-                Processing...
+                Đang xử lý...
               </span>
             </div>
           </div>
@@ -270,9 +270,8 @@ function Layout() {
     <div className="dark min-h-screen bg-black text-zinc-50 font-sans relative overflow-hidden z-0">
       {/* 🌌 Atmospheric Breathing Background */}
       <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-600/20 blur-[120px] rounded-full mix-blend-screen animate-[pulse_8s_ease-in-out_infinite]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse]"></div>
-        <div className="absolute top-[40%] left-[30%] w-[40%] h-[40%] bg-emerald-600/10 blur-[120px] rounded-full mix-blend-screen animate-[pulse_12s_ease-in-out_infinite]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-600/10 blur-[80px] rounded-full mix-blend-screen"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[80px] rounded-full mix-blend-screen"></div>
 
         {/* Scanlines overlay */}
         <div className="absolute inset-0 z-[-1] opacity-10 bg-[linear-gradient(rgba(0,0,0,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none"></div>
@@ -295,8 +294,8 @@ function Layout() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className="p-0.5 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 animate-[spin_4s_linear_infinite] hover:scale-110 transition-transform">
-                      <Avatar className="h-8 w-8 cursor-pointer border-2 border-black rounded-full animate-[spin_4s_linear_infinite_reverse]">
+                    <div className="p-0.5 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 hover:scale-105 transition-transform">
+                      <Avatar className="h-8 w-8 cursor-pointer border-2 border-black rounded-full">
                         <AvatarImage
                           src=""
                           alt={currentUser?.full_name || "User"}
@@ -319,7 +318,7 @@ function Layout() {
                     <RouterLink to="/settings">
                       <DropdownMenuItem className="cursor-pointer hover:bg-white/10 hover:text-cyan-400 font-mono focus:bg-white/10 focus:text-cyan-400">
                         <SettingsIcon className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
+                        <span>Cài đặt</span>
                       </DropdownMenuItem>
                     </RouterLink>
                     <DropdownMenuItem
@@ -327,7 +326,7 @@ function Layout() {
                       onClick={() => logout()}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>Log Out</span>
+                      <span>Đăng xuất</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -344,7 +343,6 @@ function Layout() {
           <SheetComp open={isChatOpen} onOpenChange={setIsChatOpen}>
             <SheetTriggerComp asChild>
               <button className="fixed bottom-8 right-8 z-50 p-4 bg-black/60 hover:bg-black backdrop-blur-xl border border-cyan-500/50 text-cyan-400 rounded-full shadow-[0_0_30px_rgba(34,211,238,0.3)] hover:shadow-[0_0_40px_rgba(34,211,238,0.6)] transition-all duration-300 hover:scale-110 active:scale-95 group">
-                <div className="absolute inset-0 rounded-full border border-cyan-400/30 animate-ping"></div>
                 <Fingerprint className="w-6 h-6 group-hover:text-cyan-300 transition-colors" />
               </button>
             </SheetTriggerComp>
@@ -355,8 +353,8 @@ function Layout() {
                   AEGIS_AGENT
                 </SheetTitleComp>
                 <p className="text-xs text-cyan-400 font-mono mt-1 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
-                  LINK SECURED // GEMINI ACTIVE
+                  <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
+                  Kết nối bảo mật // Gemini đang hoạt động
                 </p>
               </SheetHeaderComp>
               <AgentChatPanel initialMessage={initialChatMessage} />
