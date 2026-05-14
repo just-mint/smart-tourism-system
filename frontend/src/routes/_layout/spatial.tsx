@@ -123,11 +123,6 @@ const getNumberedIcon = (num: number) =>
   )
 
 const CLUSTER_COLORS = ["#10b981", "#06b6d4", "#8b5cf6", "#f43f5e", "#f59e0b"]
-const _getClusterIcon = (color: string) =>
-  createDivIcon(
-    `<div class="w-4 h-4 rounded-full border-2 border-black shadow-[0_0_15px_${color}]" style="background-color: ${color};"></div>`,
-    16,
-  )
 
 function StoreProductPanel({
   o2oContext,

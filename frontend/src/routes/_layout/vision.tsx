@@ -334,7 +334,7 @@ function VisionCloset() {
                     ) : (
                       <XCircle className="w-3 h-3" />
                     )}
-                    {taskStatus.status}
+                    {taskStatus.status as string}
                   </span>
                   <span className="text-[10px] text-zinc-600 font-mono">
                     ID: {taskStatus.task_id}
@@ -342,13 +342,13 @@ function VisionCloset() {
                 </div>
 
                 {/* Similar Items Grid */}
-                {taskStatus.detected_objects?.similar_items && (
+                {(taskStatus.detected_objects as any)?.similar_items && (
                   <div className="glass-card p-4">
                     <h4 className="text-[10px] font-mono text-purple-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                       <Sparkles className="w-4 h-4" /> Recommended Matches
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {taskStatus.detected_objects.similar_items.map(
+                      {((taskStatus.detected_objects as any).similar_items as any[]).map(
                         (prod: any) => (
                           <div
                             key={prod.product_id}

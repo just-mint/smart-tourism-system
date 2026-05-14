@@ -31,14 +31,7 @@ export const Route = createFileRoute("/_layout/inventory")({
   component: Inventory,
 })
 
-const _CATEGORIES = [
-  "All",
-  "Apparel",
-  "Souvenirs",
-  "Tất cả",
-  "Đặc sản",
-  "Mỹ nghệ",
-]
+
 const STORE_IMAGES = [
   "https://images.unsplash.com/photo-1550650222-6b94dbba2211?q=80&w=800",
   "https://images.unsplash.com/photo-1559592413-7ceecea18501?q=80&w=800",
@@ -126,8 +119,8 @@ function Inventory() {
         setStores(storeRes.data)
         if (storeRes.data.length > 0) {
           const firstStoreId = storeRes.data[0].store_id
-          setActiveStoreId(firstStoreId)
-          const prodRes = await InventoryAPI.getStoreProducts(firstStoreId)
+          setActiveStoreId(firstStoreId ?? null)
+          const prodRes = await InventoryAPI.getStoreProducts(firstStoreId!)
           setProducts(prodRes.data.map((p, i) => ({ ...p, imageIndex: i })))
         }
       }
@@ -271,7 +264,7 @@ function Inventory() {
               return (
                 <div
                   key={store.store_id}
-                  onClick={() => handleStoreClick(store.store_id)}
+                  onClick={() => handleStoreClick(store.store_id!)}
                   className={`group flex items-center gap-4 p-3 rounded-2xl cursor-pointer transition-all duration-300 border bg-zinc-900/30 ${isActive ? "border-amber-500/50 bg-amber-500/5 shadow-[0_0_30px_rgba(245,158,11,0.1)]" : "border-white/5 hover:border-white/20 hover:bg-zinc-800/50"}`}
                 >
                   <img
