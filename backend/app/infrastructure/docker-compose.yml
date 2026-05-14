@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  # === PostgreSQL với PostGIS + pgvector ===
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: aegis_postgres
+    environment:
+      POSTGRES_DB: aegis_db
+      POSTGRES_USER: aegis_user
+      POSTGRES_PASSWORD: aegis_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis_user -d aegis_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === Redis — Inventory Soft-lock ===
+  redis:
+    image: redis:7-alpine
+    container_name: aegis_redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # === RabbitMQ — Celery Message Broker ===
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: aegis_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # === OSRM — Private Routing Server (tránh bị ban IP khi scale) ===
+  osrm:
+    image: osrm/osrm-backend:latest
+    container_name: aegis_osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./osrm_data:/data
+    # Chú ý: Cần download file .osm.pbf của Việt Nam và xử lý trước
+    # Xem hướng dẫn trong README.md để setup OSRM với bản đồ Việt Nam
+    command: >
+      sh -c "if [ -f /data/vietnam.osrm ]; then
+        osrm-routed --algorithm mld /data/vietnam.osrm;
+      else
+        echo 'OSRM data not found. Using public demo server fallback.';
+        sleep infinity;
+      fi"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
