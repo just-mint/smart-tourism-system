@@ -17,6 +17,7 @@ import {
   type MixMatchProduct,
   type TaskStatus,
   VisionAPI,
+  API_BASE,
 } from "@/client/aegis-api"
 import {
   Sheet,
@@ -216,13 +217,12 @@ function VisionCloset() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
-              className={`flex-1 min-h-[280px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
-                isDragging
+              className={`flex-1 min-h-[280px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isDragging
                   ? "border-emerald-400 bg-emerald-500/10 scale-[1.02]"
                   : scanPreview
                     ? "border-white/10 bg-transparent"
                     : "border-white/10 bg-white/[0.02] hover:border-emerald-400/30 hover:bg-white/[0.04]"
-              }`}
+                }`}
             >
               {scanPreview ? (
                 <img
@@ -449,11 +449,11 @@ function VisionCloset() {
                 <div key={item.id} className="glass-card overflow-hidden group">
                   <div className="aspect-square bg-white/[0.02] relative overflow-hidden">
                     <img
-                      src={`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/${item.image_path}`}
+                      src={`${API_BASE}/${item.image_path}`}
                       alt={`Closet item ${item.id}`}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       onError={(e) => {
-                        ;(e.target as HTMLImageElement).style.display = "none"
+                        ; (e.target as HTMLImageElement).style.display = "none"
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -522,7 +522,7 @@ function VisionCloset() {
               <div className="flex flex-col items-center">
                 <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.3)] mb-4">
                   <img
-                    src={`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/${selectedClosetItem.image_path}`}
+                    src={`${API_BASE}/${selectedClosetItem.image_path}`}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -577,13 +577,12 @@ function VisionCloset() {
                             {prod.price.toLocaleString()}₫
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                              prod.match_score >= 90
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${prod.match_score >= 90
                                 ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
                                 : prod.match_score >= 70
                                   ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
                                   : "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                            }`}
+                              }`}
                           >
                             Match: {prod.match_score}%
                           </span>
