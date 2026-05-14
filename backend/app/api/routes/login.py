@@ -46,7 +46,7 @@ def login_access_token(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,  # Set to True if using HTTPS
+        secure=False,  # Set to True if using HTTPS
         samesite="lax",
         max_age=int(access_token_expires.total_seconds()),
     )

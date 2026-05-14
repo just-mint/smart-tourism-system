@@ -225,6 +225,7 @@ function VisionCloset() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
+              data-testid="vision-upload-zone"
               className={`flex-1 min-h-[280px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${isDragging
                   ? "border-emerald-400 bg-emerald-500/10 scale-[1.02]"
                   : scanPreview

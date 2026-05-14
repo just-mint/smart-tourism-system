@@ -450,6 +450,7 @@ function ItineraryPage() {
           {/* Generate Button */}
           <button
             onClick={handleGenerate}
+            data-testid="itinerary-generate-button"
             disabled={isLoading}
             className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-mono uppercase tracking-wider text-xs py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:shadow-[0_0_40px_rgba(139,92,246,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
           >

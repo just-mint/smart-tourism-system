@@ -299,6 +299,7 @@ function CultureHeritage() {
                 <input
                   ref={searchRef}
                   type="text"
+                  data-testid="culture-search-input"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={`${typed}`}

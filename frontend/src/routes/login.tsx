@@ -335,6 +335,7 @@ function Login() {
                     </FormLabel>
                     <FormControl>
                       <Input
+                        data-testid="email-input"
                         placeholder="admin@aegis.com"
                         type="email"
                         className="bg-black/30 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400/60 focus:ring-0 h-11 rounded-xl"
@@ -364,6 +365,7 @@ function Login() {
                     </div>
                     <FormControl>
                       <PasswordInput
+                        data-testid="password-input"
                         placeholder="••••••••"
                         className="bg-black/30 border-white/15 text-white placeholder:text-white/30 focus:border-emerald-400/60 focus:ring-0 h-11 rounded-xl"
                         {...field}
@@ -377,6 +379,7 @@ function Login() {
               <LoadingButton
                 type="submit"
                 loading={loginMutation.isPending}
+                data-testid="login-button"
                 className="w-full mt-6 h-11 bg-white text-gray-900 hover:bg-gray-100 font-semibold rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 group"
               >
                 Đăng nhập{" "}

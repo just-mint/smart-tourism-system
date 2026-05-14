@@ -975,6 +975,7 @@ function SpatialOperations() {
 
             <button
               onClick={handleFindNearby}
+              data-testid="spatial-scan-button"
               disabled={isLoadingNearby}
               className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50"
             >

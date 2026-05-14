@@ -378,6 +378,7 @@ function Inventory() {
                         <button
                           disabled={isOut || lockingId === p.product_id}
                           onClick={() => handleReserveClick(p)}
+                          data-testid="reserve-button"
                           className="bg-zinc-800 hover:bg-amber-500 text-zinc-300 hover:text-zinc-950 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50"
                         >
                           {lockingId === p.product_id ? (
@@ -444,7 +445,7 @@ function Inventory() {
                       <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Order Confirmed!
+                      Order Created!
                     </h2>
                     <p className="text-zinc-400 mb-8 font-mono">
                       Code:{" "}

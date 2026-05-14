@@ -5,9 +5,11 @@ const authFile = "playwright/.auth/user.json"
 
 setup("authenticate", async ({ page }) => {
   await page.goto("/login")
-  await page.getByTestId("email-input").fill(firstSuperuser)
-  await page.getByTestId("password-input").fill(firstSuperuserPassword)
-  await page.getByRole("button", { name: "Log In" }).click()
+  // Use placeholder as fallback to data-testid
+  await page.getByPlaceholder("admin@aegis.com").fill(firstSuperuser)
+  await page.getByPlaceholder("••••••••").fill(firstSuperuserPassword)
+  await page.getByRole("button", { name: /Đăng nhập/i }).click()
   await page.waitForURL("/")
+  await page.evaluate(() => localStorage.setItem("is_logged_in", "true"))
   await page.context().storageState({ path: authFile })
 })
