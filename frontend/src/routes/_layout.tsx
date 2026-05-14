@@ -5,12 +5,10 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import {
-  Bell,
   ChevronRight,
   Fingerprint,
   Loader2,
   LogOut,
-  Search,
   Send,
   Settings as SettingsIcon,
 } from "lucide-react"
@@ -292,26 +290,7 @@ function Layout() {
             </div>
 
             <div className="flex items-center gap-4 sm:gap-6">
-              <div className="hidden md:flex relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-cyan-400 transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Query system..."
-                  className="w-64 pl-10 pr-12 py-1.5 bg-black/40 border border-white/10 rounded-full text-sm text-zinc-200 outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all font-mono placeholder:text-zinc-600 shadow-inner"
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded bg-black/60 px-1.5 font-mono text-[10px] font-medium text-cyan-500/70 border border-white/10">
-                    ⌘K
-                  </kbd>
-                </div>
-              </div>
-
               <div className="flex items-center gap-3">
-                <button className="relative p-2 text-zinc-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-500 border border-black shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
-                </button>
-
                 <div className="h-6 w-px bg-white/10 hidden sm:block"></div>
 
                 <DropdownMenu>

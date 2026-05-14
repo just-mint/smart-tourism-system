@@ -32,16 +32,6 @@ export const Route = createFileRoute("/_layout/inventory")({
   component: Inventory,
 })
 
-const STORE_IMAGES = [
-  "https://images.unsplash.com/photo-1550650222-6b94dbba2211?q=80&w=800",
-  "https://images.unsplash.com/photo-1559592413-7ceecea18501?q=80&w=800",
-  "https://images.unsplash.com/photo-1555921015-5532091f6026?q=80&w=800",
-]
-const PRODUCT_IMAGES = [
-  "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=600",
-  "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=600",
-]
-
 const getApiErrorDetail = (error: unknown, fallback: string) => {
   if (!axios.isAxiosError(error)) return fallback
   const detail = error.response?.data?.detail
@@ -317,7 +307,7 @@ function Inventory() {
             <Store className="w-4 h-4" /> Nearby Hubs
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-            {stores.map((store, idx) => {
+            {stores.map((store) => {
               const isActive = activeStoreId === store.store_id
               return (
                 <div
@@ -325,11 +315,9 @@ function Inventory() {
                   onClick={() => handleStoreClick(store.store_id!)}
                   className={`group flex items-center gap-4 p-3 rounded-2xl cursor-pointer transition-all duration-300 border bg-zinc-900/30 ${isActive ? "border-amber-500/50 bg-amber-500/5 shadow-[0_0_30px_rgba(245,158,11,0.1)]" : "border-white/5 hover:border-white/20 hover:bg-zinc-800/50"}`}
                 >
-                  <img
-                    src={STORE_IMAGES[idx % STORE_IMAGES.length]}
-                    alt={store.name}
-                    className="w-20 h-20 rounded-xl object-cover"
-                  />
+                  <div className="w-20 h-20 rounded-xl bg-zinc-950 border border-white/10 flex items-center justify-center shrink-0">
+                    <Store className="w-8 h-8 text-amber-500/70" />
+                  </div>
                   <div className="flex-1 overflow-hidden">
                     <h3
                       className={`font-bold text-base truncate transition-colors ${isActive ? "text-amber-400" : "text-white"}`}
@@ -340,12 +328,11 @@ function Inventory() {
                       <MapPin className="w-3 h-3" />
                       {store.address || "Location pending"}
                     </p>
-                    <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1 font-medium">
-                      ⭐ {store.rating || 4.5}{" "}
-                      <span className="text-zinc-600">
-                        ({Math.floor(Math.random() * 100 + 20)})
-                      </span>
-                    </p>
+                    {store.rating && (
+                      <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1 font-medium">
+                        Rating {store.rating}
+                      </p>
+                    )}
                   </div>
                 </div>
               )
@@ -379,9 +366,6 @@ function Inventory() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((p) => {
-                const img =
-                  p.image_url ||
-                  PRODUCT_IMAGES[(p.imageIndex || 0) % PRODUCT_IMAGES.length]
                 const stock = p.stock ?? 0
                 const isOut = stock === 0
                 return (
@@ -391,15 +375,18 @@ function Inventory() {
                   >
                     {/* Image Box */}
                     <div className="relative aspect-[4/5] overflow-hidden bg-zinc-950">
-                      <img
-                        src={img}
-                        alt={p.name}
-                        onError={(e) =>
-                          (e.currentTarget.src = PRODUCT_IMAGES[0])
-                        }
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        referrerPolicy="no-referrer"
-                      />
+                      {p.image_url ? (
+                        <img
+                          src={p.image_url}
+                          alt={p.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                          <Package className="w-14 h-14 text-zinc-700" />
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
 
                       {/* Badges */}
@@ -470,15 +457,18 @@ function Inventory() {
                   <h2 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-6">
                     Order Summary
                   </h2>
-                  <img
-                    src={
-                      checkoutProduct.image_url ||
-                      PRODUCT_IMAGES[(checkoutProduct.imageIndex || 0) % 2]
-                    }
-                    onError={(e) => (e.currentTarget.src = PRODUCT_IMAGES[0])}
-                    className="w-full h-48 object-cover rounded-2xl mb-6 shadow-xl"
-                    referrerPolicy="no-referrer"
-                  />
+                  {checkoutProduct.image_url ? (
+                    <img
+                      src={checkoutProduct.image_url}
+                      alt={checkoutProduct.name}
+                      className="w-full h-48 object-cover rounded-2xl mb-6 shadow-xl"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-48 rounded-2xl mb-6 shadow-xl bg-zinc-950 border border-white/10 flex items-center justify-center">
+                      <Package className="w-14 h-14 text-zinc-700" />
+                    </div>
+                  )}
                   <h3 className="text-xl font-bold text-white mb-2">
                     {checkoutProduct.name}
                   </h3>
