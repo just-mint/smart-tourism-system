@@ -160,6 +160,20 @@ function ItineraryPage() {
   }, [isTracking, result])
 
   const handleGenerate = async () => {
+    // Validation
+    if (lat < -90 || lat > 90) {
+      toast.error("Vĩ độ (Latitude) phải nằm trong khoảng [-90, 90]")
+      return
+    }
+    if (lon < -180 || lon > 180) {
+      toast.error("Kinh độ (Longitude) phải nằm trong khoảng [-180, 180]")
+      return
+    }
+    if (radius <= 0 || radius > 20000) {
+      toast.error("Bán kính phải từ 1m đến 20,000m")
+      return
+    }
+
     setIsLoading(true)
     setResult(null)
     try {

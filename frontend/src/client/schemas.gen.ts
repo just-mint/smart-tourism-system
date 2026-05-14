@@ -1249,10 +1249,14 @@ export const RoutePlanRequestSchema = {
     properties: {
         current_lat: {
             type: 'number',
+            maximum: 90,
+            minimum: -90,
             title: 'Current Lat'
         },
         current_lon: {
             type: 'number',
+            maximum: 180,
+            minimum: -180,
             title: 'Current Lon'
         },
         place_ids: {

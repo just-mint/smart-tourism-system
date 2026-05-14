@@ -512,9 +512,10 @@ function SpatialOperations() {
       const parsedLat = parseFloat(inputLat)
       const parsedLon = parseFloat(inputLon)
       const parsedRad = parseInt(inputRadius, 10)
-      if (!Number.isNaN(parsedLat)) setLat(parsedLat)
-      if (!Number.isNaN(parsedLon)) setLon(parsedLon)
-      if (!Number.isNaN(parsedRad)) setRadius(parsedRad)
+      
+      if (!Number.isNaN(parsedLat) && parsedLat >= -90 && parsedLat <= 90) setLat(parsedLat)
+      if (!Number.isNaN(parsedLon) && parsedLon >= -180 && parsedLon <= 180) setLon(parsedLon)
+      if (!Number.isNaN(parsedRad) && parsedRad > 0 && parsedRad <= 20000) setRadius(parsedRad)
     }, 300)
     return () => clearTimeout(handler)
   }, [inputLat, inputLon, inputRadius])
