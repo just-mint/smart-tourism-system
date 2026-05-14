@@ -61,7 +61,7 @@ def sweep_expired_locks(self):
         expired_locks = (
             session.execute(
                 text("""
-                    SELECT id, product_id, quantity
+                    SELECT id, product_id, quantity, store_id
                     FROM inventory_locks
                     WHERE status = 'soft_locked'
                       AND expires_at <= (NOW() - INTERVAL '1 minute')
@@ -82,15 +82,16 @@ def sweep_expired_locks(self):
             lock_id = lock_row[0]
             product_id = lock_row[1]
             quantity = lock_row[2]
+            store_id = lock_row[3]
 
-            # ── BƯỚC 2: Giảm locked_stock (clamp tại 0) ──
+            # ── BƯỚC 2: Giảm locked_stock (clamp tại 0) cho cửa hàng tương ứng ──
             session.execute(
                 text("""
                     UPDATE inventory
                     SET locked_stock = GREATEST(0, locked_stock - :qty)
-                    WHERE product_id = :pid
+                    WHERE product_id = :pid AND store_id = :sid
                 """),
-                {"qty": quantity, "pid": product_id},
+                {"qty": quantity, "pid": product_id, "sid": store_id},
             )
 
             lock_ids.append(lock_id)
