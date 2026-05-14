@@ -233,7 +233,8 @@ async def plan_route_osrm(db: Session, current_lat: float, current_lon: float, p
     
     coords_str = ";".join(coords)
     # 1. Use OSRM Trip API to calculate actual road distance TSP
-    url = f"http://router.project-osrm.org/trip/v1/driving/{coords_str}?source=first&roundtrip=false&overview=full&geometries=geojson"
+    osrm_base = os.getenv("OSRM_BASE_URL", "http://osrm-backend:5000")
+    url = f"{osrm_base}/trip/v1/driving/{coords_str}?source=first&roundtrip=false&overview=full&geometries=geojson"
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:

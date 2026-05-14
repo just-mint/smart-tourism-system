@@ -14,7 +14,7 @@ def create_vision_task(db: Session, image_path: str):
     db.refresh(new_task)
     try:
         from workers.ai_worker.vision_tasks import process_image
-        threading.Thread(target=process_image, args=(task_id, image_path)).start()
+        process_image.delay(task_id, image_path)
     except Exception as e:
         logger.warning(f"Lỗi khi xử lý process_image bằng Thread: {e}")
     return new_task
@@ -36,7 +36,7 @@ def add_to_closet(db: Session, user_id: str, image_path: str):
     # Ném công việc nặng (AI Vision Embeddings) cho Background Worker
     try:
         from workers.ai_worker.vision_tasks import process_closet_image
-        threading.Thread(target=process_closet_image, args=(new_item.id, image_path)).start()
+        process_closet_image.delay(new_item.id, image_path)
     except Exception as e:
         logger.warning(f"Lỗi khi xử lý process_closet_image bằng Thread: {e}")
 

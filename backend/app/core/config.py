@@ -97,6 +97,9 @@ class Settings(BaseSettings):
     # Inventory: Thời gian giữ Soft-lock (giây). Mặc định 15 phút.
     INVENTORY_LOCK_TTL: int = 900
 
+    # Internal Secret: Dùng cho service-to-service auth (Celery → API, Cronjob → API)
+    INTERNAL_SECRET_KEY: str = secrets.token_urlsafe(32)
+
     # Vision Upload: Kiểu file và dung lượng tối đa cho API /vision/scan
     ALLOWED_IMAGE_TYPES: list[str] = ["image/jpeg", "image/png", "image/webp"]
     MAX_UPLOAD_SIZE_MB: int = 10
