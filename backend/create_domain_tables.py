@@ -1,9 +1,20 @@
-from app.db.session import engine, Base
-# Import all domain models so they are registered with Base
-from app.domains.vision.model import VisionTask, VirtualCloset
-from app.domains.inventory.model import Store, Product
-from app.domains.culture.model import Place, Review
+"""
+DEPRECATED — Không dùng trong production.
 
-print("Creating domain tables...")
-Base.metadata.create_all(bind=engine)
-print("Done!")
+Domain tables hiện được quản lý bởi Alembic:
+    Revision: b3c7e9f1a2d4_create_domain_tables.py
+
+Để khởi tạo schema, chạy:
+    alembic upgrade head
+
+Script này chỉ giữ lại cho mục đích tham khảo / local dev nhanh.
+"""
+import sys
+
+if __name__ == "__main__":
+    print(
+        "WARNING: create_domain_tables.py đã bị deprecated.\n"
+        "Dùng: alembic upgrade head\n"
+        "Xem: backend/app/alembic/versions/b3c7e9f1a2d4_create_domain_tables.py"
+    )
+    sys.exit(1)
