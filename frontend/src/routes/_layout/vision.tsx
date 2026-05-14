@@ -39,6 +39,14 @@ function VisionCloset() {
   const [taskId, setTaskId] = useState("")
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
   const [isPolling, setIsPolling] = useState(false)
+
+  // Cleanup Object URL for memory management
+  useEffect(() => {
+    return () => {
+      if (scanPreview) URL.revokeObjectURL(scanPreview)
+    }
+  }, [scanPreview])
+
   // Closet
   const [closetItems, setClosetItems] = useState<ClosetItemResponse[]>([])
   const [isLoadingCloset, setIsLoadingCloset] = useState(false)
