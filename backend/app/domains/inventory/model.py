@@ -51,6 +51,7 @@ class InventoryLock(Base):
     __tablename__ = "inventory_locks"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"))
+    store_id: Mapped[int] = mapped_column(ForeignKey("stores.store_id"))
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=True), index=True)
     quantity: Mapped[int] = mapped_column(Integer, default=1)
     locked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
