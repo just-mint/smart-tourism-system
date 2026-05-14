@@ -1,14 +1,136 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.domains.culture.model import Place, Review
 from app.domains.culture import schema
 import httpx
 from datetime import datetime
 import os
+import json
+from redis.asyncio import Redis
 from app.models import User
+from app.domains.inventory.model import Store
 
 def search_places_by_name(db: Session, keyword: str):
     # Dùng ilike cho tìm kiếm full-text
     return db.query(Place).filter(Place.name.ilike(f"%{keyword}%")).limit(20).all()
+
+
+def get_culture_metadata(db: Session):
+    total_places = db.query(func.count(Place.id)).scalar() or 0
+    total_categories = (
+        db.query(func.count(func.distinct(Place.category)))
+        .filter(Place.category.isnot(None))
+        .scalar()
+        or 0
+    )
+    total_stores = db.query(func.count(Store.store_id)).scalar() or 0
+    approved_reviews = (
+        db.query(func.count(Review.id)).filter(Review.status == "approved").scalar() or 0
+    )
+    return {
+        "total_places": total_places,
+        "total_categories": total_categories,
+        "total_stores": total_stores,
+        "approved_reviews": approved_reviews,
+    }
+
+
+def _fallback_image_for_category(category: str | None) -> str:
+    normalized = (category or "").lower()
+    if "ẩm" in normalized or "food" in normalized:
+        return "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200"
+    if "chợ" in normalized or "shopping" in normalized:
+        return "https://images.unsplash.com/photo-1518998053901-5348d3961a04?auto=format&fit=crop&w=1200"
+    if "công viên" in normalized or "park" in normalized:
+        return "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200"
+    return "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1200"
+
+
+async def get_wikipedia_image(title: str, category: str | None = None):
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    cache_key = f"wiki:image:{title.strip().lower()}"
+    redis: Redis | None = None
+    try:
+        redis = Redis.from_url(redis_url, decode_responses=True)
+        cached = await redis.get(cache_key)
+        if cached:
+            result = json.loads(cached)
+            await redis.aclose()
+            return result
+    except Exception:
+        redis = None
+
+    fallback = {"image_url": _fallback_image_for_category(category), "source": "fallback"}
+    if not title.strip():
+        return fallback
+
+    result = fallback
+    try:
+        async with httpx.AsyncClient(
+            timeout=6.0,
+            headers={"User-Agent": "AEGIS-O2O/1.0 (culture-image-proxy)"},
+        ) as client:
+            params = {
+                "action": "query",
+                "origin": "*",
+                "titles": title,
+                "prop": "pageimages",
+                "format": "json",
+                "pithumbsize": 1200,
+            }
+            response = await client.get("https://vi.wikipedia.org/w/api.php", params=params)
+            response.raise_for_status()
+            pages = response.json().get("query", {}).get("pages", {})
+            image_url = None
+            if pages:
+                page = next(iter(pages.values()))
+                image_url = page.get("thumbnail", {}).get("source")
+
+            if not image_url:
+                search_response = await client.get(
+                    "https://vi.wikipedia.org/w/api.php",
+                    params={
+                        "action": "query",
+                        "origin": "*",
+                        "list": "search",
+                        "srsearch": title,
+                        "utf8": "",
+                        "format": "json",
+                    },
+                )
+                search_response.raise_for_status()
+                matches = search_response.json().get("query", {}).get("search", [])
+                if matches:
+                    best_title = matches[0].get("title")
+                    image_response = await client.get(
+                        "https://vi.wikipedia.org/w/api.php",
+                        params={
+                            "action": "query",
+                            "origin": "*",
+                            "titles": best_title,
+                            "prop": "pageimages",
+                            "format": "json",
+                            "pithumbsize": 1200,
+                        },
+                    )
+                    image_response.raise_for_status()
+                    pages = image_response.json().get("query", {}).get("pages", {})
+                    if pages:
+                        page = next(iter(pages.values()))
+                        image_url = page.get("thumbnail", {}).get("source")
+
+            if image_url:
+                result = {"image_url": image_url, "source": "wikipedia"}
+    except Exception:
+        result = fallback
+
+    if redis:
+        try:
+            await redis.set(cache_key, json.dumps(result), ex=60 * 60 * 24)
+            await redis.aclose()
+        except Exception:
+            pass
+    return result
 
 async def generate_place_story(db: Session, place_id: int):
     place = db.query(Place).filter(Place.id == place_id).first()

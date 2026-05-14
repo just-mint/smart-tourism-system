@@ -40,3 +40,13 @@ class ReviewResponse(BaseModel):
     moderation_note: Optional[str] = None
     class Config:
         from_attributes = True
+
+class CultureMetadataResponse(BaseModel):
+    total_places: int
+    total_categories: int
+    total_stores: int
+    approved_reviews: int
+
+class WikiImageResponse(BaseModel):
+    image_url: Optional[str] = None
+    source: str = "fallback"

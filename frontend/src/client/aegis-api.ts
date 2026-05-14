@@ -71,6 +71,16 @@ export interface ReviewResponse {
   report_count: number
   moderation_note?: string
 }
+export interface CultureMetadataResponse {
+  total_places: number
+  total_categories: number
+  total_stores: number
+  approved_reviews: number
+}
+export interface WikiImageResponse {
+  image_url?: string
+  source: string
+}
 
 // Spatial
 export interface NearbySearchResponse {
@@ -185,6 +195,14 @@ export const AgentAPI = {
 
 // ===================== CULTURE API =====================
 export const CultureAPI = {
+  getMetadata: () =>
+    aegisClient.get<CultureMetadataResponse>("/culture/metadata"),
+
+  getWikiImage: (title: string, category?: string) =>
+    aegisClient.get<WikiImageResponse>("/culture/wiki-image", {
+      params: { title, category },
+    }),
+
   searchPlaces: (q: string) =>
     aegisClient.get<PlaceResponse[]>("/culture/places/search", { params: { q } }),
 

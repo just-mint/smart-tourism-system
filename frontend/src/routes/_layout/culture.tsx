@@ -2,9 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import {
   ArrowRight,
   BookOpen,
-  Calendar,
   ChevronRight,
-  Clock,
   Command,
   Compass,
   Globe,
@@ -15,21 +13,21 @@ import {
   MapPin,
   Navigation,
   Send,
-  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Star,
-  Ticket,
   TrendingUp,
-  Users,
   X,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
   CultureAPI,
+  SpatialAPI,
+  type CultureMetadataResponse,
   type PlaceDetailWithAI,
   type PlaceResponse,
+  type ProductCompactResponse,
   type ReviewResponse,
 } from "@/client/aegis-api"
 import useAuth from "@/hooks/useAuth"
@@ -93,6 +91,10 @@ const TRENDING_HERITAGES = [
   },
 ]
 
+type RecommendedProduct = ProductCompactResponse & {
+  storeName: string
+}
+
 function CultureHeritage() {
   const { user: currentUser } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
@@ -108,6 +110,13 @@ function CultureHeritage() {
   const [reviewText, setReviewText] = useState("")
   const [reviewRating, setReviewRating] = useState(5)
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+  const [cultureMetadata, setCultureMetadata] =
+    useState<CultureMetadataResponse | null>(null)
+  const [recommendedProducts, setRecommendedProducts] = useState<
+    RecommendedProduct[]
+  >([])
+  const [isLoadingRecommendations, setIsLoadingRecommendations] =
+    useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const [typed, setTyped] = useState("")
   const phrases = [
@@ -141,7 +150,13 @@ function CultureHeritage() {
       }
     }, 100)
     return () => clearInterval(interval)
-  }, [phrases.length, phrases])
+  }, [])
+
+  useEffect(() => {
+    CultureAPI.getMetadata()
+      .then((res) => setCultureMetadata(res.data))
+      .catch(() => setCultureMetadata(null))
+  }, [])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -154,11 +169,13 @@ function CultureHeritage() {
     return () => window.removeEventListener("keydown", handleKey)
   }, [])
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return
+  const handleSearch = async (queryOverride?: string) => {
+    const query = (queryOverride ?? searchQuery).trim()
+    if (!query) return
+    setSearchQuery(query)
     setIsSearching(true)
     try {
-      const res = await CultureAPI.searchPlaces(searchQuery)
+      const res = await CultureAPI.searchPlaces(query)
       setPlaces(res.data)
     } catch {
       setPlaces([])
@@ -246,8 +263,7 @@ function CultureHeritage() {
   }
 
   const handleTrendingClick = (query: string) => {
-    setSearchQuery(query)
-    setTimeout(() => handleSearch(), 50)
+    void handleSearch(query)
   }
 
   const showEmptyState =
@@ -256,48 +272,57 @@ function CultureHeritage() {
   const [wikiImage, setWikiImage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (selectedPlace?.name) {
-      const fetchWikiImage = async () => {
-        try {
-          const res = await fetch(
-            `https://vi.wikipedia.org/w/api.php?action=query&origin=*&titles=${encodeURIComponent(selectedPlace.name)}&prop=pageimages&format=json&pithumbsize=1200`,
-          )
-          const data = await res.json()
-          const pages = data.query?.pages
-          if (pages) {
-            const pageId = Object.keys(pages)[0]
-            const imgUrl = pages[pageId]?.thumbnail?.source
-            if (imgUrl) {
-              setWikiImage(imgUrl)
-              return
-            }
-          }
-          const searchRes = await fetch(
-            `https://vi.wikipedia.org/w/api.php?action=query&origin=*&list=search&srsearch=${encodeURIComponent(selectedPlace.name)}&utf8=&format=json`,
-          )
-          const searchData = await searchRes.json()
-          if (searchData.query?.search?.length > 0) {
-            const bestTitle = searchData.query.search[0].title
-            const imgRes = await fetch(
-              `https://vi.wikipedia.org/w/api.php?action=query&origin=*&titles=${encodeURIComponent(bestTitle)}&prop=pageimages&format=json&pithumbsize=1200`,
-            )
-            const imgData = await imgRes.json()
-            const pId = Object.keys(imgData.query.pages)[0]
-            const iUrl = imgData.query.pages[pId]?.thumbnail?.source
-            if (iUrl) setWikiImage(iUrl)
-            else setWikiImage(null)
-          } else {
-            setWikiImage(null)
-          }
-        } catch {
-          setWikiImage(null)
-        }
-      }
-      fetchWikiImage()
-    } else {
+    let cancelled = false
+    if (!selectedPlace?.name) {
       setWikiImage(null)
+      return
     }
-  }, [selectedPlace?.name])
+
+    CultureAPI.getWikiImage(selectedPlace.name, selectedPlace.category)
+      .then((res) => {
+        if (!cancelled) setWikiImage(res.data.image_url || null)
+      })
+      .catch(() => {
+        if (!cancelled) setWikiImage(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedPlace?.name, selectedPlace?.category])
+
+  useEffect(() => {
+    let cancelled = false
+    const placeId = selectedPlace?.place_id
+    if (!placeId) {
+      setRecommendedProducts([])
+      return
+    }
+
+    setIsLoadingRecommendations(true)
+    SpatialAPI.getPlaceO2OContext(placeId, 2000)
+      .then((res) => {
+        const products = res.data.nearby_stores
+          .flatMap((store) =>
+            store.products.map((product) => ({
+              ...product,
+              storeName: store.name,
+            })),
+          )
+          .slice(0, 6)
+        if (!cancelled) setRecommendedProducts(products)
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendedProducts([])
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingRecommendations(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedPlace?.place_id])
 
   return (
     <div className="relative min-h-screen w-full bg-black overflow-hidden">
@@ -458,28 +483,36 @@ function CultureHeritage() {
             </div>
           )}
 
-          {/* Thêm một số thống kê giả để tăng chiều dài */}
+          {/* Thống kê lấy từ backend */}
           {showEmptyState && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 pb-20">
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
                 <Globe className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">48</div>
-                <div className="text-xs text-white/50">Di sản văn hóa</div>
+                <div className="text-2xl font-bold text-white">
+                  {cultureMetadata?.total_categories.toLocaleString("vi-VN") ?? "--"}
+                </div>
+                <div className="text-xs text-white/50">Nhóm địa điểm</div>
               </div>
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
                 <Compass className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">120+</div>
+                <div className="text-2xl font-bold text-white">
+                  {cultureMetadata?.total_places.toLocaleString("vi-VN") ?? "--"}
+                </div>
                 <div className="text-xs text-white/50">Điểm đến</div>
               </div>
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
-                <Calendar className="w-8 h-8 text-pink-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">2000+</div>
-                <div className="text-xs text-white/50">Năm lịch sử</div>
+                <ShoppingBag className="w-8 h-8 text-pink-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">
+                  {cultureMetadata?.total_stores.toLocaleString("vi-VN") ?? "--"}
+                </div>
+                <div className="text-xs text-white/50">Cửa hàng O2O</div>
               </div>
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
-                <Users className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">1M+</div>
-                <div className="text-xs text-white/50">Lượt khám phá</div>
+                <Star className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">
+                  {cultureMetadata?.approved_reviews.toLocaleString("vi-VN") ?? "--"}
+                </div>
+                <div className="text-xs text-white/50">Đánh giá đã duyệt</div>
               </div>
             </div>
           )}
@@ -585,46 +618,54 @@ function CultureHeritage() {
               <div className="bg-[#050B14] p-5 border-b border-white/10 flex items-center gap-3">
                 <BookOpen className="w-5 h-5 text-[#D4AF37]" />
                 <h3 className="font-serif text-lg text-white">
-                  Thông tin Đặc quyền Tham quan
+                  Thông tin từ CSDL
                 </h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-white/10">
                 <div className="p-6 space-y-2">
-                  <Clock className="w-6 h-6 text-white/50 mb-4" />
+                  <Landmark className="w-6 h-6 text-white/50 mb-4" />
                   <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">
-                    Giờ mở cửa
+                    Phân loại
                   </h4>
-                  <p className="text-white text-lg">08:00 - 17:30</p>
+                  <p className="text-white text-lg">
+                    {selectedPlace?.category || "Chưa phân loại"}
+                  </p>
                   <p className="text-white/40 text-sm">
-                    Mở cửa tất cả các ngày
+                    Nguồn dữ liệu địa điểm
                   </p>
                 </div>
                 <div className="p-6 space-y-2">
-                  <ShieldCheck className="w-6 h-6 text-white/50 mb-4" />
+                  <Star className="w-6 h-6 text-white/50 mb-4" />
                   <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">
-                    Trang phục
+                    Rating
                   </h4>
-                  <p className="text-white text-lg">Kín đáo, lịch sự</p>
+                  <p className="text-white text-lg">
+                    {selectedPlace?.rating ? `${selectedPlace.rating}/5` : "Chưa có"}
+                  </p>
                   <p className="text-white/40 text-sm">
-                    Cấm quần đùi, áo sát nách
+                    Điểm đánh giá trong CSDL
                   </p>
                 </div>
                 <div className="p-6 space-y-2">
-                  <Ticket className="w-6 h-6 text-white/50 mb-4" />
+                  <BookOpen className="w-6 h-6 text-white/50 mb-4" />
                   <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">
-                    Vé Nội Địa
+                    Review
                   </h4>
-                  <p className="text-white text-lg">Miễn phí</p>
-                  <p className="text-white/40 text-sm">Yêu cầu CCCD</p>
+                  <p className="text-white text-lg">
+                    {selectedPlace?.review_count?.toLocaleString("vi-VN") ?? "Chưa có"}
+                  </p>
+                  <p className="text-white/40 text-sm">Lượt review ghi nhận</p>
                 </div>
                 <div className="p-6 space-y-2">
                   <Globe className="w-6 h-6 text-white/50 mb-4" />
                   <h4 className="text-xs font-mono text-white/50 uppercase tracking-widest">
-                    Vé Quốc Tế
+                    Địa chỉ
                   </h4>
-                  <p className="text-white text-lg font-mono">150,000 VND</p>
+                  <p className="text-white text-lg">
+                    {selectedPlace?.address || "Chưa có địa chỉ"}
+                  </p>
                   <p className="text-white/40 text-sm">
-                    Thanh toán VNPay / Thẻ
+                    Tọa độ {selectedPlace?.lat.toFixed(4)}, {selectedPlace?.lon.toFixed(4)}
                   </p>
                 </div>
               </div>
@@ -653,34 +694,25 @@ function CultureHeritage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
-                {[
-                  {
-                    name: "Nón Lá Sen Nghệ Thuật",
-                    price: "450,000",
-                    image:
-                      "https://images.unsplash.com/photo-1548625361-ecac45bc1164?auto=format&fit=crop&w=500",
-                  },
-                  {
-                    name: "Lụa Tơ Tằm Bảo Lộc",
-                    price: "1,200,000",
-                    image:
-                      "https://images.unsplash.com/photo-1583335513577-224b423126dd?auto=format&fit=crop&w=500",
-                  },
-                  {
-                    name: "Gốm Sứ Bát Tràng Men",
-                    price: "850,000",
-                    image:
-                      "https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=500",
-                  },
-                ].map((item, i) => (
+              {isLoadingRecommendations ? (
+                <div className="flex items-center gap-3 text-white/60 relative z-10">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Đang lấy gợi ý O2O từ cửa hàng gần địa điểm...
+                </div>
+              ) : recommendedProducts.length === 0 ? (
+                <div className="relative z-10 rounded-xl border border-white/10 bg-white/5 p-6 text-white/60">
+                  Chưa có gợi ý O2O từ dữ liệu cửa hàng gần địa điểm này.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                  {recommendedProducts.map((item) => (
                   <div
-                    key={i}
+                    key={item.product_id}
                     className="bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-[#D4AF37]/50 transition-colors group/item"
                   >
                     <div className="h-48 overflow-hidden">
                       <img
-                        src={item.image}
+                        src={item.image_url || wikiImage || BACKGROUND_IMAGE}
                         alt={item.name}
                         className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-700"
                       />
@@ -690,15 +722,19 @@ function CultureHeritage() {
                         {item.name}
                       </h4>
                       <p className="text-[#D4AF37] font-mono mb-4">
-                        {item.price} ₫
+                        {Number(item.price).toLocaleString("vi-VN")} ₫
+                      </p>
+                      <p className="text-white/40 text-xs mb-4">
+                        {item.storeName}
                       </p>
                       <button className="w-full py-2.5 rounded-lg border border-[#D4AF37] text-[#D4AF37] font-sans text-sm font-bold tracking-widest uppercase hover:bg-[#D4AF37] hover:text-[#0B132B] transition-all shadow-[0_0_15px_rgba(212,175,55,0)] hover:shadow-[0_0_15px_rgba(212,175,55,0.4)]">
                         GIỮ HÀNG TẠI QUẦY
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Review System Magazine Style */}

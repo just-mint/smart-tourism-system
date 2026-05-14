@@ -9,6 +9,14 @@ from app.models import User
 
 router = APIRouter()
 
+@router.get("/metadata", response_model=schema.CultureMetadataResponse)
+def get_culture_metadata(db: Session = Depends(get_db)):
+    return service.get_culture_metadata(db=db)
+
+@router.get("/wiki-image", response_model=schema.WikiImageResponse)
+async def get_wiki_image(title: str, category: str | None = None):
+    return await service.get_wikipedia_image(title=title, category=category)
+
 @router.get("/places/search", response_model=List[PlaceResponse])
 def search_culture_places(q: str, db: Session = Depends(get_db)):
     """Tìm kiếm nhanh địa danh theo từ khóa (Tìm Text trong 1.7M Dataset)"""
