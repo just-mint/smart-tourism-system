@@ -568,33 +568,40 @@ function SpatialOperations() {
     }
   }
 
-  useEffect(() => {
-    let isMounted = true
-    const fetchNearby = async () => {
-      setIsLoadingNearby(true)
-      setRouteData(null)
-      setClusterData(null)
-      setSelectedNodes([])
-      try {
-        const res = await SpatialAPI.nearbyPlaces(lat, lon, radius)
-        if (isMounted) {
-          setNearbyData(res.data)
-          setMapCenter([lat, lon])
-        }
-      } catch (_e) {
-        if (isMounted) setNearbyData(null)
-      } finally {
-        if (isMounted) setIsLoadingNearby(false)
-      }
+  const abortControllerRef = React.useRef<AbortController | null>(null)
+
+  const handleFindNearby = useCallback(async () => {
+    // Cancel previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
     }
-    fetchNearby()
-    return () => {
-      isMounted = false
+    
+    // Create new controller
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    setIsLoadingNearby(true)
+    setRouteData(null)
+    setClusterData(null)
+    setSelectedNodes([])
+    try {
+      const res = await SpatialAPI.nearbyPlaces(lat, lon, radius, controller.signal)
+      setNearbyData(res.data)
+      setMapCenter([lat, lon])
+      toast.success(`Tìm thấy ${res.data.places.length} địa điểm!`)
+    } catch (e: any) {
+      if (e.name === 'AbortError') return // Silent on abort
+      setNearbyData(null)
+      toast.error("Lỗi khi tải dữ liệu địa điểm.")
+    } finally {
+      setIsLoadingNearby(false)
     }
   }, [lat, lon, radius])
 
-  // Keep handleFindNearby as a dummy or manual trigger if needed
-  const handleFindNearby = () => {}
+  useEffect(() => {
+    handleFindNearby()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run once on mount
 
   const handleCluster = async () => {
     if (!nearbyData || nearbyData.places.length === 0) return

@@ -193,9 +193,10 @@ export const SpatialAPI = {
   searchOmni: (q: string, lat?: number, lon?: number) =>
     aegisClient.get<PlaceResponse[]>("/spatial/search", { params: { q, lat, lon } }),
 
-  nearbyPlaces: (lat: number, lon: number, radius = 2000) =>
+  nearbyPlaces: (lat: number, lon: number, radius = 2000, signal?: AbortSignal) =>
     aegisClient.get<NearbySearchResponse>("/spatial/nearby-places", {
       params: { lat, lon, radius },
+      signal,
     }),
 
   clusterStores: (place_ids: number[]) =>
