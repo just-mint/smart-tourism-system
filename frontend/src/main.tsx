@@ -11,20 +11,27 @@ import { ApiError, OpenAPI } from "./client"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import "./index.css"
-import { routeTree } from "./routeTree.gen"
 
 import { API_BASE } from "./client/aegis-api"
+import { clearAuthSession, handleUnauthorizedSession } from "./lib/auth-session"
+import { setupProductionDevtoolsGuard } from "./lib/production-devtools-guard"
+import { routeTree } from "./routeTree.gen"
 
 OpenAPI.BASE = API_BASE
 OpenAPI.WITH_CREDENTIALS = true
-// OpenAPI.TOKEN = async () => {
-//   return localStorage.getItem("access_token") || ""
-// }
+setupProductionDevtoolsGuard()
+
+OpenAPI.interceptors.response.use((response) => {
+  if ([401, 403].includes(response.status)) {
+    handleUnauthorizedSession()
+  }
+  return response
+})
 
 const handleApiError = (error: Error) => {
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
-    localStorage.removeItem("access_token")
-    window.location.href = "/login"
+    clearAuthSession()
+    window.location.assign("/login")
   }
 }
 const queryClient = new QueryClient({

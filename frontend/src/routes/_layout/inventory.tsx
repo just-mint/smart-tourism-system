@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import axios from "axios"
 import {
   CheckCircle2,
   Clock,
@@ -31,7 +32,6 @@ export const Route = createFileRoute("/_layout/inventory")({
   component: Inventory,
 })
 
-
 const STORE_IMAGES = [
   "https://images.unsplash.com/photo-1550650222-6b94dbba2211?q=80&w=800",
   "https://images.unsplash.com/photo-1559592413-7ceecea18501?q=80&w=800",
@@ -41,6 +41,12 @@ const PRODUCT_IMAGES = [
   "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=600",
   "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=600",
 ]
+
+const getApiErrorDetail = (error: unknown, fallback: string) => {
+  if (!axios.isAxiosError(error)) return fallback
+  const detail = error.response?.data?.detail
+  return typeof detail === "string" ? detail : fallback
+}
 
 function CountdownTimer({
   expiresAt,
@@ -176,8 +182,8 @@ function Inventory() {
         store_id: product.store_id,
       })
       setTimeout(() => setNotification(""), 3000)
-    } catch (err: any) {
-      setNotification(`❌ ${err.response?.data?.detail || "Lỗi giữ hàng"}`)
+    } catch (err: unknown) {
+      setNotification(`❌ ${getApiErrorDetail(err, "Lỗi giữ hàng")}`)
       setTimeout(() => setNotification(""), 3000)
     } finally {
       setLockingId(null)
@@ -191,8 +197,8 @@ function Inventory() {
       const res = await InventoryAPI.createOrder(orderForm)
       setOrderResult(res.data)
       loadLocks()
-    } catch (err: any) {
-      setNotification(`❌ ${err.response?.data?.detail || "Lỗi tạo đơn"}`)
+    } catch (err: unknown) {
+      setNotification(`❌ ${getApiErrorDetail(err, "Lỗi tạo đơn")}`)
       setTimeout(() => setNotification(""), 3000)
     } finally {
       setIsOrdering(false)
@@ -340,6 +346,7 @@ function Inventory() {
                           (e.currentTarget.src = PRODUCT_IMAGES[0])
                         }
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
 
@@ -418,6 +425,7 @@ function Inventory() {
                     }
                     onError={(e) => (e.currentTarget.src = PRODUCT_IMAGES[0])}
                     className="w-full h-48 object-cover rounded-2xl mb-6 shadow-xl"
+                    referrerPolicy="no-referrer"
                   />
                   <h3 className="text-xl font-bold text-white mb-2">
                     {checkoutProduct.name}

@@ -27,19 +27,20 @@ import {
   Rectangle,
   TileLayer,
   useMap,
+  useMapEvents,
 } from "react-leaflet"
 import MarkerClusterGroup from "react-leaflet-cluster"
 import "leaflet/dist/leaflet.css"
 import { toast } from "sonner"
 import {
+  type ClusterItem,
   type ClusterResponse,
   InventoryAPI,
   type NearbySearchResponse,
   type O2OContextResponse,
+  type PlaceResponse,
   type RoutePlanResponse,
   SpatialAPI,
-  type PlaceResponse,
-  type ClusterItem,
   type StoreWithProductsResponse,
 } from "@/client/aegis-api"
 
@@ -56,7 +57,25 @@ const createDivIcon = (html: string, size: number) =>
     iconAnchor: [size / 2, size / 2],
   })
 
-const createCustomClusterIcon = (cluster: any) => {
+type ClusterLike = {
+  getChildCount: () => number
+}
+
+type RequestError = Error & {
+  code?: string
+}
+
+const isCanceledRequest = (error: unknown) => {
+  if (!(error instanceof Error)) return false
+  const requestError = error as RequestError
+  return (
+    error.name === "AbortError" ||
+    error.name === "CanceledError" ||
+    requestError.code === "ERR_CANCELED"
+  )
+}
+
+const createCustomClusterIcon = (cluster: ClusterLike) => {
   const count = cluster.getChildCount()
   return createDivIcon(
     `
@@ -280,7 +299,11 @@ function RecenterMap({ lat, lon }: { lat: number; lon: number }) {
 }
 
 // MapFlyController: Bridges map instance to parent via ref
-function MapFlyController({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+function MapFlyController({
+  mapRef,
+}: {
+  mapRef: React.MutableRefObject<L.Map | null>
+}) {
   const map = useMap()
   useEffect(() => {
     mapRef.current = map
@@ -396,7 +419,11 @@ function PanelOmnisearch({
   )
 }
 
-function AutoFitNearby({ nearbyData }: { nearbyData: NearbySearchResponse | null }) {
+function AutoFitNearby({
+  nearbyData,
+}: {
+  nearbyData: NearbySearchResponse | null
+}) {
   const map = useMap()
   useEffect(() => {
     if (nearbyData?.places && nearbyData.places.length > 0) {
@@ -428,13 +455,39 @@ function AutoFitRoute({
   const map = useMap()
   useEffect(() => {
     if (routePolyline && routePolyline.length > 0) {
-      map.fitBounds(routePolyline as any, {
+      map.fitBounds(L.latLngBounds(routePolyline), {
         padding: [50, 50],
         animate: true,
         duration: 1.5,
       })
     }
   }, [routePolyline, map])
+  return null
+}
+
+function DebouncedMapMoveHandler({
+  onSettledCenter,
+}: {
+  onSettledCenter: (lat: number, lon: number) => void
+}) {
+  const debounceRef = React.useRef<number | null>(null)
+
+  useMapEvents({
+    dragend: (event) => {
+      const center = event.target.getCenter()
+      if (debounceRef.current) window.clearTimeout(debounceRef.current)
+      debounceRef.current = window.setTimeout(() => {
+        onSettledCenter(center.lat, center.lng)
+      }, 500)
+    },
+  })
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current)
+    }
+  }, [])
+
   return null
 }
 
@@ -468,7 +521,8 @@ function simplifyDouglasPeucker(
     const len_sq = C * C + D * D
     let param = -1
     if (len_sq !== 0) param = dot / len_sq
-    let xx, yy
+    let xx: number
+    let yy: number
     if (param < 0) {
       xx = x1
       yy = y1
@@ -515,10 +569,13 @@ function SpatialOperations() {
       const parsedLat = parseFloat(inputLat)
       const parsedLon = parseFloat(inputLon)
       const parsedRad = parseInt(inputRadius, 10)
-      
-      if (!Number.isNaN(parsedLat) && parsedLat >= -90 && parsedLat <= 90) setLat(parsedLat)
-      if (!Number.isNaN(parsedLon) && parsedLon >= -180 && parsedLon <= 180) setLon(parsedLon)
-      if (!Number.isNaN(parsedRad) && parsedRad > 0 && parsedRad <= 20000) setRadius(parsedRad)
+
+      if (!Number.isNaN(parsedLat) && parsedLat >= -90 && parsedLat <= 90)
+        setLat(parsedLat)
+      if (!Number.isNaN(parsedLon) && parsedLon >= -180 && parsedLon <= 180)
+        setLon(parsedLon)
+      if (!Number.isNaN(parsedRad) && parsedRad > 0 && parsedRad <= 20000)
+        setRadius(parsedRad)
     }, 300)
     return () => clearTimeout(handler)
   }, [inputLat, inputLon, inputRadius])
@@ -573,44 +630,52 @@ function SpatialOperations() {
 
   const abortControllerRef = React.useRef<AbortController | null>(null)
 
-  const handleFindNearby = useCallback(async () => {
-    // Cancel previous request if exists
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-    
-    // Create new controller
-    const controller = new AbortController()
-    abortControllerRef.current = controller
+  const handleFindNearby = useCallback(
+    async (nextLat = lat, nextLon = lon, nextRadius = radius) => {
+      // Cancel previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
 
-    setIsLoadingNearby(true)
-    setRouteData(null)
-    setClusterData(null)
-    setSelectedNodes([])
-    try {
-      const res = await SpatialAPI.nearbyPlaces(lat, lon, radius, controller.signal)
-      setNearbyData(res.data)
-      setMapCenter([lat, lon])
-      toast.success(`Tìm thấy ${res.data.places.length} địa điểm!`)
-    } catch (e: any) {
-      if (e.name === 'AbortError') return // Silent on abort
-      setNearbyData(null)
-      toast.error("Lỗi khi tải dữ liệu địa điểm.")
-    } finally {
-      setIsLoadingNearby(false)
-    }
-  }, [lat, lon, radius])
+      // Create new controller
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
+      setIsLoadingNearby(true)
+      setRouteData(null)
+      setClusterData(null)
+      setSelectedNodes([])
+      try {
+        const res = await SpatialAPI.nearbyPlaces(
+          nextLat,
+          nextLon,
+          nextRadius,
+          controller.signal,
+        )
+        setNearbyData(res.data)
+        setMapCenter([nextLat, nextLon])
+        toast.success(`Tìm thấy ${res.data.places.length} địa điểm!`)
+      } catch (e: unknown) {
+        if (isCanceledRequest(e)) return // Silent on abort
+        setNearbyData(null)
+        toast.error("Lỗi khi tải dữ liệu địa điểm.")
+      } finally {
+        setIsLoadingNearby(false)
+      }
+    },
+    [lat, lon, radius],
+  )
 
   useEffect(() => {
     handleFindNearby()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run once on mount
+  }, [handleFindNearby]) // Run once on mount
 
   const handleCluster = async () => {
     if (!nearbyData || nearbyData.places.length === 0) return
     setIsLoadingClusters(true)
     try {
-      const ids = nearbyData.places.map((p: any) => Number(p.id))
+      const ids = nearbyData.places.map((p: PlaceResponse) => Number(p.id))
       const res = await SpatialAPI.clusterStores(ids)
       setClusterData(res.data)
       toast.success("Phân tích K-Means hoàn tất!")
@@ -669,10 +734,21 @@ function SpatialOperations() {
     }
   }
 
+  const handleDebouncedMapMove = useCallback(
+    (nextLat: number, nextLon: number) => {
+      setLat(nextLat)
+      setLon(nextLon)
+      setInputLat(nextLat.toFixed(6))
+      setInputLon(nextLon.toFixed(6))
+      handleFindNearby(nextLat, nextLon, radius)
+    },
+    [handleFindNearby, radius],
+  )
+
   const routePolyline: [number, number][] = useMemo(() => {
     if (!routeData?.polyline) return []
-    const poly = routeData.polyline as any
-    if (poly?.coordinates) {
+    const poly = routeData.polyline
+    if (typeof poly === "object" && poly?.coordinates) {
       const rawCoords = poly.coordinates.map(
         (coord: [number, number]) => [coord[1], coord[0]] as [number, number],
       )
@@ -831,6 +907,7 @@ function SpatialOperations() {
           zoomControl={false}
         >
           <MapFlyController mapRef={mapRef} />
+          <DebouncedMapMoveHandler onSettledCenter={handleDebouncedMapMove} />
           <TileLayer
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -974,7 +1051,7 @@ function SpatialOperations() {
             </div>
 
             <button
-              onClick={handleFindNearby}
+              onClick={() => handleFindNearby()}
               data-testid="spatial-scan-button"
               disabled={isLoadingNearby}
               className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50"
@@ -1069,14 +1146,12 @@ function SpatialOperations() {
                     </div>
                   </div>
 
-                  {routeData.weather_context &&
-                    (routeData.weather_context as any).condition !==
-                      "Unknown" && (
+                  {routeData.weather_context?.condition &&
+                    routeData.weather_context.condition !== "Unknown" && (
                       <div className="flex items-center justify-center gap-2 text-xs text-amber-400 font-mono bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
                         <CloudLightning className="w-3.5 h-3.5" />
-                        Thời tiết:{" "}
-                        {(routeData.weather_context as any).condition} (
-                        {(routeData.weather_context as any).temperature}°C)
+                        Thời tiết: {routeData.weather_context.condition} (
+                        {routeData.weather_context.temperature}°C)
                       </div>
                     )}
                 </div>

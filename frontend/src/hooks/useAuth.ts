@@ -8,11 +8,16 @@ import {
   type UserRegister,
   UsersService,
 } from "@/client"
+import {
+  clearAuthSession,
+  hasAuthSession,
+  markAuthSession,
+} from "@/lib/auth-session"
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
 const isLoggedIn = () => {
-  return localStorage.getItem("is_logged_in") === "true"
+  return hasAuthSession()
 }
 
 const useAuth = () => {
@@ -42,7 +47,7 @@ const useAuth = () => {
     await LoginService.loginAccessToken({
       formData: data,
     })
-    localStorage.setItem("is_logged_in", "true")
+    markAuthSession()
   }
 
   const loginMutation = useMutation({
@@ -59,7 +64,7 @@ const useAuth = () => {
     } catch (e) {
       console.error("Logout failed", e)
     }
-    localStorage.removeItem("is_logged_in")
+    clearAuthSession()
     queryClient.clear()
     navigate({ to: "/login" })
   }

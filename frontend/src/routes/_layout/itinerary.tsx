@@ -273,9 +273,10 @@ function ItineraryPage() {
 
   const mapPoints: [number, number][] = useMemo(() => {
     if (!result) return [[lat, lon]]
-    const pts: [number, number][] = [[lat, lon]]
-    result.optimized_route.forEach((s) => pts.push([s.lat, s.lon]))
-    return pts
+    return [
+      [lat, lon],
+      ...result.optimized_route.map((s) => [s.lat, s.lon] as [number, number]),
+    ]
   }, [result, lat, lon])
 
   // GeoJSON style cho đường thực tế từ OSRM
@@ -670,6 +671,7 @@ function ItineraryPage() {
                                     }
                                     alt={p.name}
                                     className="w-full h-full object-cover"
+                                    referrerPolicy="no-referrer"
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -813,7 +815,16 @@ function ItineraryPage() {
           {result?.route_geometry?.geojson && (
             <GeoJSON
               key={JSON.stringify(result.route_geometry.geojson)}
-              data={result.route_geometry.geojson as any}
+              data={{
+                type: "FeatureCollection",
+                features: [
+                  {
+                    type: "Feature",
+                    properties: {},
+                    geometry: result.route_geometry.geojson as any,
+                  },
+                ],
+              }}
               style={geoJsonStyle}
             />
           )}
@@ -1024,6 +1035,7 @@ function ItineraryPage() {
                           prod.image_url || "https://via.placeholder.com/200"
                         }
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        referrerPolicy="no-referrer"
                       />
                     </div>
                     <div className="p-3 space-y-1.5">
