@@ -136,7 +136,9 @@ def compare_product_prices(db: Session, product_id: int, current_store_id: int, 
 
 async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: int):
     from app.core.config import settings
-    lock_key = f"lock:prod:{request.product_id}"
+    if not getattr(request, "store_id", None):
+        raise HTTPException(status_code=400, detail="Vui lòng cung cấp store_id để khóa hàng cho cửa hàng cụ thể.")
+    lock_key = f"lock:prod:{request.product_id}:store:{request.store_id}"
 
     # === PHASE 1: REDIS GATE ===
     is_locked = await redis.get(lock_key)
@@ -149,24 +151,25 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
     # === PHASE 2: POSTGRES ROW LOCK (Qua bảng Inventory) ===
     # Lấy thông tin Tồn kho của Product (DBeaver tách riêng bảng)
     inv = db.query(Inventory).filter(
-        Inventory.product_id == request.product_id
+        Inventory.product_id == request.product_id,
+        Inventory.store_id == request.store_id,
     ).with_for_update().first()
 
     if not inv:
         raise HTTPException(status_code=404, detail="Sản phẩm không có thông tin tồn kho hoặc đã hết.")
 
-    # Lấy TỔNG tồn kho có sẵn từ TẤT CẢ Store có bán product này
-    # (1 product có thể được bán tại nhiều store trong travel_app)
-    total_available = sum(max(0, i.stock - i.locked_stock) for i in db.query(Inventory).filter(
-        Inventory.product_id == request.product_id
-    ).all())
-    if total_available < request.quantity:
-        raise HTTPException(status_code=400, detail=f"Không đủ hàng. Tồn kho còn: {total_available}")
+    # Kiểm tra tồn kho tại cửa hàng cụ thể
+    if not inv:
+        raise HTTPException(status_code=404, detail="Sản phẩm không có thông tin tồn kho tại cửa hàng này hoặc đã hết.")
+    available = max(0, inv.stock - inv.locked_stock)
+    if available < request.quantity:
+        raise HTTPException(status_code=400, detail=f"Không đủ hàng tại cửa hàng. Tồn kho còn: {available}")
 
     # Chuẩn bị ghi DB - trừ từ inventory record đầu tiên còn hàng
     inv.locked_stock += request.quantity
     new_lock = InventoryLock(
         product_id=inv.product_id,
+        store_id=request.store_id,
         user_id=user_id,
         quantity=request.quantity,
         status="soft_locked"
@@ -199,12 +202,13 @@ async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id: int):
     results = []
     for lock in locks:
         try:
-            ttl = await redis.ttl(f"lock:prod:{lock.product_id}")
+            ttl = await redis.ttl(f"lock:prod:{lock.product_id}:store:{getattr(lock, 'store_id', '')}")
         except Exception:
             ttl = -1
         results.append({
             "id": lock.id,
             "product_id": lock.product_id,
+            "store_id": getattr(lock, "store_id", None),
             "quantity": lock.quantity,
             "status": lock.status,
             "expires_at": lock.expires_at,
@@ -222,7 +226,10 @@ def check_and_release_expired_locks(db: Session) -> int:
 
     released_count = 0
     for lock in expired_locks:
-        inv = db.query(Inventory).filter(Inventory.product_id == lock.product_id).first()
+        inv = db.query(Inventory).filter(
+            Inventory.product_id == lock.product_id,
+            Inventory.store_id == getattr(lock, "store_id", None),
+        ).first()
         if inv:
             inv.locked_stock = max(0, inv.locked_stock - lock.quantity)
         lock.status = "expired"
@@ -262,50 +269,56 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     total_amount = int(product.price * data.quantity)
     order_code = _generate_order_code()
 
-    # Xóa Redis lock
-    lock_key = f"lock:prod:{data.product_id}"
+    # Yêu cầu phải có lock_id kèm theo
+    if not getattr(data, "lock_id", None):
+        raise HTTPException(status_code=400, detail="Phải cung cấp lock_id khi tạo đơn hàng.")
+
+    lock = db.query(InventoryLock).filter(InventoryLock.id == data.lock_id).first()
+    if not lock or lock.user_id != user_id or lock.status != "soft_locked":
+        raise HTTPException(status_code=400, detail="Lock không hợp lệ hoặc đã hết hạn.")
+    if lock.product_id != data.product_id or lock.quantity != data.quantity:
+        raise HTTPException(status_code=400, detail="Thông tin lock không khớp với đơn hàng.")
+
+    # Xóa Redis lock (per-store key)
+    lock_key = f"lock:prod:{data.product_id}:store:{lock.store_id}"
     try:
         await redis.delete(lock_key)
     except Exception:
         pass  # Non-critical
 
     # Trừ tồn kho vĩnh viễn
-    inv_query = db.query(Inventory).filter(Inventory.product_id == data.product_id)
-    if data.store_id:
-        inv_query = inv_query.filter(Inventory.store_id == data.store_id)
-    inv = inv_query.with_for_update().first()
-    
+    # Trừ tồn kho vĩnh viễn tại cửa hàng được lock
+    inv = db.query(Inventory).filter(
+        Inventory.product_id == data.product_id,
+        Inventory.store_id == lock.store_id,
+    ).with_for_update().first()
+
     if inv:
         inv.stock = max(0, inv.stock - data.quantity)
         inv.locked_stock = max(0, inv.locked_stock - data.quantity)
-    
-    # Đánh dấu lock cũ là completed
-    existing_lock = db.query(InventoryLock).filter(
-        InventoryLock.product_id == data.product_id,
-        InventoryLock.user_id == user_id,
-        InventoryLock.status == "soft_locked"
-    ).first()
-    if existing_lock:
-        existing_lock.status = "completed"
+
+    # Đánh dấu lock là completed
+    lock.status = "completed"
 
     # Tạo Order
     new_order = Order(
         user_id=user_id,
         product_id=data.product_id,
-        store_id=data.store_id,
+        store_id=lock.store_id,
         quantity=data.quantity,
         total_amount=total_amount,
         full_name=data.full_name,
         phone=data.phone,
         address=data.address,
-        status="PENDING_SHIP",
+        status="AWAITING_PAYMENT",
         order_code=order_code,
     )
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
 
-    vietqr_url = _build_vietqr_url(total_amount, order_code)
+    # Trả về mock payment URL (chờ thanh toán)
+    mock_payment_url = f"https://mock-pay.local/pay/{order_code}"
 
     return {
         "order_id": new_order.order_id,
@@ -313,5 +326,5 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
         "status": new_order.status,
         "total_amount": total_amount,
         "product_name": product.name,
-        "vietqr_url": vietqr_url,
+        "vietqr_url": mock_payment_url,
     }
