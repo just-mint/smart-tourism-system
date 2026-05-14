@@ -17,4 +17,4 @@ dist/
 .DS_Store
 *.log
 backend/uploads/
-
+data/wishlist.db
