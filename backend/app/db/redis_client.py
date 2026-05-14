@@ -7,10 +7,10 @@ from redis.asyncio import Redis
 async def get_redis() -> AsyncGenerator[Redis, None]:
     """
     FastAPI Async Dependency: Tạo kết nối Redis asyncio cho mỗi request.
-    Đọc REDIS_URL từ biến môi trường. Trong Docker dùng redis://redis:6379/0.
+    Đọc REDIS_URL từ biến môi trường. Docker Compose override qua env.
     Kết nối luôn được đóng trong finally block để tránh resource leak.
     """
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     redis: Redis = Redis.from_url(
         redis_url,
         encoding="utf-8",

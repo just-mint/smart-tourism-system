@@ -57,7 +57,7 @@ async def health_check(session: SessionDep) -> JSONResponse:
         healthy = False
 
     # ── 2. Redis ──
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     try:
         redis = Redis.from_url(redis_url, decode_responses=True)
         pong = await redis.ping()
