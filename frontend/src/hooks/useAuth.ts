@@ -12,7 +12,7 @@ import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
 const isLoggedIn = () => {
-  return localStorage.getItem("access_token") !== null
+  return localStorage.getItem("is_logged_in") === "true"
 }
 
 const useAuth = () => {
@@ -39,10 +39,10 @@ const useAuth = () => {
   })
 
   const login = async (data: AccessToken) => {
-    const response = await LoginService.loginAccessToken({
+    await LoginService.loginAccessToken({
       formData: data,
     })
-    localStorage.setItem("access_token", response.access_token)
+    localStorage.setItem("is_logged_in", "true")
   }
 
   const loginMutation = useMutation({
@@ -53,8 +53,14 @@ const useAuth = () => {
     onError: handleError.bind(showErrorToast),
   })
 
-  const logout = () => {
-    localStorage.removeItem("access_token")
+  const logout = async () => {
+    try {
+      await LoginService.logout()
+    } catch (e) {
+      console.error("Logout failed", e)
+    }
+    localStorage.removeItem("is_logged_in")
+    queryClient.clear()
     navigate({ to: "/login" })
   }
 

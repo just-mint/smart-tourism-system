@@ -10,16 +10,17 @@ export const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 
 const aegisClient = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api/v1` : "/api/v1",
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 })
 
-// Attach auth token to every request
-aegisClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token")
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+// Attach auth token to every request - DEPRECATED: now using httpOnly cookies
+// aegisClient.interceptors.request.use((config) => {
+//   const token = localStorage.getItem("access_token")
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`
+//   }
+//   return config
+// })
 
 // ===================== TYPES =====================
 

@@ -16,9 +16,10 @@ import { routeTree } from "./routeTree.gen"
 import { API_BASE } from "./client/aegis-api"
 
 OpenAPI.BASE = API_BASE
-OpenAPI.TOKEN = async () => {
-  return localStorage.getItem("access_token") || ""
-}
+OpenAPI.WITH_CREDENTIALS = true
+// OpenAPI.TOKEN = async () => {
+//   return localStorage.getItem("access_token") || ""
+// }
 
 const handleApiError = (error: Error) => {
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
