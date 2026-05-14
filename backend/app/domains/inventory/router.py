@@ -71,6 +71,11 @@ async def get_my_locks(current_user: User = Depends(get_current_user), db: Sessi
     """Tra cứu Giỏ hàng & Đồng hồ đếm ngược được nuôi bởi Redis"""
     return await service.get_user_locks_with_ttl(db=db, redis=redis, user_id=current_user.id)
 
+@router.delete("/locks/{lock_id}", response_model=dict)
+async def cancel_inventory_lock(lock_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db), redis: Redis = Depends(get_redis)):
+    """Hủy chủ động một soft-lock của user và trả lại tồn kho."""
+    return await service.cancel_lock(db=db, redis=redis, lock_id=lock_id, user_id=current_user.id)
+
 @router.post("/trigger-release", dependencies=[Depends(verify_internal_or_superuser)])
 def release_expired(db: Session = Depends(get_db)):
     """API Dọn dẹp (Bảo mật): Trả lại hàng vào DB khi lock hết hạn. Chỉ Superuser hoặc Internal Service gọi được."""

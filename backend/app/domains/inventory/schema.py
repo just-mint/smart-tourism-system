@@ -16,11 +16,16 @@ class ProductResponse(BaseModel):
 
 class LockRequest(BaseModel):
     product_id: int
+    store_id: Optional[int] = None
     quantity: int = 1
 
 class LockResponseItem(BaseModel):
     id: int
     product_id: int
+    product_name: Optional[str] = None
+    product_price: Optional[float] = None
+    product_image_url: Optional[str] = None
+    store_id: Optional[int] = None
     quantity: int
     status: str
     ttl_seconds: int

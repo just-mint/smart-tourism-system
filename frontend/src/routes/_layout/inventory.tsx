@@ -51,22 +51,28 @@ const getApiErrorDetail = (error: unknown, fallback: string) => {
 function CountdownTimer({
   expiresAt,
   ttlSeconds,
+  onExpire,
 }: {
   expiresAt: string
   ttlSeconds: number
+  onExpire?: () => void
 }) {
   const [remaining, setRemaining] = useState(ttlSeconds)
   useEffect(() => {
+    setRemaining(ttlSeconds)
     const interval = setInterval(() => {
       const diff = Math.max(
         0,
         Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000),
       )
       setRemaining(diff)
-      if (diff <= 0) clearInterval(interval)
+      if (diff <= 0) {
+        clearInterval(interval)
+        onExpire?.()
+      }
     }, 1000)
     return () => clearInterval(interval)
-  }, [expiresAt])
+  }, [expiresAt, ttlSeconds, onExpire])
 
   const m = Math.floor(remaining / 60)
   const s = remaining % 60
@@ -97,6 +103,7 @@ function Inventory() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [notification, setNotification] = useState("")
   const [lockingId, setLockingId] = useState<number | null>(null)
+  const [cancelingLockId, setCancelingLockId] = useState<number | null>(null)
 
   // Checkout flow
   const [checkoutProduct, setCheckoutProduct] = useState<
@@ -155,6 +162,13 @@ function Inventory() {
     loadLocks()
   }, [loadLocks])
 
+  useEffect(() => {
+    if (!isCartOpen) return
+    loadLocks()
+    const interval = setInterval(loadLocks, 30000)
+    return () => clearInterval(interval)
+  }, [isCartOpen, loadLocks])
+
   const handleStoreClick = async (storeId: number) => {
     setActiveStoreId(storeId)
     setSearchQuery("")
@@ -171,7 +185,11 @@ function Inventory() {
   const handleReserveClick = async (product: ProductResponse) => {
     setLockingId(product.product_id)
     try {
-      const res = await InventoryAPI.createLock(product.product_id, 1)
+      const res = await InventoryAPI.createLock(
+        product.product_id,
+        1,
+        product.store_id,
+      )
       setNotification(`✅ ${res.data.message}`)
       loadLocks()
       // Open checkout modal
@@ -208,6 +226,40 @@ function Inventory() {
   const closeCheckout = () => {
     setCheckoutProduct(null)
     setOrderResult(null)
+  }
+
+  const openCheckoutFromLock = (lock: LockResponseItem) => {
+    setCheckoutProduct({
+      product_id: lock.product_id,
+      name: lock.product_name || `Product #${lock.product_id}`,
+      price: lock.product_price || 0,
+      image_url: lock.product_image_url,
+      store_id: lock.store_id,
+      stock: lock.quantity,
+    })
+    setOrderResult(null)
+    setOrderForm({
+      ...orderForm,
+      product_id: lock.product_id,
+      store_id: lock.store_id,
+      quantity: lock.quantity,
+    })
+    setIsCartOpen(false)
+  }
+
+  const handleCancelLock = async (lockId: number) => {
+    setCancelingLockId(lockId)
+    try {
+      const res = await InventoryAPI.cancelLock(lockId)
+      setNotification(`OK: ${res.data.message}`)
+      await loadLocks()
+      await loadData()
+    } catch (err: unknown) {
+      setNotification(`Error: ${getApiErrorDetail(err, "Lỗi hủy giữ hàng")}`)
+    } finally {
+      setCancelingLockId(null)
+      setTimeout(() => setNotification(""), 3000)
+    }
   }
 
   return (
@@ -603,7 +655,7 @@ function Inventory() {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-white font-bold mb-1">
-                          Product #{lock.product_id}
+                          {lock.product_name || `Product #${lock.product_id}`}
                         </p>
                         <p className="text-xs text-zinc-500 font-mono">
                           Qty: {lock.quantity} • Lock: {lock.id}
@@ -612,7 +664,34 @@ function Inventory() {
                       <CountdownTimer
                         expiresAt={lock.expires_at}
                         ttlSeconds={lock.ttl_seconds}
+                        onExpire={loadLocks}
                       />
+                    </div>
+                    {lock.product_price !== undefined && (
+                      <p className="text-sm text-amber-400 font-mono font-bold mb-3">
+                        {lock.product_price.toLocaleString("vi-VN")} đ
+                      </p>
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => openCheckoutFromLock(lock)}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold py-2.5 transition-colors"
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        Checkout
+                      </button>
+                      <button
+                        onClick={() => handleCancelLock(lock.id)}
+                        disabled={cancelingLockId === lock.id}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-zinc-300 hover:text-red-300 text-xs font-bold py-2.5 transition-colors disabled:opacity-50"
+                      >
+                        {cancelingLockId === lock.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <X className="w-4 h-4" />
+                        )}
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 ))

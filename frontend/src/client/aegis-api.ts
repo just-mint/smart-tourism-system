@@ -169,6 +169,10 @@ export interface ProductResponse {
 export interface LockResponseItem {
   id: number
   product_id: number
+  product_name?: string
+  product_price?: number
+  product_image_url?: string
+  store_id?: number
   quantity: number
   status: string
   ttl_seconds: number
@@ -302,14 +306,17 @@ export const InventoryAPI = {
   search: (q: string) =>
     aegisClient.get<SearchResult>("/inventory/search", { params: { q } }),
 
-  createLock: (product_id: number, quantity = 1) =>
+  createLock: (product_id: number, quantity = 1, store_id?: number) =>
     aegisClient.post<{ message: string; lock_id: number; expires_at: string }>(
       "/inventory/lock",
-      { product_id, quantity }
+      { product_id, quantity, store_id }
     ),
 
   getMyLocks: () =>
     aegisClient.get<LockResponseItem[]>("/inventory/locks"),
+
+  cancelLock: (lockId: number) =>
+    aegisClient.delete<{ message: string; lock_id: number }>(`/inventory/locks/${lockId}`),
 
   triggerRelease: () =>
     aegisClient.post<{ message: string }>("/inventory/trigger-release"),

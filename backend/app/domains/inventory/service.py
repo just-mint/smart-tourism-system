@@ -148,18 +148,22 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
 
     # === PHASE 2: POSTGRES ROW LOCK (Qua bảng Inventory) ===
     # Lấy thông tin Tồn kho của Product (DBeaver tách riêng bảng)
-    inv = db.query(Inventory).filter(
-        Inventory.product_id == request.product_id
-    ).with_for_update().first()
+    inv_query = db.query(Inventory).filter(Inventory.product_id == request.product_id)
+    if request.store_id:
+        inv_query = inv_query.filter(Inventory.store_id == request.store_id)
+    inv = inv_query.with_for_update().first()
 
     if not inv:
         raise HTTPException(status_code=404, detail="Sản phẩm không có thông tin tồn kho hoặc đã hết.")
 
     # Lấy TỔNG tồn kho có sẵn từ TẤT CẢ Store có bán product này
     # (1 product có thể được bán tại nhiều store trong travel_app)
-    total_available = sum(max(0, i.stock - i.locked_stock) for i in db.query(Inventory).filter(
-        Inventory.product_id == request.product_id
-    ).all())
+    if request.store_id:
+        total_available = max(0, inv.stock - inv.locked_stock)
+    else:
+        total_available = sum(max(0, i.stock - i.locked_stock) for i in db.query(Inventory).filter(
+            Inventory.product_id == request.product_id
+        ).all())
     if total_available < request.quantity:
         raise HTTPException(status_code=400, detail=f"Không đủ hàng. Tồn kho còn: {total_available}")
 
@@ -192,25 +196,63 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
 
 
 async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id: int):
+    check_and_release_expired_locks(db)
     locks = db.query(InventoryLock).filter(
         InventoryLock.user_id == user_id,
         InventoryLock.status == "soft_locked"
     ).all()
     results = []
     for lock in locks:
+        product = db.query(Product).filter(Product.product_id == lock.product_id).first()
+        inv = db.query(Inventory).filter(Inventory.product_id == lock.product_id).first()
         try:
             ttl = await redis.ttl(f"lock:prod:{lock.product_id}")
         except Exception:
             ttl = -1
+        if ttl >= 0:
+            ttl_seconds = ttl
+        else:
+            ttl_seconds = max(
+                0,
+                int((lock.expires_at - datetime.now(timezone.utc)).total_seconds())
+            )
         results.append({
             "id": lock.id,
             "product_id": lock.product_id,
+            "product_name": product.name if product else None,
+            "product_price": product.price if product else None,
+            "product_image_url": product.image_url if product else None,
+            "store_id": inv.store_id if inv else None,
             "quantity": lock.quantity,
             "status": lock.status,
             "expires_at": lock.expires_at,
-            "ttl_seconds": max(ttl, 0)
+            "ttl_seconds": ttl_seconds
         })
     return results
+
+
+async def cancel_lock(db: Session, redis: Redis, lock_id: int, user_id: int):
+    lock = db.query(InventoryLock).filter(
+        InventoryLock.id == lock_id,
+        InventoryLock.user_id == user_id,
+        InventoryLock.status == "soft_locked"
+    ).with_for_update().first()
+
+    if not lock:
+        raise HTTPException(status_code=404, detail="Lock không tồn tại hoặc đã hết hiệu lực.")
+
+    inv = db.query(Inventory).filter(Inventory.product_id == lock.product_id).with_for_update().first()
+    if inv:
+        inv.locked_stock = max(0, inv.locked_stock - lock.quantity)
+
+    lock.status = "cancelled"
+    try:
+        await redis.delete(f"lock:prod:{lock.product_id}")
+    except Exception:
+        pass
+
+    db.commit()
+    return {"message": "Đã hủy giữ hàng.", "lock_id": lock.id}
 
 
 def check_and_release_expired_locks(db: Session) -> int:
