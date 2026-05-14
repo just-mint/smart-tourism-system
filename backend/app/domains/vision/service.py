@@ -101,3 +101,70 @@ def find_similar_products_for_closet(db: Session, closet_item_id: int, top_n: in
 
     return matches, None
 
+
+def find_similar_products_for_product(db: Session, product_id: int, top_n: int = 5):
+    """
+    Product-to-product visual matching for catalog items.
+    This is intentionally separate from closet matching so callers do not pass
+    Product.product_id into /closet/{item_id}/matches by mistake.
+    """
+    from app.domains.inventory.model import Product
+
+    product = db.query(Product).filter(Product.product_id == product_id).first()
+    if not product:
+        return None, "Product not found"
+
+    if product.embedding is None:
+        return None, "Product chÆ°a cĂ³ vector embedding."
+
+    return _find_similar_products_by_embedding(
+        db=db,
+        embedding=product.embedding,
+        top_n=top_n,
+        exclude_product_id=product_id,
+    ), None
+
+
+def _find_similar_products_by_embedding(
+    db: Session,
+    embedding,
+    top_n: int = 5,
+    exclude_product_id: int | None = None,
+):
+    from app.domains.inventory.model import Product, Inventory
+
+    query = db.query(
+        Product,
+        Product.embedding.cosine_distance(embedding).label("distance")
+    ).filter(
+        Product.embedding.is_not(None)
+    )
+
+    if exclude_product_id is not None:
+        query = query.filter(Product.product_id != exclude_product_id)
+
+    results = query.order_by(
+        Product.embedding.cosine_distance(embedding)
+    ).limit(top_n).all()
+
+    matches = []
+    for product, distance in results:
+        similarity = round((1.0 - float(distance) / 2.0) * 100, 1)
+        inv = db.query(Inventory).filter(Inventory.product_id == product.product_id).first()
+        stock = inv.stock if inv else 0
+        store_id = inv.store_id if inv else None
+
+        matches.append({
+            "product_id": product.product_id,
+            "name": product.name,
+            "description": product.description,
+            "price": product.price,
+            "original_price": product.original_price,
+            "image_url": product.image_url,
+            "match_score": similarity,
+            "stock": stock,
+            "store_id": store_id,
+        })
+
+    return matches
+

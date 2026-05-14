@@ -47,6 +47,7 @@ class StopInRoute(BaseModel):
     """Một điểm dừng trong lộ trình tối ưu."""
     order: int
     store_id: Optional[int] = None
+    place_db_id: Optional[int] = None
     name: str
     category: Optional[str] = None
     address: Optional[str] = None

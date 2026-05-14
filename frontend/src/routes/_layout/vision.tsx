@@ -388,9 +388,11 @@ function VisionCloset() {
                                 <span className="text-emerald-400 font-mono font-bold">
                                   {prod.price.toLocaleString()}₫
                                 </span>
-                                <button className="px-3 py-1.5 text-[10px] bg-purple-500 hover:bg-purple-600 text-white font-bold rounded flex items-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.4)] transition-all">
-                                  <Shirt className="w-3 h-3" /> Thêm tủ đồ
-                                </button>
+                                {prod.store_id && (
+                                  <span className="px-2 py-1 text-[10px] bg-white/5 border border-white/10 text-zinc-400 font-mono rounded">
+                                    Store #{prod.store_id}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

@@ -41,3 +41,9 @@ class MixMatchResponse(BaseModel):
     matches: List[MixMatchProduct]
     total_matches: int
 
+
+class ProductMatchResponse(BaseModel):
+    product_id: int
+    matches: List[MixMatchProduct]
+    total_matches: int
+

@@ -101,3 +101,19 @@ def get_mix_match(item_id: int, db: Session = Depends(get_db)):
         total_matches=len(matches),
     )
 
+
+@router.get("/products/{product_id}/matches", response_model=schema.ProductMatchResponse)
+def get_product_matches(product_id: int, db: Session = Depends(get_db)):
+    """
+    Product-to-product visual matching. Use this when the UI starts from a
+    catalog product rather than a user's virtual closet item.
+    """
+    matches, error = service.find_similar_products_for_product(db=db, product_id=product_id, top_n=5)
+    if matches is None:
+        raise HTTPException(status_code=404, detail=error)
+    return schema.ProductMatchResponse(
+        product_id=product_id,
+        matches=matches,
+        total_matches=len(matches),
+    )
+

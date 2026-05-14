@@ -7,7 +7,7 @@ import axios from "axios"
 import { handleUnauthorizedSession } from "@/lib/auth-session"
 
 export const API_BASE =
-  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "" : "http://localhost:8000")
+  import.meta.env.VITE_API_URL || ""
 
 const aegisClient = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api/v1` : "/api/v1",
@@ -359,6 +359,9 @@ export const VisionAPI = {
 
   getMixMatch: (closetItemId: number) =>
     aegisClient.get<MixMatchResponse>(`/vision/closet/${closetItemId}/matches`),
+
+  getProductMatches: (productId: number) =>
+    aegisClient.get<ProductMatchResponse>(`/vision/products/${productId}/matches`),
 }
 
 export interface MixMatchProduct {
@@ -375,6 +378,12 @@ export interface MixMatchProduct {
 
 export interface MixMatchResponse {
   closet_item_id: number
+  matches: MixMatchProduct[]
+  total_matches: number
+}
+
+export interface ProductMatchResponse {
+  product_id: number
   matches: MixMatchProduct[]
   total_matches: number
 }
@@ -418,6 +427,7 @@ export interface ProductInRoute {
 export interface StopInRoute {
   order: number
   store_id?: number
+  place_db_id?: number
   name: string
   category?: string
   address?: string

@@ -108,7 +108,7 @@ function ItineraryPage() {
   const [cultureDrawerData, setCultureDrawerData] = useState<{
     name: string
     story: string
-    storeId: number
+    placeDbId: number
   } | null>(null)
   const [cultureDrawerLoading, setCultureDrawerLoading] = useState(false)
   const [priceModalOpen, setPriceModalOpen] = useState(false)
@@ -211,22 +211,22 @@ function ItineraryPage() {
   }
 
   // === OVERLAY HANDLERS ===
-  const openCultureDrawer = async (storeId: number, name: string) => {
+  const openCultureDrawer = async (placeDbId: number, name: string) => {
     setCultureDrawerOpen(true)
     setCultureDrawerLoading(true)
-    setCultureDrawerData({ name, story: "", storeId })
+    setCultureDrawerData({ name, story: "", placeDbId })
     try {
-      const res = await CultureAPI.getPlaceStory(storeId)
+      const res = await CultureAPI.getPlaceStory(placeDbId)
       setCultureDrawerData({
         name,
         story: res.data.ai_story || "Chưa có câu chuyện.",
-        storeId,
+        placeDbId,
       })
     } catch {
       setCultureDrawerData({
         name,
         story: "Địa điểm này chưa có dữ liệu văn hóa.",
-        storeId,
+        placeDbId,
       })
     } finally {
       setCultureDrawerLoading(false)
@@ -262,7 +262,7 @@ function ItineraryPage() {
     setMixMatchProduct({ name: productName, image_url: imageUrl })
     try {
       // Tìm sản phẩm tương tự trong catalog dùng vision API (CLIP 512D)
-      const res = await VisionAPI.getMixMatch(productId)
+      const res = await VisionAPI.getProductMatches(productId)
       setMixMatchResults(res.data.matches)
     } catch {
       setMixMatchResults([])
@@ -728,11 +728,11 @@ function ItineraryPage() {
                         </div>
                       )}
                     {/* Culture Drawer Trigger */}
-                    {expandedStop === stop.order && stop.store_id && (
+                    {expandedStop === stop.order && stop.place_db_id && (
                       <div className="border-t border-white/5 p-3">
                         <button
                           onClick={() =>
-                            openCultureDrawer(stop.store_id!, stop.name)
+                            openCultureDrawer(stop.place_db_id!, stop.name)
                           }
                           className="w-full flex items-center justify-center gap-2 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl py-2 hover:bg-amber-500/20 font-mono transition-all"
                         >

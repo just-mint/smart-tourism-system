@@ -26,6 +26,7 @@ from app.domains.planner.schema import (
     WeatherInfo,
 )
 from app.domains.inventory.model import Store, Product, Inventory
+from app.domains.culture.model import Place
 from app.domains.spatial.service import fetch_real_weather
 
 logger = logging.getLogger(__name__)
@@ -84,10 +85,16 @@ def _query_stores_in_radius(
         # [v2] CHECK BUDGET: Loại store vượt ngân sách
         if max_budget is not None and avg_price > max_budget:
             continue
+
+        place_db_id = None
+        if s.place_id:
+            place = db.query(Place).filter(Place.place_id == str(s.place_id)).first()
+            place_db_id = place.id if place else None
         
         results.append({
             "id": str(store_id),
             "store_id": store_id,
+            "place_db_id": place_db_id,
             "name": s.name,
             "coords": {
                 "lat": float(s.lat) if s.lat else 0.0,
@@ -194,6 +201,7 @@ async def generate_smart_itinerary(
         max_budget=request.max_budget,
     )
     total_candidates = len(raw_candidates)
+    raw_by_store_id = {int(s["store_id"]): s for s in raw_candidates}
     
     if not raw_candidates:
         return PlannerResponse(
@@ -253,15 +261,17 @@ async def generate_smart_itinerary(
     optimized_route: list[StopInRoute] = []
     for idx, shop in enumerate(reordered_shops):
         store_id = shop.get("store_id") or int(shop.get("id", 0))
+        raw_shop = raw_by_store_id.get(store_id, {})
         products = _get_store_products(db, store_id)
         coords = shop.get("coords", {})
         
         stop = StopInRoute(
             order=idx + 1,
             store_id=store_id,
+            place_db_id=shop.get("place_db_id") or raw_shop.get("place_db_id"),
             name=shop.get("name", ""),
-            category=shop.get("category"),
-            address=shop.get("address"),
+            category=shop.get("category") or raw_shop.get("category"),
+            address=shop.get("address") or raw_shop.get("address"),
             lat=coords.get("lat", 0),
             lon=coords.get("lng", 0),
             rating=shop.get("rating"),
