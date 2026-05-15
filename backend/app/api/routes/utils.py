@@ -75,16 +75,31 @@ async def health_check(session: SessionDep) -> JSONResponse:
     return JSONResponse(status_code=200, content={"status": "healthy", "checks": status})
 
 
-@router.get("/telemetry/")
-def get_telemetry(session: SessionDep) -> dict:
+import json
+
+@router.get("/telemetry/", dependencies=[Depends(get_current_active_superuser)])
+async def get_telemetry(session: SessionDep) -> dict:
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    redis = Redis.from_url(redis_url, decode_responses=True)
+    
+    cached = await redis.get("telemetry_data")
+    if cached:
+        await redis.aclose()
+        return json.loads(cached)
+
     active_users = session.scalar(select(func.count()).select_from(User))
     total_places = session.scalar(select(func.count()).select_from(Place))
     total_stores = session.scalar(select(func.count()).select_from(Store))
     active_locks = session.scalar(select(func.count()).select_from(InventoryLock))
     
-    return {
+    data = {
         "active_users": active_users or 0,
         "total_places": total_places or 0,
         "total_stores": total_stores or 0,
         "active_locks": active_locks or 0,
     }
+    
+    await redis.set("telemetry_data", json.dumps(data), ex=300)
+    await redis.aclose()
+    
+    return data

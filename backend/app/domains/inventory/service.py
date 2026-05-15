@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from app.domains.inventory.model import Product, InventoryLock, Store, Inventory, Order
 from app.domains.inventory.schema import LockRequest, OrderCreate
 from redis.asyncio import Redis
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 import random
 import string
@@ -165,11 +165,13 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
 
     # Chuẩn bị ghi DB - trừ từ inventory record đầu tiên còn hàng
     inv.locked_stock += request.quantity
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.INVENTORY_LOCK_TTL)
     new_lock = InventoryLock(
         product_id=inv.product_id,
         user_id=user_id,
         quantity=request.quantity,
-        status="soft_locked"
+        status="soft_locked",
+        expires_at=expires_at
     )
     db.add(new_lock)
     db.flush()

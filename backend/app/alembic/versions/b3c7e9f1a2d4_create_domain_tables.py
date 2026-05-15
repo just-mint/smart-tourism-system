@@ -40,30 +40,40 @@ def upgrade():
         sa.Column('address', sa.Text(), nullable=True),
         sa.Column('lat', sa.Numeric(), nullable=True),
         sa.Column('lon', sa.Numeric(), nullable=True),
-        # geoalchemy2 geometry — stored as text type for Alembic portability
-        sa.Column('geom', sa.Text(), nullable=True),
-        sa.Column('phone', sa.String(length=50), nullable=True),
-        sa.Column('rating', sa.Numeric(precision=3, scale=1), nullable=True),
-        sa.Column('review_count', sa.Integer(), nullable=True),
-        sa.Column('image_url', sa.Text(), nullable=True),
         sa.PrimaryKeyConstraint('id'),
+    )
+    # Thêm cột geometry thực sự (PostGIS) sau khi bảng đã tạo
+    op.execute(
+        "ALTER TABLE places ADD COLUMN IF NOT EXISTS geom geometry(Point,4326)"
+    )
+    op.execute(
+        "ALTER TABLE places ADD COLUMN IF NOT EXISTS phone varchar(50)"
+    )
+    op.execute(
+        "ALTER TABLE places ADD COLUMN IF NOT EXISTS rating numeric(3,1)"
+    )
+    op.execute(
+        "ALTER TABLE places ADD COLUMN IF NOT EXISTS review_count integer"
+    )
+    op.execute(
+        "ALTER TABLE places ADD COLUMN IF NOT EXISTS image_url text"
     )
     op.create_index(op.f('ix_places_id'), 'places', ['id'], unique=False)
     op.create_index(op.f('ix_places_place_id'), 'places', ['place_id'], unique=True)
     op.create_index(op.f('ix_places_category'), 'places', ['category'], unique=False)
     # GIN trigram indexes for full-text search
-    op.create_index(
-        'idx_places_name_trgm', 'places', ['name'],
-        postgresql_using='gin',
-        postgresql_ops={'name': 'gin_trgm_ops'},
+    op.execute(
+        'CREATE INDEX IF NOT EXISTS idx_places_name_trgm '
+        'ON places USING gin (name gin_trgm_ops)'
     )
-    op.create_index(
-        'idx_places_category_trgm', 'places', ['category'],
-        postgresql_using='gin',
-        postgresql_ops={'category': 'gin_trgm_ops'},
+    op.execute(
+        'CREATE INDEX IF NOT EXISTS idx_places_category_trgm '
+        'ON places USING gin (category gin_trgm_ops)'
     )
-    # GiST spatial index
-    op.create_index('idx_places_geom', 'places', ['geom'], postgresql_using='gist')
+    # GiST spatial index (requires geometry type — done via raw SQL)
+    op.execute(
+        'CREATE INDEX IF NOT EXISTS idx_places_geom ON places USING gist (geom)'
+    )
 
     # ── 2. reviews ───────────────────────────────────────────────────────────
     op.create_table(
@@ -89,14 +99,20 @@ def upgrade():
         sa.Column('address', sa.Text(), nullable=True),
         sa.Column('lat', sa.Numeric(), nullable=True),
         sa.Column('lon', sa.Numeric(), nullable=True),
-        sa.Column('geom', sa.Text(), nullable=True),
         sa.Column('phone', sa.String(length=50), nullable=True),
         sa.Column('rating', sa.Numeric(precision=3, scale=1), nullable=True,
                   server_default=sa.text('0.0')),
         sa.PrimaryKeyConstraint('store_id'),
     )
+    # Thêm cột geometry thực sự (PostGIS)
+    op.execute(
+        "ALTER TABLE stores ADD COLUMN IF NOT EXISTS geom geometry(Point,4326)"
+    )
     op.create_index(op.f('ix_stores_store_id'), 'stores', ['store_id'], unique=False)
-    op.create_index('idx_stores_geom', 'stores', ['geom'], postgresql_using='gist')
+    # GiST spatial index
+    op.execute(
+        'CREATE INDEX IF NOT EXISTS idx_stores_geom ON stores USING gist (geom)'
+    )
 
     # ── 4. products ──────────────────────────────────────────────────────────
     op.create_table(

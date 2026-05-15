@@ -305,31 +305,36 @@ def get_place_o2o_context(db: Session, place_id: str, radius: int = 2000):
             func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), radius)
         ).all()
         
-        for s in stores:
-            # Tìm products của store này
-            invs = db.query(Inventory).filter(Inventory.store_id == s.store_id).all()
-            products = []
-            if invs:
-                p_ids = [inv.product_id for inv in invs]
-                prods = db.query(Product).filter(Product.product_id.in_(p_ids)).all()
-                for p in prods:
-                    products.append({
-                        "product_id": p.product_id,
-                        "name": p.name,
-                        "price": p.price,
-                        "image_url": p.image_url
-                    })
+        if stores:
+            store_ids = [s.store_id for s in stores]
+            # Query tất cả inventory và product của các store này trong 1 câu lệnh (Tránh N+1)
+            results = db.query(Inventory, Product).join(
+                Product, Inventory.product_id == Product.product_id
+            ).filter(
+                Inventory.store_id.in_(store_ids)
+            ).all()
             
-            nearby_stores.append({
-                "store_id": s.store_id,
-                "place_id": s.place_id,
-                "name": s.name,
-                "category": s.category,
-                "address": s.address,
-                "lat": float(s.lat) if s.lat else 0.0,
-                "lon": float(s.lon) if s.lon else 0.0,
-                "products": products
-            })
+            from collections import defaultdict
+            store_products = defaultdict(list)
+            for inv, prod in results:
+                store_products[inv.store_id].append({
+                    "product_id": prod.product_id,
+                    "name": prod.name,
+                    "price": prod.price,
+                    "image_url": prod.image_url
+                })
+            
+            for s in stores:
+                nearby_stores.append({
+                    "store_id": s.store_id,
+                    "place_id": s.place_id,
+                    "name": s.name,
+                    "category": s.category,
+                    "address": s.address,
+                    "lat": float(s.lat) if s.lat else 0.0,
+                    "lon": float(s.lon) if s.lon else 0.0,
+                    "products": store_products.get(s.store_id, [])
+                })
             
     return {
         "place_info": place_info,

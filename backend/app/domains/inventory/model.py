@@ -1,14 +1,12 @@
 from datetime import datetime, timezone, timedelta
 from app.db.session import Base
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Numeric, Text, Index
+from sqlalchemy import String, Integer, DateTime, ForeignKey, Numeric, Text, Index, UniqueConstraint, CheckConstraint
 from sqlalchemy.sql import text
 from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
 from geoalchemy2 import Geometry
 
-def get_expire_time():
-    return datetime.now(timezone.utc) + timedelta(minutes=15)
 
 class Store(Base):
     __tablename__ = "stores"
@@ -36,7 +34,11 @@ class Product(Base):
     size: Mapped[str | None] = mapped_column(String(20), nullable=True)     # S, M, L, XL, Free
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)    # Đỏ, Xanh, Trắng
     tags: Mapped[str | None] = mapped_column(Text, nullable=True)           # "giá tốt,gần du lịch,quà"
-    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        CheckConstraint('price >= 0', name='check_price_nonnegative'),
+    )
 
 class Inventory(Base):
     __tablename__ = "inventory"
@@ -47,14 +49,20 @@ class Inventory(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
     locked_stock: Mapped[int] = mapped_column(Integer, default=0)
 
+    __table_args__ = (
+        UniqueConstraint('store_id', 'product_id', name='uq_inventory_store_product'),
+        CheckConstraint('stock >= 0', name='check_stock_nonnegative'),
+        CheckConstraint('locked_stock >= 0', name='check_locked_stock_nonnegative'),
+    )
+
 class InventoryLock(Base):
     __tablename__ = "inventory_locks"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"))
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=True), index=True)
     quantity: Mapped[int] = mapped_column(Integer, default=1)
-    locked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=get_expire_time)
+    locked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(50), default="soft_locked") 
 
     __table_args__ = (
@@ -74,4 +82,4 @@ class Order(Base):
     address: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(50), default="PENDING_SHIP")
     order_code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

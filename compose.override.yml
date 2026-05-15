@@ -54,12 +54,16 @@ services:
   db:
     restart: "no"
     ports:
-      - "5433:5432"
+      - "5432:5432"
 
   adminer:
     restart: "no"
     ports:
       - "8080:8080"
+
+  optimization_service:
+    ports:
+      - "8002:8001"
 
   backend:
     restart: "no"
