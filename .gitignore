@@ -17,4 +17,10 @@ dist/
 .DS_Store
 *.log
 backend/uploads/
+<<<<<<< HEAD
 
+=======
+data/wishlist.db
+test_ai_engine.py
+test-ai_engine.py
+>>>>>>> origin/main

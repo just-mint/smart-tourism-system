@@ -3,7 +3,305 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
+<<<<<<< HEAD
 import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+=======
+import type { AgentChatWithAgentEndpointData, AgentChatWithAgentEndpointResponse, CultureSearchCulturePlacesData, CultureSearchCulturePlacesResponse, CultureGetAiStoryData, CultureGetAiStoryResponse, CultureAddReviewData, CultureAddReviewResponse, CultureGetReviewsData, CultureGetReviewsResponse, InventoryGetStoresData, InventoryGetStoresResponse, InventoryGetProductData, InventoryGetProductResponse, InventoryGetStoreProductsData, InventoryGetStoreProductsResponse, InventorySearchData, InventorySearchResponse, InventoryCreateInventoryLockData, InventoryCreateInventoryLockResponse, InventoryGetMyLocksResponse, InventoryReleaseExpiredData, InventoryReleaseExpiredResponse, InventoryComparePricesData, InventoryComparePricesResponse, InventoryCreateOrderData, InventoryCreateOrderResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginLogoutResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlannerGenerateItineraryData, PlannerGenerateItineraryResponse, SpatialSearchPlacesOmniData, SpatialSearchPlacesOmniResponse, SpatialFindNearbyPlacesData, SpatialFindNearbyPlacesResponse, SpatialClusterAndGroupStoresData, SpatialClusterAndGroupStoresResponse, SpatialCreateOptimalRouteData, SpatialCreateOptimalRouteResponse, SpatialGetPlaceO2oContextApiData, SpatialGetPlaceO2oContextApiResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetTelemetryResponse, VisionUploadAndScanData, VisionUploadAndScanResponse, VisionCheckTaskStatusData, VisionCheckTaskStatusResponse, VisionMyClosetResponse, VisionAddVirtualClosetData, VisionAddVirtualClosetResponse, VisionGetMixMatchData, VisionGetMixMatchResponse } from './types.gen';
+
+export class AgentService {
+    /**
+     * Chat With Agent Endpoint
+     * Agent Gateway: Chứa NÃO THẬT. Gọi chéo API ngầm.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AgentChatResponse Successful Response
+     * @throws ApiError
+     */
+    public static chatWithAgentEndpoint(data: AgentChatWithAgentEndpointData): CancelablePromise<AgentChatWithAgentEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/agent/chat',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class CultureService {
+    /**
+     * Search Culture Places
+     * Tìm kiếm nhanh địa danh theo từ khóa (Tìm Text trong 1.7M Dataset)
+     * @param data The data for the request.
+     * @param data.q
+     * @returns PlaceResponse Successful Response
+     * @throws ApiError
+     */
+    public static searchCulturePlaces(data: CultureSearchCulturePlacesData): CancelablePromise<CultureSearchCulturePlacesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/culture/places/search',
+            query: {
+                q: data.q
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Ai Story
+     * @param data The data for the request.
+     * @param data.id
+     * @returns PlaceDetailWithAI Successful Response
+     * @throws ApiError
+     */
+    public static getAiStory(data: CultureGetAiStoryData): CancelablePromise<CultureGetAiStoryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/culture/places/{id}/story',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Add Review
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.requestBody
+     * @returns ReviewResponse Successful Response
+     * @throws ApiError
+     */
+    public static addReview(data: CultureAddReviewData): CancelablePromise<CultureAddReviewResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/culture/places/{id}/reviews',
+            path: {
+                id: data.id
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Reviews
+     * @param data The data for the request.
+     * @param data.id
+     * @returns ReviewResponse Successful Response
+     * @throws ApiError
+     */
+    public static getReviews(data: CultureGetReviewsData): CancelablePromise<CultureGetReviewsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/culture/places/{id}/reviews',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class InventoryService {
+    /**
+     * Get Stores
+     * @param data The data for the request.
+     * @param data.placeId
+     * @returns app__domains__inventory__schema__StoreResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStores(data: InventoryGetStoresData = {}): CancelablePromise<InventoryGetStoresResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/inventory/stores',
+            query: {
+                place_id: data.placeId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Product
+     * @param data The data for the request.
+     * @param data.id
+     * @returns ProductResponse Successful Response
+     * @throws ApiError
+     */
+    public static getProduct(data: InventoryGetProductData): CancelablePromise<InventoryGetProductResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/inventory/products/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Store Products
+     * @param data The data for the request.
+     * @param data.storeId
+     * @returns ProductResponse Successful Response
+     * @throws ApiError
+     */
+    public static getStoreProducts(data: InventoryGetStoreProductsData): CancelablePromise<InventoryGetStoreProductsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/inventory/stores/{store_id}/products',
+            path: {
+                store_id: data.storeId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Search
+     * Tìm kiếm tổng hợp: Store + Product theo keyword
+     * @param data The data for the request.
+     * @param data.q
+     * @returns SearchResult Successful Response
+     * @throws ApiError
+     */
+    public static search(data: InventorySearchData = {}): CancelablePromise<InventorySearchResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/inventory/search',
+            query: {
+                q: data.q
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Inventory Lock
+     * API Phân tầng: Chạm phanh Redis trước, Lock Postgres sau. An toàn giữ hàng O2O.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static createInventoryLock(data: InventoryCreateInventoryLockData): CancelablePromise<InventoryCreateInventoryLockResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/inventory/lock',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get My Locks
+     * Tra cứu Giỏ hàng & Đồng hồ đếm ngược được nuôi bởi Redis
+     * @returns LockResponseItem Successful Response
+     * @throws ApiError
+     */
+    public static getMyLocks(): CancelablePromise<InventoryGetMyLocksResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/inventory/locks'
+        });
+    }
+    
+    /**
+     * Release Expired
+     * API Dọn dẹp (Bảo mật): Trả lại hàng vào DB khi lock hết hạn. Chỉ Superuser hoặc Internal Service gọi được.
+     * @param data The data for the request.
+     * @param data.xInternalSecret
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static releaseExpired(data: InventoryReleaseExpiredData = {}): CancelablePromise<InventoryReleaseExpiredResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/inventory/trigger-release',
+            headers: {
+                'x-internal-secret': data.xInternalSecret
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Compare Prices
+     * So sánh giá sản phẩm tại nhiều cửa hàng gần nhau — dùng cho PriceCompareModal
+     * @param data The data for the request.
+     * @param data.productId
+     * @param data.storeId
+     * @param data.lat
+     * @param data.lon
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static comparePrices(data: InventoryComparePricesData): CancelablePromise<InventoryComparePricesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/inventory/products/{product_id}/compare',
+            path: {
+                product_id: data.productId
+            },
+            query: {
+                store_id: data.storeId,
+                lat: data.lat,
+                lon: data.lon
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Order
+     * Hoàn tất đơn hàng O2O: Xóa Redis Lock → Trừ tồn kho → Tạo Order → Trả VietQR
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns OrderResponse Successful Response
+     * @throws ApiError
+     */
+    public static createOrder(data: InventoryCreateOrderData): CancelablePromise<InventoryCreateOrderResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/inventory/orders',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+>>>>>>> origin/main
 
 export class ItemsService {
     /**
@@ -138,6 +436,22 @@ export class LoginService {
     }
     
     /**
+<<<<<<< HEAD
+=======
+     * Logout
+     * Log out by clearing the access_token cookie
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static logout(): CancelablePromise<LoginLogoutResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/login/logout'
+        });
+    }
+    
+    /**
+>>>>>>> origin/main
      * Test Token
      * Test access token
      * @returns UserPublic Successful Response
@@ -213,6 +527,7 @@ export class LoginService {
     }
 }
 
+<<<<<<< HEAD
 export class PrivateService {
     /**
      * Create User
@@ -226,6 +541,25 @@ export class PrivateService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/private/users/',
+=======
+export class PlannerService {
+    /**
+     * Generate Itinerary
+     * 🧠 AEGIS Smart Planner — Luồng Tự Động 6 Bước.
+     *
+     * Nhận nhu cầu khách hàng (tọa độ, bán kính, keywords) →
+     * Tự động: Lọc PostGIS → Chấm điểm MCDM → TSP tối ưu lộ trình →
+     * Gắn sản phẩm O2O → Trả về lộ trình hoàn chỉnh.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns PlannerResponse Successful Response
+     * @throws ApiError
+     */
+    public static generateItinerary(data: PlannerGenerateItineraryData): CancelablePromise<PlannerGenerateItineraryResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/planner/generate',
+>>>>>>> origin/main
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {
@@ -235,6 +569,123 @@ export class PrivateService {
     }
 }
 
+<<<<<<< HEAD
+=======
+export class SpatialService {
+    /**
+     * Search Places Omni
+     * @param data The data for the request.
+     * @param data.q
+     * @param data.lat
+     * @param data.lon
+     * @returns PlaceResponse Successful Response
+     * @throws ApiError
+     */
+    public static searchPlacesOmni(data: SpatialSearchPlacesOmniData): CancelablePromise<SpatialSearchPlacesOmniResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/spatial/search',
+            query: {
+                q: data.q,
+                lat: data.lat,
+                lon: data.lon
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Find Nearby Places
+     * @param data The data for the request.
+     * @param data.lat
+     * @param data.lon
+     * @param data.radius
+     * @returns NearbySearchResponse Successful Response
+     * @throws ApiError
+     */
+    public static findNearbyPlaces(data: SpatialFindNearbyPlacesData): CancelablePromise<SpatialFindNearbyPlacesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/spatial/nearby-places',
+            query: {
+                lat: data.lat,
+                lon: data.lon,
+                radius: data.radius
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Cluster And Group Stores
+     * Gom cụm Places & Stores bằng KMeans và ST_DWithin
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns ClusterResponse Successful Response
+     * @throws ApiError
+     */
+    public static clusterAndGroupStores(data: SpatialClusterAndGroupStoresData): CancelablePromise<SpatialClusterAndGroupStoresResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/spatial/cluster-stores',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Optimal Route
+     * TSP Greedy Optimization & OSRM Routing
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns RoutePlanResponse Successful Response
+     * @throws ApiError
+     */
+    public static createOptimalRoute(data: SpatialCreateOptimalRouteData): CancelablePromise<SpatialCreateOptimalRouteResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/spatial/route-plan',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Place O2O Context Api
+     * @param data The data for the request.
+     * @param data.placeId
+     * @param data.radius
+     * @returns O2OContextResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPlaceO2oContextApi(data: SpatialGetPlaceO2oContextApiData): CancelablePromise<SpatialGetPlaceO2oContextApiResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/spatial/places/{place_id}/o2o-context',
+            path: {
+                place_id: data.placeId
+            },
+            query: {
+                radius: data.radius
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+>>>>>>> origin/main
 export class UsersService {
     /**
      * Read Users
@@ -456,7 +907,15 @@ export class UtilsService {
     
     /**
      * Health Check
+<<<<<<< HEAD
      * @returns boolean Successful Response
+=======
+     * Kiểm tra sức khỏe thực sự của hệ thống:
+     * - PostgreSQL: SELECT 1
+     * - Redis: PING
+     * Trả 200 nếu tất cả OK, 503 nếu bất kỳ service nào tạch.
+     * @returns unknown Successful Response
+>>>>>>> origin/main
      * @throws ApiError
      */
     public static healthCheck(): CancelablePromise<UtilsHealthCheckResponse> {
@@ -465,4 +924,115 @@ export class UtilsService {
             url: '/api/v1/utils/health-check/'
         });
     }
+<<<<<<< HEAD
+=======
+    
+    /**
+     * Get Telemetry
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getTelemetry(): CancelablePromise<UtilsGetTelemetryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/utils/telemetry/'
+        });
+    }
+}
+
+export class VisionService {
+    /**
+     * Upload And Scan
+     * Upload ảnh để AI scan sản phẩm (non-blocking, trả task_id ngay)
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns VisionUploadResponse Successful Response
+     * @throws ApiError
+     */
+    public static uploadAndScan(data: VisionUploadAndScanData): CancelablePromise<VisionUploadAndScanResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/vision/scan',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Check Task Status
+     * @param data The data for the request.
+     * @param data.taskId
+     * @returns TaskStatus Successful Response
+     * @throws ApiError
+     */
+    public static checkTaskStatus(data: VisionCheckTaskStatusData): CancelablePromise<VisionCheckTaskStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/vision/tasks/{task_id}',
+            path: {
+                task_id: data.taskId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * My Closet
+     * @returns ClosetItemResponse Successful Response
+     * @throws ApiError
+     */
+    public static myCloset(): CancelablePromise<VisionMyClosetResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/vision/closet'
+        });
+    }
+    
+    /**
+     * Add Virtual Closet
+     * Upload trang phục cá nhân vào Tủ Đồ Ảo (lưu Vector Embedding 512D qua pgvector)
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns ClosetItemResponse Successful Response
+     * @throws ApiError
+     */
+    public static addVirtualCloset(data: VisionAddVirtualClosetData): CancelablePromise<VisionAddVirtualClosetResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/vision/closet',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Mix Match
+     * AI Mix & Match: Tìm sản phẩm trong catalog có visual similarity cao nhất
+     * so với một item trong tủ đồ ảo. Dùng pgvector cosine_distance trên CLIP 512D embeddings.
+     * @param data The data for the request.
+     * @param data.itemId
+     * @returns MixMatchResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMixMatch(data: VisionGetMixMatchData): CancelablePromise<VisionGetMixMatchResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/vision/closet/{item_id}/matches',
+            path: {
+                item_id: data.itemId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+>>>>>>> origin/main
 }

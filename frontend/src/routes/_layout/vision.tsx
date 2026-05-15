@@ -13,6 +13,10 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+<<<<<<< HEAD
+=======
+  API_BASE,
+>>>>>>> origin/main
   type ClosetItemResponse,
   type MixMatchProduct,
   type TaskStatus,
@@ -38,6 +42,17 @@ function VisionCloset() {
   const [taskId, setTaskId] = useState("")
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
   const [isPolling, setIsPolling] = useState(false)
+<<<<<<< HEAD
+=======
+
+  // Cleanup Object URL for memory management
+  useEffect(() => {
+    return () => {
+      if (scanPreview) URL.revokeObjectURL(scanPreview)
+    }
+  }, [scanPreview])
+
+>>>>>>> origin/main
   // Closet
   const [closetItems, setClosetItems] = useState<ClosetItemResponse[]>([])
   const [isLoadingCloset, setIsLoadingCloset] = useState(false)
@@ -216,6 +231,10 @@ function VisionCloset() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
+<<<<<<< HEAD
+=======
+              data-testid="vision-upload-zone"
+>>>>>>> origin/main
               className={`flex-1 min-h-[280px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
                 isDragging
                   ? "border-emerald-400 bg-emerald-500/10 scale-[1.02]"
@@ -334,7 +353,11 @@ function VisionCloset() {
                     ) : (
                       <XCircle className="w-3 h-3" />
                     )}
+<<<<<<< HEAD
                     {taskStatus.status}
+=======
+                    {taskStatus.status as string}
+>>>>>>> origin/main
                   </span>
                   <span className="text-[10px] text-zinc-600 font-mono">
                     ID: {taskStatus.task_id}
@@ -349,7 +372,11 @@ function VisionCloset() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {taskStatus.detected_objects.similar_items.map(
+<<<<<<< HEAD
                         (prod: any) => (
+=======
+                        (prod: MixMatchProduct) => (
+>>>>>>> origin/main
                           <div
                             key={prod.product_id}
                             className="bg-white/5 border border-white/10 rounded-xl overflow-hidden flex flex-col transition-transform hover:scale-[1.02]"
@@ -362,6 +389,10 @@ function VisionCloset() {
                                 }
                                 alt={prod.name}
                                 className="w-full h-full object-cover"
+<<<<<<< HEAD
+=======
+                                referrerPolicy="no-referrer"
+>>>>>>> origin/main
                               />
                               <div className="absolute top-2 right-2 bg-purple-500/80 backdrop-blur text-white text-[10px] px-2 py-1 rounded font-bold">
                                 {prod.match_score}% Match
@@ -449,9 +480,16 @@ function VisionCloset() {
                 <div key={item.id} className="glass-card overflow-hidden group">
                   <div className="aspect-square bg-white/[0.02] relative overflow-hidden">
                     <img
+<<<<<<< HEAD
                       src={`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/${item.image_path}`}
                       alt={`Closet item ${item.id}`}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+=======
+                      src={`${API_BASE}/${item.image_path}`}
+                      alt={`Closet item ${item.id}`}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+>>>>>>> origin/main
                       onError={(e) => {
                         ;(e.target as HTMLImageElement).style.display = "none"
                       }}
@@ -522,8 +560,14 @@ function VisionCloset() {
               <div className="flex flex-col items-center">
                 <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.3)] mb-4">
                   <img
+<<<<<<< HEAD
                     src={`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/${selectedClosetItem.image_path}`}
                     className="w-full h-full object-cover"
+=======
+                    src={`${API_BASE}/${selectedClosetItem.image_path}`}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+>>>>>>> origin/main
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-2 w-full text-center text-[10px] font-mono text-purple-300">
@@ -561,6 +605,10 @@ function VisionCloset() {
                           }
                           alt={prod.name}
                           className="w-full h-full object-cover"
+<<<<<<< HEAD
+=======
+                          referrerPolicy="no-referrer"
+>>>>>>> origin/main
                         />
                       </div>
                       <div className="flex-1 flex flex-col justify-between min-w-0">

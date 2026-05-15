@@ -417,7 +417,11 @@ export default function Dashboard() {
                 <p className={`text-2xl font-bold font-mono ${c.text}`}>
                   <AnimNum
                     target={s.value}
+<<<<<<< HEAD
                     prefix={"prefix" in s ? (s as any).prefix : ""}
+=======
+                    prefix={"prefix" in s ? s.prefix : ""}
+>>>>>>> origin/main
                   />
                 </p>
                 <p className="text-xs text-zinc-400 mt-1">{s.label}</p>

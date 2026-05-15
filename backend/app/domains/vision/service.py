@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 from app.domains.vision.model import VisionTask, VirtualCloset
 import uuid
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
-
 
 def create_vision_task(db: Session, image_path: str):
     task_id = str(uuid.uuid4())

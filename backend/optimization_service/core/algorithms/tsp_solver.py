@@ -12,13 +12,21 @@ Lộ trình:
 
 import math
 import logging
+<<<<<<< HEAD
+=======
+import os
+>>>>>>> origin/main
 from typing import Any
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
+<<<<<<< HEAD
 OSRM_BASE_URL = "http://router.project-osrm.org"
+=======
+OSRM_BASE_URL = os.getenv("OSRM_BASE_URL", "https://router.project-osrm.org")
+>>>>>>> origin/main
 OSRM_TIMEOUT = 10.0  # Tăng lên 10s để tránh lỗi mạng ngắn hạn
 
 

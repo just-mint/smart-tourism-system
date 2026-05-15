@@ -27,17 +27,32 @@ import {
   Rectangle,
   TileLayer,
   useMap,
+<<<<<<< HEAD
+=======
+  useMapEvents,
+>>>>>>> origin/main
 } from "react-leaflet"
 import MarkerClusterGroup from "react-leaflet-cluster"
 import "leaflet/dist/leaflet.css"
 import { toast } from "sonner"
 import {
+<<<<<<< HEAD
+=======
+  type ClusterItem,
+>>>>>>> origin/main
   type ClusterResponse,
   InventoryAPI,
   type NearbySearchResponse,
   type O2OContextResponse,
+<<<<<<< HEAD
   type RoutePlanResponse,
   SpatialAPI,
+=======
+  type PlaceResponse,
+  type RoutePlanResponse,
+  SpatialAPI,
+  type StoreWithProductsResponse,
+>>>>>>> origin/main
 } from "@/client/aegis-api"
 
 export const Route = createFileRoute("/_layout/spatial")({
@@ -53,7 +68,29 @@ const createDivIcon = (html: string, size: number) =>
     iconAnchor: [size / 2, size / 2],
   })
 
+<<<<<<< HEAD
 const createCustomClusterIcon = (cluster: any) => {
+=======
+type ClusterLike = {
+  getChildCount: () => number
+}
+
+type RequestError = Error & {
+  code?: string
+}
+
+const isCanceledRequest = (error: unknown) => {
+  if (!(error instanceof Error)) return false
+  const requestError = error as RequestError
+  return (
+    error.name === "AbortError" ||
+    error.name === "CanceledError" ||
+    requestError.code === "ERR_CANCELED"
+  )
+}
+
+const createCustomClusterIcon = (cluster: ClusterLike) => {
+>>>>>>> origin/main
   const count = cluster.getChildCount()
   return createDivIcon(
     `
@@ -123,11 +160,14 @@ const getNumberedIcon = (num: number) =>
   )
 
 const CLUSTER_COLORS = ["#10b981", "#06b6d4", "#8b5cf6", "#f43f5e", "#f59e0b"]
+<<<<<<< HEAD
 const _getClusterIcon = (color: string) =>
   createDivIcon(
     `<div class="w-4 h-4 rounded-full border-2 border-black shadow-[0_0_15px_${color}]" style="background-color: ${color};"></div>`,
     16,
   )
+=======
+>>>>>>> origin/main
 
 function StoreProductPanel({
   o2oContext,
@@ -282,7 +322,15 @@ function RecenterMap({ lat, lon }: { lat: number; lon: number }) {
 }
 
 // MapFlyController: Bridges map instance to parent via ref
+<<<<<<< HEAD
 function MapFlyController({ mapRef }: { mapRef: React.MutableRefObject<any> }) {
+=======
+function MapFlyController({
+  mapRef,
+}: {
+  mapRef: React.MutableRefObject<L.Map | null>
+}) {
+>>>>>>> origin/main
   const map = useMap()
   useEffect(() => {
     mapRef.current = map
@@ -296,13 +344,22 @@ function PanelOmnisearch({
   userLat,
   userLon,
 }: {
+<<<<<<< HEAD
   onSelect: (place: any) => void
   mapRef: React.MutableRefObject<any>
+=======
+  onSelect: (place: PlaceResponse) => void
+  mapRef: React.MutableRefObject<L.Map | null>
+>>>>>>> origin/main
   userLat: number
   userLon: number
 }) {
   const [query, setQuery] = useState("")
+<<<<<<< HEAD
   const [results, setResults] = useState<any[]>([])
+=======
+  const [results, setResults] = useState<PlaceResponse[]>([])
+>>>>>>> origin/main
   const [isSearching, setIsSearching] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
 
@@ -348,7 +405,11 @@ function PanelOmnisearch({
       </div>
       {showDropdown && results.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-[250px] overflow-y-auto z-50">
+<<<<<<< HEAD
           {results.map((p: any, idx: number) => (
+=======
+          {results.map((p: PlaceResponse, idx: number) => (
+>>>>>>> origin/main
             <div
               key={p.id}
               onClick={() => {
@@ -398,12 +459,25 @@ function PanelOmnisearch({
   )
 }
 
+<<<<<<< HEAD
 function AutoFitNearby({ nearbyData }: { nearbyData: any }) {
   const map = useMap()
   useEffect(() => {
     if (nearbyData?.places && nearbyData.places.length > 0) {
       const lats = nearbyData.places.map((p: any) => p.lat)
       const lons = nearbyData.places.map((p: any) => p.lon)
+=======
+function AutoFitNearby({
+  nearbyData,
+}: {
+  nearbyData: NearbySearchResponse | null
+}) {
+  const map = useMap()
+  useEffect(() => {
+    if (nearbyData?.places && nearbyData.places.length > 0) {
+      const lats = nearbyData.places.map((p: PlaceResponse) => p.lat)
+      const lons = nearbyData.places.map((p: PlaceResponse) => p.lon)
+>>>>>>> origin/main
       const minLat = Math.min(...lats),
         maxLat = Math.max(...lats)
       const minLon = Math.min(...lons),
@@ -430,7 +504,11 @@ function AutoFitRoute({
   const map = useMap()
   useEffect(() => {
     if (routePolyline && routePolyline.length > 0) {
+<<<<<<< HEAD
       map.fitBounds(routePolyline as any, {
+=======
+      map.fitBounds(L.latLngBounds(routePolyline), {
+>>>>>>> origin/main
         padding: [50, 50],
         animate: true,
         duration: 1.5,
@@ -440,6 +518,35 @@ function AutoFitRoute({
   return null
 }
 
+<<<<<<< HEAD
+=======
+function DebouncedMapMoveHandler({
+  onSettledCenter,
+}: {
+  onSettledCenter: (lat: number, lon: number) => void
+}) {
+  const debounceRef = React.useRef<number | null>(null)
+
+  useMapEvents({
+    dragend: (event) => {
+      const center = event.target.getCenter()
+      if (debounceRef.current) window.clearTimeout(debounceRef.current)
+      debounceRef.current = window.setTimeout(() => {
+        onSettledCenter(center.lat, center.lng)
+      }, 500)
+    },
+  })
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current)
+    }
+  }, [])
+
+  return null
+}
+
+>>>>>>> origin/main
 function simplifyDouglasPeucker(
   points: [number, number][],
   epsilon: number,
@@ -470,7 +577,12 @@ function simplifyDouglasPeucker(
     const len_sq = C * C + D * D
     let param = -1
     if (len_sq !== 0) param = dot / len_sq
+<<<<<<< HEAD
     let xx, yy
+=======
+    let xx: number
+    let yy: number
+>>>>>>> origin/main
     if (param < 0) {
       xx = x1
       yy = y1
@@ -503,7 +615,11 @@ function simplifyDouglasPeucker(
 }
 
 function SpatialOperations() {
+<<<<<<< HEAD
   const mapRef = React.useRef<any>(null)
+=======
+  const mapRef = React.useRef<L.Map | null>(null)
+>>>>>>> origin/main
   const [lat, setLat] = useState(21.0285)
   const [lon, setLon] = useState(105.8542)
   const [radius, setRadius] = useState(2000)
@@ -517,9 +633,19 @@ function SpatialOperations() {
       const parsedLat = parseFloat(inputLat)
       const parsedLon = parseFloat(inputLon)
       const parsedRad = parseInt(inputRadius, 10)
+<<<<<<< HEAD
       if (!Number.isNaN(parsedLat)) setLat(parsedLat)
       if (!Number.isNaN(parsedLon)) setLon(parsedLon)
       if (!Number.isNaN(parsedRad)) setRadius(parsedRad)
+=======
+
+      if (!Number.isNaN(parsedLat) && parsedLat >= -90 && parsedLat <= 90)
+        setLat(parsedLat)
+      if (!Number.isNaN(parsedLon) && parsedLon >= -180 && parsedLon <= 180)
+        setLon(parsedLon)
+      if (!Number.isNaN(parsedRad) && parsedRad > 0 && parsedRad <= 20000)
+        setRadius(parsedRad)
+>>>>>>> origin/main
     }, 300)
     return () => clearTimeout(handler)
   }, [inputLat, inputLon, inputRadius])
@@ -534,7 +660,11 @@ function SpatialOperations() {
   const [isLoadingRoute, setIsLoadingRoute] = useState(false)
   const [isLoadingClusters, setIsLoadingClusters] = useState(false)
 
+<<<<<<< HEAD
   const [selectedNodes, setSelectedNodes] = useState<any[]>([])
+=======
+  const [selectedNodes, setSelectedNodes] = useState<PlaceResponse[]>([])
+>>>>>>> origin/main
   const [mapCenter, setMapCenter] = useState<[number, number]>([
     21.0285, 105.8542,
   ])
@@ -544,7 +674,11 @@ function SpatialOperations() {
     number | string | null
   >(null)
 
+<<<<<<< HEAD
   const handlePlaceClick = async (p: any) => {
+=======
+  const handlePlaceClick = async (p: PlaceResponse) => {
+>>>>>>> origin/main
     if (routeData) {
       toggleNodeSelection(p)
       return
@@ -552,7 +686,11 @@ function SpatialOperations() {
 
     const toastId = toast.loading("Đang tìm cửa hàng xung quanh...")
     try {
+<<<<<<< HEAD
       const queryId = p.place_id || p.id
+=======
+      const queryId = p.place_id || String(p.id)
+>>>>>>> origin/main
       const res = await SpatialAPI.getPlaceO2OContext(queryId, radius)
       setO2OContext(res.data)
       toast.success("Đã mở Khu Mua Sắm O2O!", { id: toastId })
@@ -572,14 +710,31 @@ function SpatialOperations() {
     }
   }
 
+<<<<<<< HEAD
   useEffect(() => {
     let isMounted = true
     const fetchNearby = async () => {
+=======
+  const abortControllerRef = React.useRef<AbortController | null>(null)
+
+  const handleFindNearby = useCallback(
+    async (nextLat = lat, nextLon = lon, nextRadius = radius) => {
+      // Cancel previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+
+      // Create new controller
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
+>>>>>>> origin/main
       setIsLoadingNearby(true)
       setRouteData(null)
       setClusterData(null)
       setSelectedNodes([])
       try {
+<<<<<<< HEAD
         const res = await SpatialAPI.nearbyPlaces(lat, lon, radius)
         if (isMounted) {
           setNearbyData(res.data)
@@ -599,12 +754,42 @@ function SpatialOperations() {
 
   // Keep handleFindNearby as a dummy or manual trigger if needed
   const handleFindNearby = () => {}
+=======
+        const res = await SpatialAPI.nearbyPlaces(
+          nextLat,
+          nextLon,
+          nextRadius,
+          controller.signal,
+        )
+        setNearbyData(res.data)
+        setMapCenter([nextLat, nextLon])
+        toast.success(`Tìm thấy ${res.data.places.length} địa điểm!`)
+      } catch (e: unknown) {
+        if (isCanceledRequest(e)) return // Silent on abort
+        setNearbyData(null)
+        toast.error("Lỗi khi tải dữ liệu địa điểm.")
+      } finally {
+        setIsLoadingNearby(false)
+      }
+    },
+    [lat, lon, radius],
+  )
+
+  useEffect(() => {
+    handleFindNearby()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleFindNearby]) // Run once on mount
+>>>>>>> origin/main
 
   const handleCluster = async () => {
     if (!nearbyData || nearbyData.places.length === 0) return
     setIsLoadingClusters(true)
     try {
+<<<<<<< HEAD
       const ids = nearbyData.places.map((p: any) => Number(p.id))
+=======
+      const ids = nearbyData.places.map((p: PlaceResponse) => Number(p.id))
+>>>>>>> origin/main
       const res = await SpatialAPI.clusterStores(ids)
       setClusterData(res.data)
       toast.success("Phân tích K-Means hoàn tất!")
@@ -615,7 +800,11 @@ function SpatialOperations() {
     }
   }
 
+<<<<<<< HEAD
   const toggleNodeSelection = useCallback((place: any) => {
+=======
+  const toggleNodeSelection = useCallback((place: PlaceResponse) => {
+>>>>>>> origin/main
     setSelectedNodes((prev) => {
       const isSelected = prev.some((p) => p.id === place.id)
       if (isSelected) {
@@ -663,10 +852,28 @@ function SpatialOperations() {
     }
   }
 
+<<<<<<< HEAD
   const routePolyline: [number, number][] = useMemo(() => {
     if (!routeData?.polyline) return []
     const poly = routeData.polyline as any
     if (poly?.coordinates) {
+=======
+  const handleDebouncedMapMove = useCallback(
+    (nextLat: number, nextLon: number) => {
+      setLat(nextLat)
+      setLon(nextLon)
+      setInputLat(nextLat.toFixed(6))
+      setInputLon(nextLon.toFixed(6))
+      handleFindNearby(nextLat, nextLon, radius)
+    },
+    [handleFindNearby, radius],
+  )
+
+  const routePolyline: [number, number][] = useMemo(() => {
+    if (!routeData?.polyline) return []
+    const poly = routeData.polyline
+    if (typeof poly === "object" && poly?.coordinates) {
+>>>>>>> origin/main
       const rawCoords = poly.coordinates.map(
         (coord: [number, number]) => [coord[1], coord[0]] as [number, number],
       )
@@ -677,10 +884,17 @@ function SpatialOperations() {
 
   const clusterRectangles = useMemo(() => {
     if (!clusterData) return null
+<<<<<<< HEAD
     return clusterData.clusters.map((cluster: any, i: number) => {
       const color = CLUSTER_COLORS[i % CLUSTER_COLORS.length]
       const lats = cluster.places.map((p: any) => p.lat)
       const lons = cluster.places.map((p: any) => p.lon)
+=======
+    return clusterData.clusters.map((cluster: ClusterItem, i: number) => {
+      const color = CLUSTER_COLORS[i % CLUSTER_COLORS.length]
+      const lats = cluster.places.map((p: PlaceResponse) => p.lat)
+      const lons = cluster.places.map((p: PlaceResponse) => p.lon)
+>>>>>>> origin/main
       if (lats.length === 0) return null
       const minLat = Math.min(...lats),
         maxLat = Math.max(...lats)
@@ -709,7 +923,11 @@ function SpatialOperations() {
 
   const o2oMarkers = useMemo(() => {
     if (!o2oContext) return null
+<<<<<<< HEAD
     return o2oContext.nearby_stores.map((store: any) => {
+=======
+    return o2oContext.nearby_stores.map((store: StoreWithProductsResponse) => {
+>>>>>>> origin/main
       return (
         <Marker
           key={`o2o-${store.store_id}`}
@@ -732,8 +950,13 @@ function SpatialOperations() {
 
   const nearbyMarkers = useMemo(() => {
     if (!nearbyData) return null
+<<<<<<< HEAD
     return nearbyData.places.map((p: any) => {
       const isSelected = selectedNodes.some((n: any) => n.id === p.id)
+=======
+    return nearbyData.places.map((p: PlaceResponse) => {
+      const isSelected = selectedNodes.some((n: PlaceResponse) => n.id === p.id)
+>>>>>>> origin/main
       let orderIndex = -1
 
       if (routeData?.optimized_order) {
@@ -825,6 +1048,10 @@ function SpatialOperations() {
           zoomControl={false}
         >
           <MapFlyController mapRef={mapRef} />
+<<<<<<< HEAD
+=======
+          <DebouncedMapMoveHandler onSettledCenter={handleDebouncedMapMove} />
+>>>>>>> origin/main
           <TileLayer
             attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -914,7 +1141,11 @@ function SpatialOperations() {
             mapRef={mapRef}
             userLat={lat}
             userLon={lon}
+<<<<<<< HEAD
             onSelect={(p: any) => {
+=======
+            onSelect={(p: PlaceResponse) => {
+>>>>>>> origin/main
               setHighlightedPlaceId(p.id)
               setTimeout(() => setHighlightedPlaceId(null), 3000)
               handlePlaceClick(p)
@@ -968,7 +1199,12 @@ function SpatialOperations() {
             </div>
 
             <button
+<<<<<<< HEAD
               onClick={handleFindNearby}
+=======
+              onClick={() => handleFindNearby()}
+              data-testid="spatial-scan-button"
+>>>>>>> origin/main
               disabled={isLoadingNearby}
               className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50"
             >
@@ -1062,6 +1298,7 @@ function SpatialOperations() {
                     </div>
                   </div>
 
+<<<<<<< HEAD
                   {routeData.weather_context &&
                     (routeData.weather_context as any).condition !==
                       "Unknown" && (
@@ -1070,6 +1307,14 @@ function SpatialOperations() {
                         Thời tiết:{" "}
                         {(routeData.weather_context as any).condition} (
                         {(routeData.weather_context as any).temperature}°C)
+=======
+                  {routeData.weather_context?.condition &&
+                    routeData.weather_context.condition !== "Unknown" && (
+                      <div className="flex items-center justify-center gap-2 text-xs text-amber-400 font-mono bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                        <CloudLightning className="w-3.5 h-3.5" />
+                        Thời tiết: {routeData.weather_context.condition} (
+                        {routeData.weather_context.temperature}°C)
+>>>>>>> origin/main
                       </div>
                     )}
                 </div>

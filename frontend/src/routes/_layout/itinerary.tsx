@@ -160,6 +160,23 @@ function ItineraryPage() {
   }, [isTracking, result])
 
   const handleGenerate = async () => {
+<<<<<<< HEAD
+=======
+    // Validation
+    if (lat < -90 || lat > 90) {
+      toast.error("Vĩ độ (Latitude) phải nằm trong khoảng [-90, 90]")
+      return
+    }
+    if (lon < -180 || lon > 180) {
+      toast.error("Kinh độ (Longitude) phải nằm trong khoảng [-180, 180]")
+      return
+    }
+    if (radius <= 0 || radius > 20000) {
+      toast.error("Bán kính phải từ 1m đến 20,000m")
+      return
+    }
+
+>>>>>>> origin/main
     setIsLoading(true)
     setResult(null)
     try {
@@ -259,9 +276,16 @@ function ItineraryPage() {
 
   const mapPoints: [number, number][] = useMemo(() => {
     if (!result) return [[lat, lon]]
+<<<<<<< HEAD
     const pts: [number, number][] = [[lat, lon]]
     result.optimized_route.forEach((s) => pts.push([s.lat, s.lon]))
     return pts
+=======
+    return [
+      [lat, lon],
+      ...result.optimized_route.map((s) => [s.lat, s.lon] as [number, number]),
+    ]
+>>>>>>> origin/main
   }, [result, lat, lon])
 
   // GeoJSON style cho đường thực tế từ OSRM
@@ -436,6 +460,10 @@ function ItineraryPage() {
           {/* Generate Button */}
           <button
             onClick={handleGenerate}
+<<<<<<< HEAD
+=======
+            data-testid="itinerary-generate-button"
+>>>>>>> origin/main
             disabled={isLoading}
             className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-mono uppercase tracking-wider text-xs py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:shadow-[0_0_40px_rgba(139,92,246,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -655,6 +683,10 @@ function ItineraryPage() {
                                     }
                                     alt={p.name}
                                     className="w-full h-full object-cover"
+<<<<<<< HEAD
+=======
+                                    referrerPolicy="no-referrer"
+>>>>>>> origin/main
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -798,7 +830,20 @@ function ItineraryPage() {
           {result?.route_geometry?.geojson && (
             <GeoJSON
               key={JSON.stringify(result.route_geometry.geojson)}
+<<<<<<< HEAD
               data={result.route_geometry.geojson as any}
+=======
+              data={{
+                type: "FeatureCollection",
+                features: [
+                  {
+                    type: "Feature",
+                    properties: {},
+                    geometry: result.route_geometry.geojson as any,
+                  },
+                ],
+              }}
+>>>>>>> origin/main
               style={geoJsonStyle}
             />
           )}
@@ -1009,6 +1054,10 @@ function ItineraryPage() {
                           prod.image_url || "https://via.placeholder.com/200"
                         }
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+<<<<<<< HEAD
+=======
+                        referrerPolicy="no-referrer"
+>>>>>>> origin/main
                       />
                     </div>
                     <div className="p-3 space-y-1.5">

@@ -4,12 +4,20 @@
  * Uses axios with auth token interceptor.
  */
 import axios from "axios"
+<<<<<<< HEAD
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "http://localhost:8000" : "");
+=======
+import { handleUnauthorizedSession } from "@/lib/auth-session"
+
+export const API_BASE =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "" : "http://localhost:8000")
+>>>>>>> origin/main
 
 const aegisClient = axios.create({
   baseURL: API_BASE ? `${API_BASE}/api/v1` : "/api/v1",
   headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
 })
 
 // Attach auth token to every request
@@ -20,6 +28,20 @@ aegisClient.interceptors.request.use((config) => {
   }
   return config
 })
+=======
+  withCredentials: true,
+})
+
+aegisClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+      handleUnauthorizedSession()
+    }
+    return Promise.reject(error)
+  },
+)
+>>>>>>> origin/main
 
 // ===================== TYPES =====================
 
@@ -48,6 +70,10 @@ export interface PlaceResponse {
   rating?: number
   review_count?: number
   image_url?: string
+<<<<<<< HEAD
+=======
+  match_score?: number // Added
+>>>>>>> origin/main
 }
 export interface PlaceDetailWithAI extends PlaceResponse {
   ai_story?: string
@@ -93,12 +119,30 @@ export interface ClusterItem {
 export interface ClusterResponse {
   clusters: ClusterItem[]
 }
+<<<<<<< HEAD
 export interface RoutePlanResponse {
   total_distance_meters: number
   waypoints: Array<{ lat: number; lon: number; name?: string; order?: number }>
   polyline?: string
   optimized_order: number[]
   weather_context?: Record<string, unknown>
+=======
+export interface WeatherContext {
+  condition?: string
+  temperature?: number
+}
+
+export interface RoutePolyline {
+  coordinates?: [number, number][]
+}
+
+export interface RoutePlanResponse {
+  total_distance_meters: number
+  waypoints: Array<{ lat: number; lon: number; name?: string; order?: number }>
+  polyline?: RoutePolyline | string
+  optimized_order: number[]
+  weather_context?: WeatherContext
+>>>>>>> origin/main
 }
 
 export interface ProductCompactResponse {
@@ -114,8 +158,13 @@ export interface StoreWithProductsResponse {
   name: string
   category?: string
   address?: string
+<<<<<<< HEAD
   lat?: number
   lon?: number
+=======
+  lat: number
+  lon: number
+>>>>>>> origin/main
   phone?: string
   rating?: number
   products: ProductCompactResponse[]
@@ -152,11 +201,23 @@ export interface VisionUploadResponse {
   task_id: string
   message: string
 }
+<<<<<<< HEAD
+=======
+export interface DetectedObjects {
+  similar_items?: MixMatchProduct[]
+  [key: string]: unknown
+}
+
+>>>>>>> origin/main
 export interface TaskStatus {
   task_id: string
   status: string
   image_path: string
+<<<<<<< HEAD
   detected_objects?: Record<string, unknown>
+=======
+  detected_objects?: DetectedObjects
+>>>>>>> origin/main
   matched_product_ids?: number[]
 }
 export interface ClosetItemResponse {
@@ -192,9 +253,16 @@ export const SpatialAPI = {
   searchOmni: (q: string, lat?: number, lon?: number) =>
     aegisClient.get<PlaceResponse[]>("/spatial/search", { params: { q, lat, lon } }),
 
+<<<<<<< HEAD
   nearbyPlaces: (lat: number, lon: number, radius = 2000) =>
     aegisClient.get<NearbySearchResponse>("/spatial/nearby-places", {
       params: { lat, lon, radius },
+=======
+  nearbyPlaces: (lat: number, lon: number, radius = 2000, signal?: AbortSignal) =>
+    aegisClient.get<NearbySearchResponse>("/spatial/nearby-places", {
+      params: { lat, lon, radius },
+      signal,
+>>>>>>> origin/main
     }),
 
   clusterStores: (place_ids: number[]) =>
