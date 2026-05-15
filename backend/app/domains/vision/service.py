@@ -46,7 +46,7 @@ def get_user_closet(db: Session, user_id: str):
     return db.query(VirtualCloset).filter(VirtualCloset.user_id == user_id).all()
 
 
-def find_similar_products_for_closet(db: Session, closet_item_id: int, top_n: int = 5):
+def find_similar_products_for_closet(db: Session, closet_item_id: int, user_id: str, top_n: int = 5):
     """
     Mix & Match API thật: Lấy vector 512D của closet item → tìm products 
     có cosine similarity cao nhất bằng pgvector.
@@ -58,6 +58,9 @@ def find_similar_products_for_closet(db: Session, closet_item_id: int, top_n: in
     closet_item = db.query(VirtualCloset).filter(VirtualCloset.id == closet_item_id).first()
     if not closet_item:
         return None, "Closet item not found"
+
+    if str(closet_item.user_id) != str(user_id):
+        return None, "Forbidden: Không có quyền truy cập tủ đồ này"
 
     if closet_item.vector_embedding is None:
         return None, "Vector chưa được xử lý. Vui lòng chờ AI Worker hoàn tất."
@@ -91,7 +94,7 @@ def find_similar_products_for_closet(db: Session, closet_item_id: int, top_n: in
             "product_id": product.product_id,
             "name": product.name,
             "description": product.description,
-            "price": product.price,
+            "price": inv.price_override if inv and inv.price_override is not None else product.price,
             "original_price": product.original_price,
             "image_url": product.image_url,
             "match_score": similarity,
