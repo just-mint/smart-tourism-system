@@ -42,7 +42,7 @@ def get_products_by_store(db: Session, store_id: int):
         prod_dict = {
             "product_id": prod.product_id,
             "name": prod.name,
-            "price": prod.price,
+            "price": inv.price_override if inv.price_override is not None else prod.price,
             "original_price": prod.original_price,
             "description": prod.description,
             "image_url": prod.image_url,
@@ -77,7 +77,7 @@ def search_stores_and_products(db: Session, query: str):
         products.append({
             "product_id": prod.product_id,
             "name": prod.name,
-            "price": prod.price,
+            "price": inv.price_override if inv.price_override is not None else prod.price,
             "original_price": prod.original_price,
             "description": prod.description,
             "image_url": prod.image_url,
@@ -122,7 +122,7 @@ def compare_product_prices(db: Session, product_id: int, current_store_id: int, 
             "store_id": store.store_id,
             "store_name": store.name,
             "address": store.address,
-            "price": product.price,
+            "price": inv.price_override if inv.price_override is not None else product.price,
             "stock": inv.stock - inv.locked_stock,
             "is_current": store.store_id == current_store_id,
             "category": store.category,
@@ -266,8 +266,7 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     if not product:
         raise HTTPException(status_code=404, detail="Sản phẩm không tồn tại")
 
-    total_amount = int(product.price * data.quantity)
-    order_code = _generate_order_code()
+    # total_amount sẽ được tính lại dựa trên giá (có thể bị override) sau khi xác định store_id từ lock
 
     # Yêu cầu phải có lock_id kèm theo
     if not getattr(data, "lock_id", None):
@@ -296,6 +295,19 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     if inv:
         inv.stock = max(0, inv.stock - data.quantity)
         inv.locked_stock = max(0, inv.locked_stock - data.quantity)
+        unit_price = inv.price_override if inv.price_override is not None else product.price
+    else:
+        unit_price = product.price
+
+    total_amount = int(unit_price * data.quantity)
+
+    # Retry loop to generate unique order_code
+    for _ in range(5):
+        order_code = _generate_order_code()
+        if not db.query(Order).filter(Order.order_code == order_code).first():
+            break
+    else:
+        raise HTTPException(status_code=500, detail="Hệ thống bận, không thể tạo mã đơn hàng. Vui lòng thử lại.")
 
     # Đánh dấu lock là completed
     lock.status = "completed"
