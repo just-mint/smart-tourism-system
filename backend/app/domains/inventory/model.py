@@ -46,6 +46,7 @@ class Inventory(Base):
     stock: Mapped[int] = mapped_column(Integer, default=0)
     version: Mapped[int] = mapped_column(Integer, default=1)
     locked_stock: Mapped[int] = mapped_column(Integer, default=0)
+    price_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 class InventoryLock(Base):
     __tablename__ = "inventory_locks"
