@@ -4,6 +4,7 @@ from app.domains.culture import schema
 import httpx
 from datetime import datetime
 import os
+from fastapi import HTTPException
 
 def search_places_by_name(db: Session, keyword: str):
     # Dùng ilike cho tìm kiếm full-text
@@ -42,14 +43,21 @@ async def generate_place_story(db: Session, place_id: int):
             
     return {"id": place.id, "place_id": place.place_id, "name": place.name, "category": place.category, "address": place.address, "lat": place.lat, "lon": place.lon, "ai_story": bot_story}
 
-def create_place_review(db: Session, place_id: int, review_data: schema.ReviewCreate):
+def create_place_review(db: Session, place_id: int, review_data: schema.ReviewCreate, user=None):
     place = db.query(Place).filter(Place.id == place_id).first()
     if not place:
         return None
+        
+    bad_words = ["tệ", "xấu", "lừa đảo", "chửi", "ngu"]
+    content_lower = review_data.text.lower()
+    if any(word in content_lower for word in bad_words):
+        raise HTTPException(status_code=400, detail="Nội dung đánh giá chứa từ ngữ không phù hợp.")
+
+    author_name = user.full_name if user and user.full_name else review_data.author_name
     time_str = datetime.now().isoformat()
     review = Review(
         place_id=str(place.place_id), 
-        author_name=review_data.author_name,
+        author_name=author_name,
         rating=review_data.rating,
         text=review_data.text,
         time_posted=time_str
