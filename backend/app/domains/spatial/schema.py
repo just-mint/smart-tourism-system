@@ -60,6 +60,7 @@ class RoutePlanResponse(BaseModel):
     polyline: Optional[Union[str, dict]] = None
     optimized_order: List[int]
     weather_context: Optional[dict] = None
+    routing_source: Optional[str] = None
 
 class ProductCompactResponse(BaseModel):
     product_id: int

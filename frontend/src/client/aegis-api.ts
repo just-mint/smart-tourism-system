@@ -135,6 +135,7 @@ export interface RoutePlanResponse {
   polyline?: RoutePolyline | string
   optimized_order: number[]
   weather_context?: WeatherContext
+  routing_source?: string
 }
 
 export interface ProductCompactResponse {

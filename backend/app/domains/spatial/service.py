@@ -233,50 +233,49 @@ async def plan_route_osrm(db: Session, current_lat: float, current_lon: float, p
     for p in place_dicts: coords.append(f"{p['lon']},{p['lat']}")
     
     coords_str = ";".join(coords)
-    # 1. Use OSRM Trip API to calculate actual road distance TSP
-    osrm_base = os.getenv("OSRM_BASE_URL", "https://router.project-osrm.org")
-    url = f"{osrm_base}/trip/v1/driving/{coords_str}?source=first&roundtrip=false&overview=full&geometries=geojson"
+    osrm_base = os.getenv("OSRM_BASE_URL", "https://router.project-osrm.org").rstrip("/")
+    route_sources = [osrm_base]
+    if osrm_base != "https://router.project-osrm.org":
+        route_sources.append("https://router.project-osrm.org")
 
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url)
-            if response.status_code != 200:
-                raise ValueError(f"OSRM Server Error: {response.status_code}")
-            data = response.json()
+    last_error = None
+    for route_source in route_sources:
+        url = f"{route_source}/trip/v1/driving/{coords_str}?source=first&roundtrip=false&overview=full&geometries=geojson"
+        try:
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                response = await client.get(url)
+                if response.status_code != 200:
+                    raise ValueError(f"OSRM Server Error: {response.status_code}")
+                data = response.json()
 
-        if data.get("code") != "Ok":
-            raise ValueError(f"OSRM No Route: {data.get('code')}")
+            if data.get("code") != "Ok":
+                raise ValueError(f"OSRM No Route: {data.get('code')}")
 
-        trip = data['trips'][0]
-        
-        # 2. Extract TSP order from waypoints array (skipping source at index 0)
-        ordered_places = []
-        for i, wp in enumerate(data['waypoints'][1:]):
-            ordered_places.append((wp['waypoint_index'], place_dicts[i]))
-            
-        ordered_places.sort(key=lambda x: x[0])
-        optimized_order_ids = [p['id'] for _, p in ordered_places]
-        
-        osrm_waypoints = [{"lat": p['lat'], "lon": p['lon'], "name": p['name']} for _, p in ordered_places]
+            trip = data['trips'][0]
 
-        return {
-            "total_distance_meters": trip['distance'],
-            "waypoints": osrm_waypoints,
-            "polyline": trip['geometry'],
-            "optimized_order": optimized_order_ids,
-            "weather_context": weather
-        }
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"[Route] OSRM Trip fallback: {e}")
-        # Fallback
-        return {
-            "total_distance_meters": 0.0,
-            "waypoints": [{"lat": p["lat"], "lon": p["lon"], "name": p["name"]} for p in place_dicts],
-            "polyline": None,
-            "optimized_order": [p['id'] for p in place_dicts],
-            "weather_context": weather
-        }
+            ordered_places = []
+            for i, wp in enumerate(data['waypoints'][1:]):
+                ordered_places.append((wp['waypoint_index'], place_dicts[i]))
+
+            ordered_places.sort(key=lambda x: x[0])
+            optimized_order_ids = [p['id'] for _, p in ordered_places]
+
+            osrm_waypoints = [{"lat": p['lat'], "lon": p['lon'], "name": p['name']} for _, p in ordered_places]
+
+            return {
+                "total_distance_meters": trip['distance'],
+                "waypoints": osrm_waypoints,
+                "polyline": trip['geometry'],
+                "optimized_order": optimized_order_ids,
+                "weather_context": weather,
+                "routing_source": route_source,
+            }
+        except Exception as e:
+            last_error = e
+            import logging
+            logging.getLogger(__name__).warning(f"[Route] OSRM Trip failed at {route_source}: {e}")
+
+    raise ValueError(f"Không thể lấy tuyến đường theo bản đồ từ OSRM: {last_error}")
 
 def get_place_o2o_context(db: Session, place_id: str, radius: int = 2000):
     from sqlalchemy import func

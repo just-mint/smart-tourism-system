@@ -554,6 +554,38 @@ function simplifyDouglasPeucker(
   return [points[0], points[end]]
 }
 
+function calculateRouteDistanceMeters(points: [number, number][]) {
+  const radiusMeters = 6371000
+  return points.slice(1).reduce((total, point, index) => {
+    const prev = points[index]
+    const lat1 = (prev[0] * Math.PI) / 180
+    const lat2 = (point[0] * Math.PI) / 180
+    const deltaLat = ((point[0] - prev[0]) * Math.PI) / 180
+    const deltaLon = ((point[1] - prev[1]) * Math.PI) / 180
+    const a =
+      Math.sin(deltaLat / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2
+    return total + radiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  }, 0)
+}
+
+function extractGeoJsonRoute(polyline: RoutePlanResponse["polyline"]) {
+  if (!polyline || typeof polyline !== "object") return []
+
+  const coordinates = (polyline as { coordinates?: unknown }).coordinates
+  if (!Array.isArray(coordinates)) return []
+
+  return coordinates
+    .filter(
+      (coord): coord is [number, number] =>
+        Array.isArray(coord) &&
+        coord.length >= 2 &&
+        Number.isFinite(coord[0]) &&
+        Number.isFinite(coord[1]),
+    )
+    .map((coord) => [coord[1], coord[0]] as [number, number])
+}
+
 function SpatialOperations() {
   const mapRef = React.useRef<L.Map | null>(null)
   const [lat, setLat] = useState(21.0285)
@@ -746,16 +778,20 @@ function SpatialOperations() {
   )
 
   const routePolyline: [number, number][] = useMemo(() => {
-    if (!routeData?.polyline) return []
-    const poly = routeData.polyline
-    if (typeof poly === "object" && poly?.coordinates) {
-      const rawCoords = poly.coordinates.map(
-        (coord: [number, number]) => [coord[1], coord[0]] as [number, number],
-      )
+    if (!routeData) return []
+
+    const rawCoords = extractGeoJsonRoute(routeData.polyline)
+    if (rawCoords.length > 1) {
       return simplifyDouglasPeucker(rawCoords, 0.00005) // Epsilon ~5-10m
     }
+
     return []
   }, [routeData])
+
+  const routeDistanceMeters =
+    routeData && routeData.total_distance_meters > 0
+      ? routeData.total_distance_meters
+      : calculateRouteDistanceMeters(routePolyline)
 
   const clusterRectangles = useMemo(() => {
     if (!clusterData) return null
@@ -1130,7 +1166,7 @@ function SpatialOperations() {
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div className="bg-black/40 rounded-xl p-3 text-center border border-white/5">
                       <p className="text-xl font-bold text-cyan-400 font-mono">
-                        {(routeData.total_distance_meters / 1000).toFixed(1)}
+                        {(routeDistanceMeters / 1000).toFixed(1)}
                       </p>
                       <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mt-1">
                         KM Lộ Trình
