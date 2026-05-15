@@ -555,3 +555,44 @@
     text-shadow: none !important;
   }
 }
+
+/* Route-level performance budget for map, vision, culture and checkout screens. */
+.route-performance-budget {
+  --route-motion-duration: 160ms;
+}
+
+.route-performance-budget * {
+  transition-duration: var(--route-motion-duration);
+}
+
+.route-performance-budget .animate-pulse,
+.route-performance-budget .animate-bounce,
+.route-performance-budget .animate-ping {
+  animation: none !important;
+}
+
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .route-performance-budget,
+  .route-performance-budget * {
+    scroll-behavior: auto !important;
+  }
+
+  .route-performance-budget .backdrop-blur-sm,
+  .route-performance-budget .backdrop-blur,
+  .route-performance-budget .backdrop-blur-md,
+  .route-performance-budget .backdrop-blur-lg,
+  .route-performance-budget .backdrop-blur-xl,
+  .route-performance-budget .backdrop-blur-2xl,
+  .route-performance-budget .backdrop-blur-3xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .route-performance-budget .shadow-2xl,
+  .route-performance-budget .shadow-xl,
+  .route-performance-budget .shadow-\[0_0_30px_rgba\(139\,92\,246\,0\.4\)\],
+  .route-performance-budget .shadow-\[0_0_40px_rgba\(212\,175\,55\,0\.05\)\],
+  .route-performance-budget .shadow-\[0_20px_60px_rgba\(0\,0\,0\,0\.6\)\] {
+    box-shadow: none !important;
+  }
+}

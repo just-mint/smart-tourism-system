@@ -54,7 +54,7 @@ export type Body_vision_upload_and_scan = {
 
 export type ClosetItemResponse = {
     id: number;
-    user_id: number;
+    user_id: string;
     image_path: string;
     created_at: string;
 };

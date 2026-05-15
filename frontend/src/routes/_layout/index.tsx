@@ -365,7 +365,7 @@ export default function Dashboard() {
             <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
               AEGIS{" "}
               <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                Command Center
+                Trung tâm điều phối
               </span>
             </h1>
             <p className="text-zinc-400 mt-1 text-sm">
@@ -623,7 +623,7 @@ export default function Dashboard() {
                 {
                   icon: Globe,
                   label: "Vision Scan",
-                  desc: "Search by image",
+                  desc: "Tìm bằng hình ảnh",
                   color: "amber",
                 },
               ].map((a) => {

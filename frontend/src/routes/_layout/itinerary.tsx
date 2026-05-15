@@ -295,7 +295,7 @@ function ItineraryPage() {
     }).format(n)
 
   return (
-    <div className="relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-zinc-950 flex">
+    <div className="route-performance-budget relative w-full h-[calc(100vh-4rem)] overflow-hidden bg-zinc-950 flex">
       {/* LEFT PANEL */}
       <div className="w-[420px] shrink-0 flex flex-col h-full border-r border-white/5 bg-black/60 backdrop-blur-2xl z-20">
         {/* Header */}
@@ -304,7 +304,7 @@ function ItineraryPage() {
             <Zap className="w-6 h-6 text-violet-400" /> SMART_PLANNER
           </h1>
           <p className="text-[10px] text-zinc-500 font-mono mt-1 uppercase tracking-widest">
-            O2O 6-Step Orchestrator Engine
+            Bộ lập lịch O2O 6 bước
           </p>
         </div>
 
@@ -453,7 +453,7 @@ function ItineraryPage() {
             onClick={handleGenerate}
             data-testid="itinerary-generate-button"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-mono uppercase tracking-wider text-xs py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:shadow-[0_0_40px_rgba(139,92,246,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-mono uppercase tracking-wider text-xs py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
@@ -595,8 +595,8 @@ function ItineraryPage() {
                   className={`w-4 h-4 ${isTracking ? "animate-pulse" : ""}`}
                 />
                 {isTracking
-                  ? "🔴 Đang theo dõi GPS Realtime"
-                  : "Bật theo dõi vị trí Realtime"}
+                  ? "Đang theo dõi vị trí"
+                  : "Bật theo dõi vị trí"}
               </button>
 
               {/* Stops */}
@@ -859,10 +859,10 @@ function ItineraryPage() {
             <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
             <div>
               <p className="text-xs text-white font-mono font-bold">
-                Orchestrator đang xử lý...
+                Đang tối ưu lộ trình...
               </p>
               <p className="text-[10px] text-zinc-400 font-mono">
-                PostGIS → Ranking → TSP → Products
+                Tìm điểm đến → xếp hạng → tối ưu đường đi → gợi ý sản phẩm
               </p>
             </div>
           </div>
@@ -887,15 +887,15 @@ function ItineraryPage() {
             {cultureDrawerLoading ? (
               <div className="flex flex-col items-center py-12">
                 <Loader2 className="w-8 h-8 text-amber-400 animate-spin mb-3" />
-                <p className="text-xs text-amber-300/70 font-mono animate-pulse">
-                  Gemini AI đang viết câu chuyện...
+                <p className="text-xs text-amber-300/70 font-mono">
+                  Đang viết câu chuyện văn hóa...
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
                   <p className="text-[10px] text-amber-400 font-mono uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3" /> AI Storyteller
+                    <Sparkles className="w-3 h-3" /> Câu chuyện văn hóa
                   </p>
                   <p className="text-sm text-zinc-200 leading-relaxed">
                     {cultureDrawerData?.story}
@@ -976,7 +976,7 @@ function ItineraryPage() {
         </SheetContent>
       </Sheet>
 
-      {/* ═══ OVERLAY 3: AI Mix & Match (Bottom Sheet) ═══ */}
+      {/* Product matching bottom sheet */}
       <Sheet open={mixMatchOpen} onOpenChange={setMixMatchOpen}>
         <SheetContent
           side="bottom"
@@ -984,11 +984,10 @@ function ItineraryPage() {
         >
           <SheetHeader className="pb-3">
             <SheetTitle className="flex items-center gap-2 text-purple-400">
-              <Sparkles className="w-5 h-5" /> AI Mix & Match — Phối đồ thông
-              minh
+              <Sparkles className="w-5 h-5" /> Gợi ý phối đồ thông minh
             </SheetTitle>
             <p className="text-xs text-zinc-500 font-mono">
-              CLIP 512D · pgvector Cosine Similarity
+              So khớp bằng vector · CLIP 512D
             </p>
           </SheetHeader>
           <div className="px-5 pb-6">
@@ -1011,7 +1010,7 @@ function ItineraryPage() {
                     {mixMatchProduct.name}
                   </p>
                 </div>
-                <ArrowRight className="w-5 h-5 text-purple-400 ml-auto animate-pulse" />
+                <ArrowRight className="w-5 h-5 text-purple-400 ml-auto" />
               </div>
             )}
 
@@ -1064,7 +1063,7 @@ function ItineraryPage() {
               </div>
             ) : (
               <p className="text-center text-zinc-500 text-sm py-8">
-                Chưa có sản phẩm matching. Cần products có vector embeddings.
+                Chưa có sản phẩm phù hợp. Cần dữ liệu vector cho sản phẩm.
               </p>
             )}
           </div>

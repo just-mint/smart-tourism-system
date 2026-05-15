@@ -128,6 +128,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    volumes:
+      - ./backend/uploads:/app/backend/uploads
     environment:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
@@ -181,6 +183,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    volumes:
+      - ./backend/uploads:/app/backend/uploads
     environment:
       - DOMAIN=${DOMAIN}
       - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}

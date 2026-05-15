@@ -25,6 +25,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { toast } from "sonner"
 
 export const Route = createFileRoute("/_layout/vision")({
   component: VisionCloset,
@@ -40,18 +41,13 @@ function VisionCloset() {
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
   const [isPolling, setIsPolling] = useState(false)
 
-  // Cleanup Object URL for memory management
-  useEffect(() => {
-    return () => {
-      if (scanPreview) URL.revokeObjectURL(scanPreview)
-    }
-  }, [scanPreview])
-
   // Closet
   const [closetItems, setClosetItems] = useState<ClosetItemResponse[]>([])
   const [isLoadingCloset, setIsLoadingCloset] = useState(false)
   const [closetFile, setClosetFile] = useState<File | null>(null)
+  const [closetPreview, setClosetPreview] = useState("")
   const [isUploadingCloset, setIsUploadingCloset] = useState(false)
+  const [isAddingScanToCloset, setIsAddingScanToCloset] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [selectedClosetItem, setSelectedClosetItem] =
     useState<ClosetItemResponse | null>(null)
@@ -60,6 +56,28 @@ function VisionCloset() {
   const [isLoadingMixMatch, setIsLoadingMixMatch] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const closetFileRef = useRef<HTMLInputElement>(null)
+
+  const setScanImage = (file: File) => {
+    setScanFile(file)
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setScanPreview(reader.result)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const setClosetImage = (file: File) => {
+    setClosetFile(file)
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setClosetPreview(reader.result)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 
   // Handle Scan Upload
   const handleScanUpload = async () => {
@@ -120,9 +138,12 @@ function VisionCloset() {
     try {
       await VisionAPI.addToCloset(closetFile)
       setClosetFile(null)
+      setClosetPreview("")
+      if (closetFileRef.current) closetFileRef.current.value = ""
+      toast.success("Đã thêm ảnh vào tủ đồ")
       loadCloset()
     } catch {
-      // silent
+      toast.error("Không thêm được ảnh vào tủ đồ")
     } finally {
       setIsUploadingCloset(false)
     }
@@ -157,10 +178,9 @@ function VisionCloset() {
     const file = e.dataTransfer.files[0]
     if (file?.type.startsWith("image/")) {
       if (activeTab === "scan") {
-        setScanFile(file)
-        setScanPreview(URL.createObjectURL(file))
+        setScanImage(file)
       } else {
-        setClosetFile(file)
+        setClosetImage(file)
       }
     }
   }
@@ -172,15 +192,31 @@ function VisionCloset() {
     const file = e.target.files?.[0]
     if (!file) return
     if (target === "scan") {
-      setScanFile(file)
-      setScanPreview(URL.createObjectURL(file))
+      setScanImage(file)
     } else {
-      setClosetFile(file)
+      setClosetImage(file)
+    }
+  }
+
+  const handleAddScanToCloset = async () => {
+    if (!scanFile) {
+      toast.error("Không tìm thấy ảnh vừa quét để thêm vào tủ đồ")
+      return
+    }
+    setIsAddingScanToCloset(true)
+    try {
+      await VisionAPI.addToCloset(scanFile)
+      toast.success("Đã thêm ảnh quét vào tủ đồ")
+      if (activeTab === "closet") loadCloset()
+    } catch {
+      toast.error("Không thêm được ảnh quét vào tủ đồ")
+    } finally {
+      setIsAddingScanToCloset(false)
     }
   }
 
   return (
-    <div className="p-6 md:p-8 w-full max-w-[1800px] mx-auto flex flex-col gap-6 animate-in fade-in duration-700 relative z-10">
+    <div className="route-performance-budget p-6 md:p-8 w-full max-w-[1800px] mx-auto flex flex-col gap-6 animate-in fade-in duration-700 relative z-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -192,7 +228,7 @@ function VisionCloset() {
               Vision & Closet
             </h1>
             <p className="text-sm text-emerald-400/70 font-mono mt-0.5 tracking-widest uppercase">
-              Quét AI · Vector Embedding · pgvector
+              Quét ảnh AI · Dữ liệu vector · pgvector
             </p>
           </div>
         </div>
@@ -350,6 +386,24 @@ function VisionCloset() {
                   </span>
                 </div>
 
+                {taskStatus.status === "completed" && (
+                  <button
+                    type="button"
+                    onClick={handleAddScanToCloset}
+                    disabled={!scanFile || isAddingScanToCloset}
+                    className="w-full aegis-btn aegis-btn-primary text-xs disabled:opacity-40"
+                  >
+                    {isAddingScanToCloset ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Shirt className="w-3.5 h-3.5" />
+                    )}
+                    {isAddingScanToCloset
+                      ? "Đang thêm vào tủ đồ..."
+                      : "Thêm ảnh này vào tủ đồ"}
+                  </button>
+                )}
+
                 {/* Similar Items Grid */}
                 {taskStatus.detected_objects?.similar_items && (
                   <div className="glass-card p-4">
@@ -374,7 +428,7 @@ function VisionCloset() {
                                 referrerPolicy="no-referrer"
                               />
                               <div className="absolute top-2 right-2 bg-purple-500/80 backdrop-blur text-white text-[10px] px-2 py-1 rounded font-bold">
-                                {prod.match_score}% Match
+                                Phù hợp {prod.match_score}%
                               </div>
                             </div>
                             <div className="p-3 flex flex-col justify-between flex-1">
@@ -400,6 +454,19 @@ function VisionCloset() {
                     </div>
                   </div>
                 )}
+
+                {taskStatus.status === "failed" && (
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+                    <p className="text-xs font-mono uppercase tracking-wider text-red-300">
+                      Lỗi xử lý ảnh
+                    </p>
+                    <p className="mt-2 text-sm text-red-100/80">
+                      {typeof taskStatus.detected_objects?.error === "string"
+                        ? taskStatus.detected_objects.error
+                        : "AI worker chưa xử lý được ảnh này. Vui lòng thử lại sau khi backend và worker đã sẵn sàng."}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -411,6 +478,15 @@ function VisionCloset() {
           {/* Upload to Closet */}
           <div className="glass-card p-5 flex items-center gap-4">
             <div className="flex-1 flex items-center gap-3">
+              {closetPreview && (
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-purple-500/30 bg-white/[0.03]">
+                  <img
+                    src={closetPreview}
+                    alt="Ảnh tủ đồ đã chọn"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
               <button
                 onClick={() => closetFileRef.current?.click()}
                 className="aegis-btn aegis-btn-ghost text-xs"
@@ -489,7 +565,7 @@ function VisionCloset() {
                       }}
                       className="w-full mt-1 bg-gradient-to-r from-purple-600/20 to-cyan-600/20 hover:from-purple-500/40 hover:to-cyan-500/40 border border-purple-500/30 text-purple-300 hover:text-white font-mono text-[10px] uppercase tracking-wider py-1.5 rounded flex justify-center items-center gap-1.5 transition-all"
                     >
-                      <Sparkles className="w-3 h-3" /> AI Mix & Match
+                      <Sparkles className="w-3 h-3" /> Gợi ý phối đồ
                     </button>
                   </div>
                 </div>
@@ -510,7 +586,7 @@ function VisionCloset() {
           )}
         </>
       )}
-      {/* AI Mix & Match Sheet — REAL API */}
+      {/* Product matching sheet */}
       <Sheet
         open={isMixMatchOpen}
         onOpenChange={(open) => {
@@ -518,7 +594,7 @@ function VisionCloset() {
           if (!open) setMixMatchResults([])
         }}
       >
-        <SheetContent className="w-[400px] sm:w-[500px] border-l border-white/10 bg-black/80 backdrop-blur-3xl text-zinc-100 p-0 shadow-[-20px_0_50px_rgba(0,0,0,0.8)] overflow-y-auto custom-scrollbar">
+        <SheetContent className="w-[400px] sm:w-[500px] border-l border-white/10 bg-black/85 backdrop-blur-md text-zinc-100 p-0 shadow-xl overflow-y-auto custom-scrollbar">
           <SheetHeader className="p-6 border-b border-white/10 bg-gradient-to-b from-purple-900/20 to-transparent sticky top-0 z-10 backdrop-blur-md">
             <SheetTitle className="flex items-center gap-3 text-white text-xl font-bold tracking-wide">
               <Sparkles className="w-6 h-6 text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />{" "}
@@ -526,7 +602,7 @@ function VisionCloset() {
             </SheetTitle>
             <p className="text-xs text-purple-400 font-mono mt-1 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
-              pgvector Cosine Similarity · CLIP 512D
+              So khớp bằng vector · CLIP 512D
             </p>
           </SheetHeader>
 

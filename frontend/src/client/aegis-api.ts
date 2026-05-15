@@ -206,7 +206,7 @@ export interface TaskStatus {
 }
 export interface ClosetItemResponse {
   id: number
-  user_id: number
+  user_id: string
   image_path: string
   created_at: string
 }

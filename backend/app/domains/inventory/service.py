@@ -134,13 +134,15 @@ def compare_product_prices(db: Session, product_id: int, current_store_id: int, 
     return comparisons
 
 
-async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: int):
+async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id):
     from app.core.config import settings
     lock_key = f"lock:prod:{request.product_id}"
+    user_id_str = str(user_id)
 
     # === PHASE 1: REDIS GATE ===
     is_locked = await redis.get(lock_key)
-    if is_locked and str(is_locked) != str(user_id):
+    locked_by = is_locked.decode() if isinstance(is_locked, bytes) else is_locked
+    if locked_by and str(locked_by) != user_id_str:
         raise HTTPException(
             status_code=409,
             detail="Sản phẩm này đang nằm trong giỏ của người khác! Vui lòng thử lại sau."
@@ -180,7 +182,7 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
 
     # === PHASE 3: SET REDIS TTL ===
     try:
-        await redis.set(lock_key, user_id, ex=settings.INVENTORY_LOCK_TTL)
+        await redis.set(lock_key, user_id_str, ex=settings.INVENTORY_LOCK_TTL)
     except Exception as redis_error:
         db.rollback()
         logger.error(f"Redis SET thất bại cho lock_key={lock_key}: {redis_error}")
@@ -195,7 +197,7 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
     return new_lock
 
 
-async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id: int):
+async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id):
     check_and_release_expired_locks(db)
     locks = db.query(InventoryLock).filter(
         InventoryLock.user_id == user_id,
@@ -231,7 +233,7 @@ async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id: int):
     return results
 
 
-async def cancel_lock(db: Session, redis: Redis, lock_id: int, user_id: int):
+async def cancel_lock(db: Session, redis: Redis, lock_id: int, user_id):
     lock = db.query(InventoryLock).filter(
         InventoryLock.id == lock_id,
         InventoryLock.user_id == user_id,
@@ -289,7 +291,7 @@ def _build_vietqr_url(amount: int, order_code: str) -> str:
     return f"https://img.vietqr.io/image/{bank_id}-{account_no}-{template}.png?amount={amount}&addInfo={info}&accountName=AEGIS%20O2O"
 
 
-async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: int):
+async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id):
     """
     Hoàn tất đơn hàng O2O:
     1. Tìm product, tính tổng tiền

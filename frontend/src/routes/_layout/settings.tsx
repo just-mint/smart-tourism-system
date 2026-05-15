@@ -8,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useAuth from "@/hooks/useAuth"
 
 const tabsConfig = [
-  { value: "my-profile", title: "My profile", component: UserInformation },
-  { value: "password", title: "Password", component: ChangePassword },
-  { value: "danger-zone", title: "Danger zone", component: DeleteAccount },
+  { value: "my-profile", title: "Hồ sơ", component: UserInformation },
+  { value: "password", title: "Mật khẩu", component: ChangePassword },
+  { value: "danger-zone", title: "Khu vực nguy hiểm", component: DeleteAccount },
 ]
 
 export const Route = createFileRoute("/_layout/settings")({
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_layout/settings")({
   head: () => ({
     meta: [
       {
-        title: "Settings - AEGIS O2O",
+        title: "Cài đặt - AEGIS O2O",
       },
     ],
   }),
@@ -42,10 +42,10 @@ function UserSettings() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Settings
+            Cài đặt
           </h1>
           <p className="text-sm text-zinc-400/70 font-mono mt-0.5 tracking-widest uppercase">
-            Account & Preferences
+            Tài khoản & tùy chọn
           </p>
         </div>
       </div>

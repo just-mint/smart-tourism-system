@@ -23,21 +23,21 @@ import { type Item, Main } from "./Main"
 import { User } from "./User"
 
 const mainItems: Item[] = [
-  { icon: LayoutDashboard, title: "Dashboard", path: "/" },
-  { icon: Map, title: "Spatial Operations", path: "/spatial" },
-  { icon: Route, title: "Smart Planner", path: "/itinerary" },
-  { icon: Landmark, title: "Culture & Heritage", path: "/culture" },
-  { icon: PackageOpen, title: "Inventory & O2O", path: "/inventory" },
-  { icon: ScanFace, title: "Vision & Closet", path: "/vision" },
-  { icon: Package, title: "Items", path: "/items" },
-  { icon: Settings, title: "Settings", path: "/settings" },
+  { icon: LayoutDashboard, title: "Tổng quan", path: "/" },
+  { icon: Map, title: "Bản đồ không gian", path: "/spatial" },
+  { icon: Route, title: "Lập lịch thông minh", path: "/itinerary" },
+  { icon: Landmark, title: "Văn hóa & Di sản", path: "/culture" },
+  { icon: PackageOpen, title: "Chợ O2O", path: "/inventory" },
+  { icon: ScanFace, title: "Vision & Tủ đồ", path: "/vision" },
+  { icon: Package, title: "Dữ liệu mẫu", path: "/items" },
+  { icon: Settings, title: "Cài đặt", path: "/settings" },
 ]
 
 export function AppSidebar() {
   const { user: currentUser } = useAuth()
 
   const items = currentUser?.is_superuser
-    ? [...mainItems, { icon: Users, title: "Admin", path: "/admin" }]
+    ? [...mainItems, { icon: Users, title: "Quản trị", path: "/admin" }]
     : mainItems
 
   return (

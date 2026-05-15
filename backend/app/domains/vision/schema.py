@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 from datetime import datetime
+from uuid import UUID
 
 class VisionUploadResponse(BaseModel):
     task_id: str
@@ -17,7 +18,7 @@ class TaskStatus(BaseModel):
 
 class ClosetItemResponse(BaseModel):
     id: int
-    user_id: int
+    user_id: UUID
     image_path: str
     created_at: datetime
     class Config:

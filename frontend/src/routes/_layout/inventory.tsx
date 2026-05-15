@@ -38,6 +38,19 @@ const getApiErrorDetail = (error: unknown, fallback: string) => {
   return typeof detail === "string" ? detail : fallback
 }
 
+const hasRenderableProductImage = (url?: string | null) =>
+  Boolean(url && !url.includes("via.placeholder.com"))
+
+function ProductImageFallback({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`flex items-center justify-center bg-zinc-950 border border-white/10 ${className}`}
+    >
+      <Package className="w-14 h-14 text-zinc-700" />
+    </div>
+  )
+}
+
 function CountdownTimer({
   expiresAt,
   ttlSeconds,
@@ -241,11 +254,11 @@ function Inventory() {
     setCancelingLockId(lockId)
     try {
       const res = await InventoryAPI.cancelLock(lockId)
-      setNotification(`OK: ${res.data.message}`)
+      setNotification(`Đã hủy: ${res.data.message}`)
       await loadLocks()
       await loadData()
     } catch (err: unknown) {
-      setNotification(`Error: ${getApiErrorDetail(err, "Lỗi hủy giữ hàng")}`)
+      setNotification(`Không hủy được: ${getApiErrorDetail(err, "Lỗi hủy giữ hàng")}`)
     } finally {
       setCancelingLockId(null)
       setTimeout(() => setNotification(""), 3000)
@@ -253,9 +266,9 @@ function Inventory() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 selection:bg-amber-500/30 font-sans pb-20">
+    <div className="route-performance-budget min-h-screen bg-zinc-950 text-zinc-200 selection:bg-amber-500/30 font-sans pb-20">
       {/* 1. STICKY HEADER & SEARCH */}
-      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 shadow-2xl">
+      <header className="sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-sm border-b border-white/5 shadow-lg">
         <div className="max-w-[1600px] mx-auto px-6 h-20 flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-zinc-950">
@@ -295,7 +308,7 @@ function Inventory() {
 
       {/* NOTIFICATION */}
       {notification && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-white/10 rounded-full px-6 py-3 shadow-2xl flex items-center gap-2 animate-in slide-in-from-top-4">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-white/10 rounded-full px-6 py-3 shadow-lg flex items-center gap-2 animate-in slide-in-from-top-4">
           <span className="text-sm font-medium">{notification}</span>
         </div>
       )}
@@ -375,17 +388,18 @@ function Inventory() {
                   >
                     {/* Image Box */}
                     <div className="relative aspect-[4/5] overflow-hidden bg-zinc-950">
-                      {p.image_url ? (
+                      {hasRenderableProductImage(p.image_url) ? (
                         <img
                           src={p.image_url}
                           alt={p.name}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none"
+                          }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                          <Package className="w-14 h-14 text-zinc-700" />
-                        </div>
+                        <ProductImageFallback className="w-full h-full bg-zinc-900 border-0" />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
 
@@ -448,26 +462,27 @@ function Inventory() {
         open={!!checkoutProduct}
         onOpenChange={(open) => !open && closeCheckout()}
       >
-        <DialogContent className="max-w-[900px] p-0 bg-zinc-950/90 backdrop-blur-2xl border-white/10 shadow-2xl overflow-hidden">
+        <DialogContent className="!max-w-[1100px] w-[calc(100vw-3rem)] p-0 bg-zinc-950/95 backdrop-blur-sm border-white/10 shadow-xl overflow-hidden">
           {checkoutProduct && (
-            <div className="flex flex-col md:flex-row h-full md:h-[600px]">
+            <div className="flex flex-col md:flex-row h-full md:h-[640px]">
               {/* Left: Product Recap */}
-              <div className="w-full md:w-[400px] bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
+              <div className="w-full md:w-[440px] bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
                 <div>
                   <h2 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-6">
                     Tóm tắt đơn hàng
                   </h2>
-                  {checkoutProduct.image_url ? (
+                  {hasRenderableProductImage(checkoutProduct.image_url) ? (
                     <img
                       src={checkoutProduct.image_url}
                       alt={checkoutProduct.name}
                       className="w-full h-48 object-cover rounded-2xl mb-6 shadow-xl"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none"
+                      }}
                     />
                   ) : (
-                    <div className="w-full h-48 rounded-2xl mb-6 shadow-xl bg-zinc-950 border border-white/10 flex items-center justify-center">
-                      <Package className="w-14 h-14 text-zinc-700" />
-                    </div>
+                    <ProductImageFallback className="w-full h-48 rounded-2xl mb-6 shadow-xl" />
                   )}
                   <h3 className="text-xl font-bold text-white mb-2">
                     {checkoutProduct.name}
@@ -487,7 +502,7 @@ function Inventory() {
               </div>
 
               {/* Right: Payment & Form */}
-              <div className="flex-1 p-8 overflow-y-auto">
+              <div className="flex-1 min-w-0 p-8 md:p-10 overflow-y-auto">
                 {orderResult ? (
                   // SUCCESS & VIETQR
                   <div className="flex flex-col items-center text-center h-full justify-center animate-in zoom-in-95 duration-500">
@@ -498,7 +513,7 @@ function Inventory() {
                       Đã tạo đơn hàng!
                     </h2>
                     <p className="text-zinc-400 mb-8 font-mono">
-                      Code:{" "}
+                      Mã đơn:{" "}
                       <span className="text-white font-bold">
                         {orderResult.order_code}
                       </span>
@@ -648,7 +663,7 @@ function Inventory() {
                           {lock.product_name || `Sản phẩm #${lock.product_id}`}
                         </p>
                         <p className="text-xs text-zinc-500 font-mono">
-                          Qty: {lock.quantity} • Lock: {lock.id}
+                          Số lượng: {lock.quantity} • Mã giữ hàng: {lock.id}
                         </p>
                       </div>
                       <CountdownTimer

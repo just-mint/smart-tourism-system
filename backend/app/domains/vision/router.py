@@ -61,7 +61,7 @@ def check_task_status(task_id: str, db: Session = Depends(get_db)):
     
     if task.status == "processing":
         delta = (datetime.now(timezone.utc) - task.created_at).total_seconds()
-        if delta > 30:
+        if delta > 180:
             task.status = "failed"
             task.detected_objects = {"error": "AI Worker Timeout"}
             db.commit()

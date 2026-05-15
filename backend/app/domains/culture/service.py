@@ -137,7 +137,7 @@ async def generate_place_story(db: Session, place_id: int):
     if not place: return None
 
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    cache_key = f"culture:story:{place.id}"
+    cache_key = f"culture:story:v2:{place.id}"
     redis: Redis | None = None
     try:
         redis = Redis.from_url(redis_url, decode_responses=True)
@@ -150,13 +150,49 @@ async def generate_place_story(db: Session, place_id: int):
     except Exception:
         redis = None
     
-    # Lập Prompt theo đúng yêu cầu
-    prompt = f"Bạn là hướng dẫn viên du lịch, hãy kể một câu chuyện ngắn 100 từ về {place.name} thuộc loại hình {place.category or 'văn hóa'} cho du khách."
+    category = place.category or "văn hóa địa phương"
+    address_line = f" tại {place.address}" if place.address else ""
+    rating_line = (
+        f" Điểm đánh giá trong dữ liệu là {float(place.rating):.1f}/5,"
+        if place.rating
+        else ""
+    )
+    review_line = (
+        f" với {place.review_count} lượt ghi nhận,"
+        if place.review_count
+        else ""
+    )
+
+    prompt = (
+        "Bạn là một biên tập viên du lịch viết tiếng Việt giàu hình ảnh. "
+        "Hãy viết một đoạn 'câu chuyện từ dòng thời gian' dài 90-130 từ, "
+        "giọng văn ấm, sang, có nhịp kể như dẫn khách đi qua ký ức của địa điểm. "
+        "Chỉ dùng dữ kiện được cung cấp, không bịa niên đại, nhân vật lịch sử hoặc danh hiệu chưa chắc chắn. "
+        "Nếu dữ kiện ít, hãy nói về không khí, dấu vết đời sống, cảm giác khi du khách dừng chân, "
+        "và cách nơi này nối quá khứ với trải nghiệm O2O hiện tại. "
+        f"Địa điểm: {place.name}. Nhóm: {category}. Địa chỉ: {place.address or 'chưa có địa chỉ chi tiết'}."
+        f"{rating_line}{review_line}"
+    )
     
     from app.core.config import settings
     api_key = settings.GEMINI_API_KEY
-    # Nội dung Fallback cứng phòng trường hợp Timeout hoặc LLM API bị sập
-    bot_story = f"[{place.name}] là một biểu tượng nổi bật thuộc nhóm {place.category or 'văn hóa'}. Nơi đây lưu giữ nhiều giá trị lịch sử và không gian nghệ thuật chờ bạn khám phá trên bản đồ AEGIS."
+    # Nội dung fallback vẫn phải đọc như một câu chuyện, nhưng không bịa dữ kiện khi DB thiếu thông tin.
+    if "ẩm" in category.lower() or "food" in category.lower():
+        bot_story = (
+            f"{place.name}{address_line} không chỉ là một điểm dừng ăn uống, mà là một lát cắt nhỏ của nhịp sống địa phương. "
+            "Từ mùi nước dùng, tiếng gọi món đến những bàn ăn đi qua nhiều lượt khách, nơi này giữ lại thứ ký ức rất đời thường: "
+            "người ta tìm đến vì hương vị, rồi nhớ nó vì cảm giác quen thuộc sau một ngày di chuyển. "
+            "Trên dòng thời gian của AEGIS, điểm dừng ấy nối văn hóa ẩm thực với hành trình hiện tại: xem địa điểm, đọc dấu vết dữ liệu, "
+            "rồi bước tiếp sang những gợi ý O2O gần bên như một cách mang trải nghiệm địa phương về gần hơn."
+        )
+    else:
+        bot_story = (
+            f"{place.name}{address_line} hiện lên như một mốc nhỏ trên bản đồ ký ức của vùng đất này. "
+            f"Thuộc nhóm {category}, nơi đây không chỉ được nhìn bằng tọa độ hay tên gọi, mà bằng những lớp đời sống đã đi ngang qua: "
+            "khách ghé thăm, câu chuyện được kể lại, và những thói quen đô thị âm thầm bồi đắp quanh nó. "
+            "Khi đặt vào dòng thời gian AEGIS, địa điểm trở thành điểm nối giữa quá khứ và hiện tại: "
+            "một nơi để dừng chân, đọc dấu vết văn hóa, rồi tiếp tục khám phá các trải nghiệm O2O lân cận bằng nhịp đi riêng của bạn."
+        )
     
     story_source = "fallback"
 

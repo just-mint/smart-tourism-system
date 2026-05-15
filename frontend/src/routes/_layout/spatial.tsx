@@ -79,7 +79,7 @@ const createCustomClusterIcon = (cluster: ClusterLike) => {
   const count = cluster.getChildCount()
   return createDivIcon(
     `
-    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-[0_0_20px_rgba(139,92,246,0.8)] bg-gradient-to-tr from-cyan-500 to-purple-500 border-2 border-white/80 animate-pulse">
+    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md bg-gradient-to-tr from-cyan-500 to-purple-500 border-2 border-white/80">
       ${count}
     </div>
   `,
@@ -107,24 +107,24 @@ const tourismIcon = createDivIcon(
 
 const storeIcon = createDivIcon(
   `
-  <div class="relative w-7 h-7 flex items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-red-500 to-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.9)] animate-bounce transition-transform hover:scale-110">
+  <div class="relative w-7 h-7 flex items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-red-500 to-orange-500 shadow-md transition-transform hover:scale-105">
     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
   </div>
 `,
   28,
 )
 const selectedIcon = createDivIcon(
-  `<div class="w-4 h-4 bg-purple-500 rounded-full border-2 border-black shadow-[0_0_15px_rgba(168,85,247,0.9)] animate-pulse"></div>`,
+  `<div class="w-4 h-4 bg-purple-500 rounded-full border-2 border-black shadow-md"></div>`,
   16,
 )
 const highlightedIcon = createDivIcon(
   `
   <div class="relative w-10 h-10 flex items-center justify-center drop-shadow-[0_0_30px_rgba(250,204,21,1)] scale-125 z-50">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#facc15" stroke="white" stroke-width="1.5" class="w-10 h-10 animate-bounce">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#facc15" stroke="white" stroke-width="1.5" class="w-10 h-10">
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
       <circle cx="12" cy="10" r="3" fill="white" />
     </svg>
-    <div class="absolute w-12 h-12 rounded-full border-4 border-yellow-400/50 animate-ping"></div>
+    <div class="absolute w-12 h-12 rounded-full border-4 border-yellow-400/30"></div>
   </div>
 `,
   40,
@@ -891,7 +891,7 @@ function SpatialOperations() {
   ])
 
   return (
-    <div className="relative w-full h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-zinc-950">
+    <div className="route-performance-budget relative w-full h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-zinc-950">
       <StoreProductPanel
         o2oContext={o2oContext}
         onClose={() => setO2OContext(null)}
@@ -1061,7 +1061,7 @@ function SpatialOperations() {
               ) : (
                 <Search className="w-4 h-4" />
               )}
-              {isLoadingNearby ? "Scanning..." : "Quét Khu Vực"}
+              {isLoadingNearby ? "Đang quét..." : "Quét khu vực"}
             </button>
             {/* K-Means Clustering Button */}
             {nearbyData && nearbyData.places.length > 0 && !routeData && (
@@ -1120,7 +1120,7 @@ function SpatialOperations() {
                   ) : (
                     <Navigation className="w-4 h-4" />
                   )}
-                  {isLoadingRoute ? "Processing TSP..." : "Tối Ưu Tuyến Đường"}
+                  {isLoadingRoute ? "Đang tối ưu..." : "Tối ưu tuyến đường"}
                 </button>
               )}
 

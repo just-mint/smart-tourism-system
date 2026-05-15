@@ -122,7 +122,7 @@ function ReviewModerationPanel() {
         {isLoading ? (
           <div className="flex items-center gap-2 p-6 text-sm text-zinc-400">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading reviews...
+            Đang tải đánh giá...
           </div>
         ) : reviews.length === 0 ? (
           <div className="p-6 text-sm text-zinc-500">

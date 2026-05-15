@@ -76,6 +76,7 @@ const TRENDING_HERITAGES = [
     subtitle: "Thành phố trong sương",
     desc: "Ruộng bậc thang, đỉnh Fansipan",
     query: "Sapa",
+    wikiTitle: "Ruộng bậc thang Sa Pa",
   },
 ]
 
@@ -103,6 +104,9 @@ function CultureHeritage() {
   const [recommendedProducts, setRecommendedProducts] = useState<
     RecommendedProduct[]
   >([])
+  const [trendingImages, setTrendingImages] = useState<Record<string, string>>(
+    {},
+  )
   const [isLoadingRecommendations, setIsLoadingRecommendations] =
     useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -144,6 +148,27 @@ function CultureHeritage() {
     CultureAPI.getMetadata()
       .then((res) => setCultureMetadata(res.data))
       .catch(() => setCultureMetadata(null))
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all(
+      TRENDING_HERITAGES.map((item) =>
+        CultureAPI.getWikiImage(item.wikiTitle ?? item.name, "di sản")
+          .then((res) => [item.name, res.data.image_url || ""] as const)
+          .catch(() => [item.name, ""] as const),
+      ),
+    ).then((entries) => {
+      if (cancelled) return
+      setTrendingImages(
+        Object.fromEntries(entries.filter(([, imageUrl]) => imageUrl)),
+      )
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -327,14 +352,14 @@ function CultureHeritage() {
   }, [selectedPlace?.place_id])
 
   return (
-    <div className="relative min-h-screen w-full bg-black overflow-hidden">
+    <div className="route-performance-budget relative min-h-screen w-full bg-black overflow-hidden">
       {/* Background cố định, rõ nét, không bị che sidebar */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center bg-fixed bg-no-repeat"
         style={{ backgroundImage: `url(${BACKGROUND_IMAGE})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-black/80" />
-        <div className="absolute inset-0 backdrop-blur-md" />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
       {/* Content - có padding để không đè sidebar */}
@@ -345,7 +370,7 @@ function CultureHeritage() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl">
               <Sparkles className="w-4 h-4 text-amber-200" />
               <span className="text-xs font-mono font-bold tracking-wider text-white/90 uppercase">
-                AI Storytelling Engine
+                Công cụ kể chuyện AI
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
@@ -458,10 +483,25 @@ function CultureHeritage() {
                     className="group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 hover:scale-105 hover:z-10 transform-gpu perspective-1000 border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.8)] hover:border-white/30 hover:shadow-[0_8px_30px_rgba(255,255,255,0.15)]"
                   >
                     <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 bg-[#050B14]">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Landmark className="h-16 w-16 text-[#D4AF37]/40" />
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+                      {trendingImages[item.name] ? (
+                        <img
+                          src={trendingImages[item.name]}
+                          alt={item.name}
+                          className="h-full w-full object-cover opacity-90"
+                          onError={() =>
+                            setTrendingImages((prev) => {
+                              const next = { ...prev }
+                              delete next[item.name]
+                              return next
+                            })
+                          }
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Landmark className="h-16 w-16 text-[#D4AF37]/40" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-black/15" />
                     </div>
                     <div className="relative p-6 h-72 flex flex-col justify-end">
                       <h3 className="text-2xl font-bold text-white group-hover:text-amber-200 transition drop-shadow-md">
@@ -548,7 +588,7 @@ function CultureHeritage() {
               </h2>
               <div className="w-24 h-1 bg-[#D4AF37] mb-6 shadow-[0_0_10px_#D4AF37]" />
               <p className="text-white/80 font-mono text-sm tracking-[0.2em] uppercase">
-                Trải nghiệm Di sản · O2O Shopping Ecosystem
+                Trải nghiệm di sản · Hệ sinh thái O2O
               </p>
               <p className="mt-3 text-xs text-white/50 font-mono">
                 Nguồn ảnh: {imageSource}
@@ -586,15 +626,6 @@ function CultureHeritage() {
                     </p>
                   </div>
                 )}
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-white/50 font-mono">
-                  <div>Nguồn nội dung: {selectedPlace?.story_source || "AEGIS"}</div>
-                  <div>
-                    Cache: {selectedPlace?.story_cached ? "đã dùng bản lưu" : "bản mới"}
-                  </div>
-                  <div>
-                    Provenance: {(selectedPlace?.content_sources || []).join(" · ") || "AEGIS places dataset"}
-                  </div>
-                </div>
                 <div className="pt-8 flex items-center gap-2 text-white/50 text-sm font-mono border-t border-white/10">
                   <MapPin className="w-4 h-4" /> {selectedPlace?.address}
                 </div>
@@ -712,14 +743,13 @@ function CultureHeritage() {
             </div>
 
             {/* O2O Shopping Connection */}
-            <div className="bg-[#050B14]/80 backdrop-blur-xl border border-[#D4AF37]/30 shadow-[0_0_40px_rgba(212,175,55,0.05)] rounded-2xl p-8 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37]/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+            <div className="bg-[#050B14]/90 border border-[#D4AF37]/30 shadow-lg rounded-2xl p-8 relative overflow-hidden group">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 relative z-10">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <ShoppingBag className="w-5 h-5 text-[#D4AF37]" />
                     <span className="text-xs font-mono text-[#D4AF37] uppercase tracking-[0.2em]">
-                      O2O Exclusive
+                      Gợi ý O2O
                     </span>
                   </div>
                   <h3 className="font-serif text-3xl text-white">

@@ -143,7 +143,8 @@ export const ClosetItemResponseSchema = {
             title: 'Id'
         },
         user_id: {
-            type: 'integer',
+            type: 'string',
+            format: 'uuid',
             title: 'User Id'
         },
         image_path: {
