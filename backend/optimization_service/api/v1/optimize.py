@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.post("/optimize", response_model=OptimizeResponse)
-def optimize_route(request: OptimizeRequest):
+async def optimize_route(request: OptimizeRequest):
     """
     Endpoint chính của Optimization Service.
     Nhận raw shops + weights → Trả về reordered_shops + metrics.
@@ -25,7 +25,7 @@ def optimize_route(request: OptimizeRequest):
         if not request.shops:
             raise HTTPException(status_code=400, detail="Danh sách shops không được rỗng")
         
-        result = optimize_pipeline(request)
+        result = await optimize_pipeline(request)
         return result
     except HTTPException:
         raise

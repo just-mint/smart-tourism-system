@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-from fastapi import APIRouter, Depends, HTTPException
-=======
 import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException
->>>>>>> origin/main
 from sqlalchemy.orm import Session
 from redis.asyncio import Redis
 from app.db.session import get_db
@@ -15,8 +11,6 @@ from app.domains.inventory import service, schema
 
 router = APIRouter()
 
-<<<<<<< HEAD
-=======
 # ── Internal Secret cho service-to-service / Celery calls ──
 INTERNAL_SECRET_KEY = os.getenv("INTERNAL_SECRET_KEY", "")
 
@@ -45,7 +39,6 @@ def verify_internal_or_superuser(
     )
 
 
->>>>>>> origin/main
 @router.get("/stores", response_model=list[schema.StoreResponse])
 def get_stores(place_id: str | None = None, db: Session = Depends(get_db)):
     return service.get_all_stores(db=db, place_id=place_id)
@@ -78,15 +71,9 @@ async def get_my_locks(current_user: User = Depends(get_current_user), db: Sessi
     """Tra cứu Giỏ hàng & Đồng hồ đếm ngược được nuôi bởi Redis"""
     return await service.get_user_locks_with_ttl(db=db, redis=redis, user_id=current_user.id)
 
-<<<<<<< HEAD
-@router.post("/trigger-release")
-def release_expired(db: Session = Depends(get_db)):
-    """API Dọn dẹp Cronjob trả lại hàng vào Database khi thời lượng Redis bốc hơi"""
-=======
 @router.post("/trigger-release", dependencies=[Depends(verify_internal_or_superuser)])
 def release_expired(db: Session = Depends(get_db)):
     """API Dọn dẹp (Bảo mật): Trả lại hàng vào DB khi lock hết hạn. Chỉ Superuser hoặc Internal Service gọi được."""
->>>>>>> origin/main
     count = service.check_and_release_expired_locks(db=db)
     return {"message": f"Hệ thống đã tự động hoàn trả tồn kho cho {count} giao dịch không thanh toán."}
 

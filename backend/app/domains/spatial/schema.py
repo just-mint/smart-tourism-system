@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from pydantic import BaseModel
-=======
 from pydantic import BaseModel, Field
->>>>>>> origin/main
 from typing import List, Optional, Any, Union
 
 class PlaceResponse(BaseModel):
@@ -54,13 +50,8 @@ class ClusterResponse(BaseModel):
     clusters: List[ClusterItem]
 
 class RoutePlanRequest(BaseModel):
-<<<<<<< HEAD
-    current_lat: float
-    current_lon: float
-=======
     current_lat: float = Field(..., ge=-90, le=90)
     current_lon: float = Field(..., ge=-180, le=180)
->>>>>>> origin/main
     place_ids: List[int]
 
 class RoutePlanResponse(BaseModel):

@@ -3,6 +3,8 @@ AEGIS Optimization Service — Unit & Integration Tests
 Chạy: python -m optimization_service.main_test (từ thư mục backend/)
 """
 
+import asyncio
+
 from optimization_service.core.algorithms.ranking import rank_items, haversine
 from optimization_service.core.algorithms.tsp_solver import (
     run_tsp_pipeline,
@@ -41,7 +43,7 @@ def test_tsp_pipeline():
         {"id": "2", "name": "Điểm 2", "coords": {"lat": 10.770, "lng": 106.700}, "price": 60000, "rating": 4.2},
         {"id": "3", "name": "Điểm 3", "coords": {"lat": 10.775, "lng": 106.695}, "price": 70000, "rating": 3.8},
     ]
-    ordered, metrics, route_geometry = run_tsp_pipeline(shops, user_lat=10.772, user_lon=106.698)
+    ordered, metrics, route_geometry = asyncio.run(run_tsp_pipeline(shops, user_lat=10.772, user_lon=106.698))
     assert len(ordered) == 3
     assert metrics["total_distance_km"] >= 0
     has_geo = route_geometry is not None and route_geometry.get("geojson") is not None

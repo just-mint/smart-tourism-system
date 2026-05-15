@@ -3,6 +3,8 @@ import ast
 import re
 import time
 import base64
+import redis # Thêm Redis
+import hashlib # Thêm Hash để tạo key
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -19,6 +21,15 @@ groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 # Các model sử dụng
 GROQ_MODEL = "llama-3.3-70b-versatile"
 GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+
+# Khởi tạo Redis Client
+redis_client = redis.Redis(
+    host=os.getenv("REDIS_HOST", "localhost"), 
+    port=6379, 
+    db=0, 
+    decode_responses=True
+)
+CACHE_TTL = 604800 # Thời gian sống của cache: 7 ngày (tính bằng giây)
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -96,6 +107,17 @@ def analyze_input(user_input=None, image_path=None):
     return list({k.lower().strip() for k in keywords if k and len(k) > 1})
 
 def generate_story(item_name, data_raw):
+    # 1. Tạo một mã băm (hash) duy nhất làm Key Cache dựa trên tên sản phẩm
+    cache_key = f"story:{hashlib.md5(item_name.encode('utf-8')).hexdigest()}"
+    try:
+        # 2. KIỂM TRA CACHE TRƯỚC
+        cached_story = redis_client.get(cache_key)
+        if cached_story:
+            print(f"[Cache HIT] Lấy story cho '{item_name}' từ bộ nhớ đệm Redis ⚡")
+            return cached_story
+    except Exception as e:
+        print(f"[Cảnh báo] Lỗi kết nối Redis: {e}")
+
     """Sử dụng Groq để viết story (hoặc bạn có thể đổi sang Gemini tùy thích)"""
     prompt = f"Viết 1 đoạn văn ngắn 3 câu truyền cảm hứng về {item_name}. Gợi ý: {data_raw}"
     
@@ -106,7 +128,12 @@ def generate_story(item_name, data_raw):
                 messages=[{"role": "user", "content": prompt}],
                 timeout=API_TIMEOUT
             )
-            return completion.choices[0].message.content
+            res = completion.choices[0].message.content
+            try:
+                redis_client.setex(cache_key, CACHE_TTL, res)
+            except Exception:
+                pass # Bỏ qua lỗi lưu cache nếu Redis sập
+            return res
         except Exception as e:
             print(f"[!] Lỗi tạo story (Lần {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:

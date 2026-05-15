@@ -2,11 +2,7 @@ from collections.abc import Generator
 from typing import Annotated
 
 import jwt
-<<<<<<< HEAD
-from fastapi import Depends, HTTPException, status
-=======
 from fastapi import Depends, HTTPException, Request, status
->>>>>>> origin/main
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -18,12 +14,8 @@ from app.core.db import engine
 from app.models import TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(
-<<<<<<< HEAD
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token"
-=======
     tokenUrl=f"{settings.API_V1_STR}/login/access-token",
     auto_error=False
->>>>>>> origin/main
 )
 
 
@@ -33,15 +25,6 @@ def get_db() -> Generator[Session, None, None]:
 
 
 SessionDep = Annotated[Session, Depends(get_db)]
-<<<<<<< HEAD
-TokenDep = Annotated[str, Depends(reusable_oauth2)]
-
-
-def get_current_user(session: SessionDep, token: TokenDep) -> User:
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-=======
 TokenDep = Annotated[str | None, Depends(reusable_oauth2)]
 
 
@@ -58,7 +41,6 @@ def get_current_user(session: SessionDep, request: Request, token: TokenDep) -> 
     try:
         payload = jwt.decode(
             actual_token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
->>>>>>> origin/main
         )
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):

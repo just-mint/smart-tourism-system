@@ -32,13 +32,8 @@ class Settings(BaseSettings):
     )
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
-<<<<<<< HEAD
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-=======
     # 30 minutes for security hardening
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
->>>>>>> origin/main
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
@@ -102,12 +97,9 @@ class Settings(BaseSettings):
     # Inventory: Thời gian giữ Soft-lock (giây). Mặc định 15 phút.
     INVENTORY_LOCK_TTL: int = 900
 
-<<<<<<< HEAD
-=======
     # Internal Secret: Dùng cho service-to-service auth (Celery → API, Cronjob → API)
     INTERNAL_SECRET_KEY: str = secrets.token_urlsafe(32)
 
->>>>>>> origin/main
     # Vision Upload: Kiểu file và dung lượng tối đa cho API /vision/scan
     ALLOWED_IMAGE_TYPES: list[str] = ["image/jpeg", "image/png", "image/webp"]
     MAX_UPLOAD_SIZE_MB: int = 10

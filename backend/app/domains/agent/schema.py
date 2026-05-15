@@ -3,8 +3,8 @@ from typing import Optional, List
 
 class AgentChatRequest(BaseModel):
     query: str
-    current_lat: Optional[float] = None
-    current_lon: Optional[float] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
 
 class AgentChatResponse(BaseModel):
     answer: str

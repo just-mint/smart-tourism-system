@@ -78,8 +78,6 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SENTRY_DSN=${SENTRY_DSN}
 
-<<<<<<< HEAD
-=======
   redis:
     image: redis:alpine
     ports:
@@ -114,6 +112,8 @@ services:
       - "8001"
     env_file:
       - .env
+    environment:
+    - INTERNAL_AUTH_TOKEN=${INTERNAL_AUTH_TOKEN}
 
   ai_worker:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
@@ -167,7 +167,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
 
->>>>>>> origin/main
   backend:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
@@ -180,13 +179,10 @@ services:
         restart: true
       prestart:
         condition: service_completed_successfully
-<<<<<<< HEAD
-=======
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
->>>>>>> origin/main
     env_file:
       - .env
     environment:
@@ -195,6 +191,7 @@ services:
       - ENVIRONMENT=${ENVIRONMENT}
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
       - SECRET_KEY=${SECRET_KEY?Variable not set}
+      - INTERNAL_AUTH_TOKEN=${INTERNAL_AUTH_TOKEN}
       - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
       - SMTP_HOST=${SMTP_HOST}
@@ -207,14 +204,11 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SENTRY_DSN=${SENTRY_DSN}
-<<<<<<< HEAD
-=======
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
       - OPTIMIZATION_SERVICE_URL=http://optimization_service:8001/api/v1/optimize
       - OSRM_BASE_URL=http://osrm-backend:5000
       - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY}
->>>>>>> origin/main
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
@@ -232,17 +226,10 @@ services:
 
       - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8000
 
-<<<<<<< HEAD
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.entrypoints=http
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`api.${DOMAIN?Variable not set}`)
-=======
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`) || (Host(`dashboard.${DOMAIN?Variable not set}`) && PathPrefix(`/api`))
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.entrypoints=http
 
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`api.${DOMAIN?Variable not set}`) || (Host(`dashboard.${DOMAIN?Variable not set}`) && PathPrefix(`/api`))
->>>>>>> origin/main
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=https
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=le
@@ -279,8 +266,6 @@ services:
 
       # Enable redirection for HTTP and HTTPS
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
-<<<<<<< HEAD
-=======
   # === OSRM — Private Routing Server (tránh bị ban IP khi scale) ===
   osrm-backend:
     image: osrm/osrm-backend:latest
@@ -303,7 +288,6 @@ services:
       timeout: 10s
       retries: 3
 
->>>>>>> origin/main
 volumes:
   app-db-data:
 

@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-from fastapi import APIRouter, Depends
-from pydantic.networks import EmailStr
-
-from app.api.deps import get_current_active_superuser, SessionDep
-from sqlalchemy import func, select
-=======
 import os
 import logging
 
@@ -15,18 +8,14 @@ from redis.asyncio import Redis
 
 from app.api.deps import get_current_active_superuser, SessionDep
 from sqlalchemy import func, select, text
->>>>>>> origin/main
 from app.models import User
 from app.domains.culture.model import Place
 from app.domains.inventory.model import Store, InventoryLock
 from app.models import Message
 from app.utils import generate_test_email, send_email
 
-<<<<<<< HEAD
-=======
 logger = logging.getLogger(__name__)
 
->>>>>>> origin/main
 router = APIRouter(prefix="/utils", tags=["utils"])
 
 
@@ -49,10 +38,6 @@ def test_email(email_to: EmailStr) -> Message:
 
 
 @router.get("/health-check/")
-<<<<<<< HEAD
-async def health_check() -> bool:
-    return True
-=======
 async def health_check(session: SessionDep) -> JSONResponse:
     """
     Kiểm tra sức khỏe thực sự của hệ thống:
@@ -89,7 +74,6 @@ async def health_check(session: SessionDep) -> JSONResponse:
 
     return JSONResponse(status_code=200, content={"status": "healthy", "checks": status})
 
->>>>>>> origin/main
 
 @router.get("/telemetry/")
 def get_telemetry(session: SessionDep) -> dict:

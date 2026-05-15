@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 import os
-<<<<<<< HEAD
-=======
 import uuid
->>>>>>> origin/main
+import io
+from PIL import Image, UnidentifiedImageError
 from app.db.session import get_db
 from app.domains.vision import service, schema
 from app.core.config import settings
@@ -18,11 +17,7 @@ MAX_SIZE_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
 def validate_and_save(file: UploadFile, folder: str) -> str:
-<<<<<<< HEAD
-    """Kiểm tra MIME type + dung lượng file trước khi lưu"""
-=======
     """Kiểm tra MIME type + dung lượng file trước khi lưu với tên UUID4 chống ghi đè."""
->>>>>>> origin/main
     # 1. Kiểm tra MIME type
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
@@ -37,19 +32,23 @@ def validate_and_save(file: UploadFile, folder: str) -> str:
             status_code=413,
             detail=f"File vượt giới hạn {settings.MAX_UPLOAD_SIZE_MB}MB. Kích thước thực: {len(contents) // 1024 // 1024}MB"
         )
-
-<<<<<<< HEAD
-    # 3. Tạo thư mục và lưu file an toàn (tránh path traversal bằng basename)
-    os.makedirs(folder, exist_ok=True)
-    safe_filename = os.path.basename(file.filename or "upload")
-=======
+    
+    # P1-21: Xác minh cấu trúc nhị phân của ảnh bằng PIL
+    try:
+        img = Image.open(io.BytesIO(contents))
+        img.verify()  # Đọc header của file để xác nhận đây thực sự là ảnh
+    except (UnidentifiedImageError, Exception):
+        raise HTTPException(
+            status_code=400, 
+            detail="Bảo mật: File giả mạo hoặc cấu trúc ảnh bị hỏng."
+        )
+    
     # 3. Tạo thư mục và lưu file an toàn
     #    ⚠️ Dùng UUID4 thay vì tên gốc để chống ghi đè + path traversal
     os.makedirs(folder, exist_ok=True)
     original_name = file.filename or "upload"
     _, ext = os.path.splitext(original_name)
     safe_filename = f"{uuid.uuid4().hex}{ext}"
->>>>>>> origin/main
     file_path = os.path.join(folder, safe_filename)
     with open(file_path, "wb") as buffer:
         buffer.write(contents)

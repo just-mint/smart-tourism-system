@@ -219,6 +219,14 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
     
     # Ép Gemini tuân thủ tư duy O2O Agent
     sys_instruction_text = "Bạn là AEGIS AI, chuyên gia du lịch và gợi ý mua sắm O2O tại Việt Nam. Nếu khách hỏi địa danh, BẮT BUỘC gọi hàm search_culture. Nếu khách muốn mua sắm, BẮT BUỘC gọi search_products hoặc find_stores_near. Nếu khách muốn lên kế hoạch, tìm đường đi mua sắm, hoặc hỏi 'nên đi đâu', BẮT BUỘC gọi create_itinerary với tọa độ và từ khóa. Luôn khuyến khích khách 'Giữ hàng (Lock)' qua giao diện O2O và xem lộ trình trên tab Itinerary."
+    # P1-26: NHÚNG TỌA ĐỘ VÀO SYSTEM PROMPT
+    # Kiểm tra xem request có gửi lên tọa độ không, nếu có thì chép thẳng vào não Agent
+    lat = getattr(request, 'lat', None)
+    lon = getattr(request, 'lon', None)
+    if lat is not None and lon is not None:
+        sys_instruction_text += f"\n\n[QUAN TRỌNG]: Tọa độ hiện tại của người dùng là Vĩ độ {lat}, Kinh độ {lon}. BẮT BUỘC ưu tiên sử dụng tọa độ này làm tham số mặc định khi gọi các tool 'find_stores_near', 'check_weather' và 'create_itinerary'."
+    # ---------------------------------------------
+    
     system_instruction = {"parts": [{"text": sys_instruction_text}]}
     
     history = [

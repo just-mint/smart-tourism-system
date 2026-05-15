@@ -21,7 +21,7 @@ from optimization_service.schemas.payload import (
 logger = logging.getLogger(__name__)
 
 
-def optimize_pipeline(request: OptimizeRequest) -> OptimizeResponse:
+async def optimize_pipeline(request: OptimizeRequest) -> OptimizeResponse:
     """
     Pipeline chính: Context → Ranking → Top N → TSP → OSRM Route Geometry → Response.
     """
@@ -73,7 +73,7 @@ def optimize_pipeline(request: OptimizeRequest) -> OptimizeResponse:
     top_shops = ranked[:top_n]
 
     # 5. TSP Pipeline
-    ordered_shops, metrics, route_geometry = run_tsp_pipeline(
+    ordered_shops, metrics, route_geometry = await run_tsp_pipeline(
         shops=top_shops,
         user_lat=request.user_lat,
         user_lon=request.user_lng,

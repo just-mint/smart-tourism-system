@@ -30,15 +30,10 @@ from app.domains.spatial.service import fetch_real_weather
 
 logger = logging.getLogger(__name__)
 
-<<<<<<< HEAD
-# URL của Optimization Microservice
-OPTIMIZATION_SERVICE_URL = "http://localhost:8001/api/v1/optimize"
-=======
 import os
 
 # URL của Optimization Microservice
 OPTIMIZATION_SERVICE_URL = os.getenv("OPTIMIZATION_SERVICE_URL", "http://localhost:8001/api/v1/optimize")
->>>>>>> origin/main
 
 
 def _query_stores_in_radius(
