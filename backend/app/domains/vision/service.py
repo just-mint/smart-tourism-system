@@ -63,6 +63,7 @@ def get_user_closet(db: Session, user_id: str):
 
 def find_similar_products_for_closet(db: Session, closet_item_id: int, top_n: int = 5):
     from app.domains.inventory.model import Inventory, Product
+    from app.domains.inventory.service import _product_image_url
 
     closet_item = db.query(VirtualCloset).filter(VirtualCloset.id == closet_item_id).first()
     if not closet_item:
@@ -94,7 +95,7 @@ def find_similar_products_for_closet(db: Session, closet_item_id: int, top_n: in
                 "description": product.description,
                 "price": product.price,
                 "original_price": product.original_price,
-                "image_url": product.image_url,
+                "image_url": _product_image_url(product),
                 "match_score": similarity,
                 "stock": inv.stock if inv else 0,
                 "store_id": inv.store_id if inv else None,
@@ -129,6 +130,7 @@ def _find_similar_products_by_embedding(
     exclude_product_id: int | None = None,
 ):
     from app.domains.inventory.model import Inventory, Product
+    from app.domains.inventory.service import _product_image_url
 
     query = db.query(
         Product,
@@ -152,7 +154,7 @@ def _find_similar_products_by_embedding(
                 "description": product.description,
                 "price": product.price,
                 "original_price": product.original_price,
-                "image_url": product.image_url,
+                "image_url": _product_image_url(product),
                 "match_score": similarity,
                 "stock": inv.stock if inv else 0,
                 "store_id": inv.store_id if inv else None,

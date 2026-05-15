@@ -283,8 +283,8 @@ function VisionCloset() {
                       <UploadCloud className="w-8 h-8 text-emerald-400" />
                     </div>
                     {/* Scan animation */}
-                    <div className="absolute inset-0 rounded-2xl overflow-hidden">
-                      <div className="absolute top-1/2 w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+                    <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                      <div className="animate-scanline absolute w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                     </div>
                   </div>
                   <p className="text-sm text-zinc-400 mb-1">
@@ -421,11 +421,15 @@ function VisionCloset() {
                               <img
                                 src={
                                   prod.image_url ||
-                                  "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=200"
+                                  "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=400"
                                 }
                                 alt={prod.name}
                                 className="w-full h-full object-cover"
                                 referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  ;(e.target as HTMLImageElement).src =
+                                    "https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=400&q=80"
+                                }}
                               />
                               <div className="absolute top-2 right-2 bg-purple-500/80 backdrop-blur text-white text-[10px] px-2 py-1 rounded font-bold">
                                 Phù hợp {prod.match_score}%
@@ -647,11 +651,15 @@ function VisionCloset() {
                         <img
                           src={
                             prod.image_url ||
-                            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=200"
+                            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=400"
                           }
                           alt={prod.name}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            ;(e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=400&q=80"
+                          }}
                         />
                       </div>
                       <div className="flex-1 flex flex-col justify-between min-w-0">

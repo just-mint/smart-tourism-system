@@ -299,11 +299,17 @@
 /* Scan Line */
 @keyframes scanline {
   0% {
-    top: -10%;
+    top: 0%;
+  }
+  50% {
+    top: calc(100% - 2px);
   }
   100% {
-    top: 110%;
+    top: 0%;
   }
+}
+.animate-scanline {
+  animation: scanline 2s ease-in-out infinite !important;
 }
 
 /* Progress Ring */
