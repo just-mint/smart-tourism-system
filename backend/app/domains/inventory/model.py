@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-
+    store_id: Mapped[int | None] = mapped_column(ForeignKey("stores.store_id"), index=True, nullable=True)
 from geoalchemy2 import Geometry
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text
@@ -10,8 +9,6 @@ from sqlalchemy.sql import text
 from app.db.session import Base
 
 
-def get_expire_time():
-    return datetime.now(timezone.utc) + timedelta(minutes=15)
 
 class Store(Base):
     __tablename__ = "stores"
@@ -39,7 +36,11 @@ class Product(Base):
     size: Mapped[str | None] = mapped_column(String(20), nullable=True)     # S, M, L, XL, Free
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)    # Đỏ, Xanh, Trắng
     tags: Mapped[str | None] = mapped_column(Text, nullable=True)           # "giá tốt,gần du lịch,quà"
-    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        CheckConstraint('price >= 0', name='check_price_nonnegative'),
+    )
 
 class Inventory(Base):
     __tablename__ = "inventory"
@@ -51,6 +52,12 @@ class Inventory(Base):
     locked_stock: Mapped[int] = mapped_column(Integer, default=0)
     price_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    __table_args__ = (
+        UniqueConstraint('store_id', 'product_id', name='uq_inventory_store_product'),
+        CheckConstraint('stock >= 0', name='check_stock_nonnegative'),
+        CheckConstraint('locked_stock >= 0', name='check_locked_stock_nonnegative'),
+    )
+
 class InventoryLock(Base):
     __tablename__ = "inventory_locks"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -58,9 +65,7 @@ class InventoryLock(Base):
     store_id: Mapped[int | None] = mapped_column(ForeignKey("stores.store_id"), index=True, nullable=True)
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=True), index=True)
     quantity: Mapped[int] = mapped_column(Integer, default=1)
-    locked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=get_expire_time)
-    status: Mapped[str] = mapped_column(String(50), default="soft_locked")
+    store_id: Mapped[int | None] = mapped_column(ForeignKey("stores.store_id"), index=True, nullable=True)
 
     __table_args__ = (
         Index("idx_active_locks", expires_at, postgresql_where=(text("status IN ('soft_locked', 'active')"))),
@@ -79,4 +84,4 @@ class Order(Base):
     address: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(50), default="AWAITING_PAYMENT")
     order_code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

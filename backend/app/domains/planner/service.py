@@ -64,22 +64,39 @@ def _query_stores_in_radius(
     stores = query.limit(50).all()
     
     results = []
+    if not stores:
+        return results
+        
+    store_ids = [s.store_id for s in stores]
+    
+    # [Fix P1-15] Aggregate Inventory and Product in one query
+    inv_prod = db.query(Inventory, Product).join(
+        Product, Inventory.product_id == Product.product_id
+    ).filter(Inventory.store_id.in_(store_ids)).all()
+    
+    from collections import defaultdict
+    store_invs = defaultdict(list)
+    store_prods = defaultdict(list)
+    
+    for inv, prod in inv_prod:
+        store_invs[inv.store_id].append(inv)
+        store_prods[inv.store_id].append(prod)
+        
     for s in stores:
         store_id = s.store_id
+        inventory_rows = store_invs.get(store_id, [])
+        products = store_prods.get(store_id, [])
         
-        # [v2] CHECK STOCK (Soft filter):
-        # - Store KHÔNG CÓ inventory records → vẫn cho qua (chưa nhập kho)
-        # - Store CÓ inventory nhưng TẤT CẢ stock=0 → loại
-        inventory_rows = db.query(Inventory).filter(
-            Inventory.store_id == store_id,
-        ).all()
-        
-        if inventory_rows:  # Chỉ check khi store đã có data inventory
-            has_available = any(row.stock > row.locked_stock for row in inventory_rows)
-            if not has_available:
-                continue  # Hết hàng hoàn toàn → bỏ qua
-        
-        avg_price = _get_store_avg_price(db, store_id)
+        # [v2] CHECK STOCK:
+        # Nếu store không có sản phẩm nào, loại luôn vì không có gì để mua (tránh avg price = 0)
+        if not inventory_rows:
+            continue
+            
+        has_available = any(row.stock > row.locked_stock for row in inventory_rows)
+        if not has_available:
+            continue
+            
+        avg_price = sum(p.price for p in products) / len(products) if products else 0.0
         
         # [v2] CHECK BUDGET: Loại store vượt ngân sách
         if max_budget is not None and avg_price > max_budget:
@@ -102,29 +119,7 @@ def _query_stores_in_radius(
     return results
 
 
-def _get_store_avg_price(db: Session, store_id: int) -> float:
-    """Lấy giá trung bình sản phẩm của store."""
-    result = db.query(func.avg(Product.price)).join(
-        Inventory, Product.product_id == Inventory.product_id
-    ).filter(Inventory.store_id == store_id).scalar()
-    return float(result) if result else 0.0
 
-
-def _get_store_products(db: Session, store_id: int) -> list[ProductInRoute]:
-    """Lấy danh sách sản phẩm của store (tối đa 5)."""
-    results = db.query(Product, Inventory).join(
-        Inventory, Product.product_id == Inventory.product_id
-    ).filter(Inventory.store_id == store_id).limit(5).all()
-    
-    products = []
-    for prod, inv in results:
-        products.append(ProductInRoute(
-            product_id=prod.product_id,
-            name=prod.name,
-            price=prod.price,
-            image_url=prod.image_url,
-        ))
-    return products
 
 
 async def _call_optimization_service(
@@ -249,11 +244,28 @@ async def generate_smart_itinerary(
         metrics_data = {"total_price": 0, "total_distance_km": 0, "routing_fallback_used": True}
         route_geo = None
 
+    # Fetch all products for these stores at once
+    reordered_store_ids = [shop.get("store_id") or int(shop.get("id", 0)) for shop in reordered_shops]
+    inv_prod_results = db.query(Inventory, Product).join(
+        Product, Inventory.product_id == Product.product_id
+    ).filter(Inventory.store_id.in_(reordered_store_ids)).all()
+    
+    from collections import defaultdict
+    store_route_products = defaultdict(list)
+    for inv, prod in inv_prod_results:
+        if len(store_route_products[inv.store_id]) < 5:
+            store_route_products[inv.store_id].append(ProductInRoute(
+                product_id=prod.product_id,
+                name=prod.name,
+                price=prod.price,
+                image_url=prod.image_url,
+            ))
+
     # === ENRICH & PACKING ===
     optimized_route: list[StopInRoute] = []
     for idx, shop in enumerate(reordered_shops):
         store_id = shop.get("store_id") or int(shop.get("id", 0))
-        products = _get_store_products(db, store_id)
+        products = store_route_products.get(store_id, [])
         coords = shop.get("coords", {})
         
         stop = StopInRoute(

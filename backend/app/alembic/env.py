@@ -4,35 +4,37 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-# target_metadata = None
+from app.models import SQLModel  # noqa — registers User, Item into SQLModel.metadata
+from app.core.config import settings  # noqa
+from app.db.session import Base  # noqa — Base for domain models
 
-from app.models import SQLModel  # noqa
-from app.core.config import settings # noqa
-from app.db.session import Base
+# ── Import all domain models so they register into Base.metadata ──
+from app.domains.culture import model as culture_model  # noqa
+from app.domains.inventory import model as inventory_model  # noqa
+from app.domains.vision import model as vision_model  # noqa
+# Note: agent & spatial domains use models from culture/inventory, no separate model.py
 
-# Import all domain models to ensure Alembic sees them
-from app.domains.inventory.model import Store, Product, Inventory, InventoryLock, Order
-from app.domains.culture.model import Place, Review
-from app.domains.vision.model import VisionTask, VirtualCloset
-
+# Alembic hỗ trợ list metadata — đơn giản và chính xác nhất
 target_metadata = [SQLModel.metadata, Base.metadata]
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+# ── Tập hợp TẤT CẢ tên table của app (từ cả 2 metadata) ──
+_APP_TABLES: set[str] = set()
+for _meta in target_metadata:
+    _APP_TABLES.update(_meta.tables.keys())
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    """
+    Chỉ cho Alembic theo dõi các table của app.
+    Bỏ qua toàn bộ bảng PostGIS Tiger geocoder và extension tables
+    (spatial_ref_sys, faces, edges, topology, loader_*, zip_*, v.v.)
+    """
+    if type_ == "table":
+        return name in _APP_TABLES
+    return True
 
 
 def get_url():
@@ -45,33 +47,19 @@ def include_object(object, name, type_, reflected, compare_to):
 
 
 def run_migrations_offline():
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
     url = get_url()
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True, include_object=include_object
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True,
+        include_object=include_object,
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 
 def run_migrations_online():
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
@@ -79,12 +67,13 @@ def run_migrations_online():
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_type=True, include_object=include_object
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            include_object=include_object,
         )
-
         with context.begin_transaction():
             context.run_migrations()
 

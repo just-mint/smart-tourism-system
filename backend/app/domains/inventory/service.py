@@ -186,12 +186,14 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
 
     # Chuẩn bị ghi DB - trừ từ inventory record đầu tiên còn hàng
     inv.locked_stock += request.quantity
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.INVENTORY_LOCK_TTL)
     new_lock = InventoryLock(
         product_id=inv.product_id,
         store_id=request.store_id or inv.store_id,
         user_id=user_id,
         quantity=request.quantity,
-        status="soft_locked"
+        status="soft_locked",
+        expires_at=expires_at
     )
     try:
         db.add(new_lock)

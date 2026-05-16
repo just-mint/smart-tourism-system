@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, Text
+from sqlalchemy import Column, Integer, String, Numeric, Text, CheckConstraint
 from geoalchemy2 import Geometry
 from app.db.session import Base
 
@@ -29,3 +29,7 @@ class Review(Base):
     rating = Column(Integer)
     text = Column(Text)
     time_posted = Column(String(100))
+
+    __table_args__ = (
+        CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),
+    )

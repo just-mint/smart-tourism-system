@@ -6,3 +6,6 @@ RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 \
     && apt-get install -y --no-install-recommends \
        postgresql-15-pgvector \
     && rm -rf /var/lib/apt/lists/*
+
+# Auto-create extensions (postgis, vector, pg_trgm, uuid-ossp) on first boot
+COPY init_db.sql /docker-entrypoint-initdb.d/init_db.sql
