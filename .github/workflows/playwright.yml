@@ -38,7 +38,7 @@ jobs:
   test-playwright:
     needs:
       - changes
-    if: ${{ needs.changes.outputs.changed == 'true' && github.event_name != 'push' }}
+    if: ${{ needs.changes.outputs.changed == 'true' }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
@@ -84,7 +84,7 @@ jobs:
       - test-playwright
       - changes
     # Merge reports after playwright-tests, even if some shards have failed
-    if: ${{ !cancelled() && needs.changes.outputs.changed == 'true' && needs.test-playwright.result == 'success' }}
+    if: ${{ !cancelled() && needs.changes.outputs.changed == 'true' && (needs.test-playwright.result == 'success' || needs.test-playwright.result == 'failure') }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
