@@ -39,8 +39,13 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "20"))
 MAX_PRODUCTS = int(os.environ.get("MAX_PRODUCTS", "0"))  # 0 = all
+
 REQUEST_TIMEOUT = 10  # seconds per image download
 RETRY_LIMIT = 2
+
+# Khai báo version và tên model
+EMBEDDING_MODEL_NAME = 'clip-ViT-B-32'
+EMBEDDING_VERSION = 'v1.0'
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  LOAD CLIP MODEL (one-time)
@@ -48,15 +53,18 @@ RETRY_LIMIT = 2
 def load_clip_model():
     """Load CLIP model into memory."""
     print("=" * 72)
-    print("  🧠 AEGIS — CLIP Vector Embedding Pipeline")
+    # Cập nhật log để hiển thị Version
+    print(f"  🧠 AEGIS — CLIP Vector Embedding Pipeline (Version: {EMBEDDING_VERSION})")
     print("=" * 72)
-    print("\n⏳ Đang tải model CLIP (clip-ViT-B-32)... (lần đầu sẽ download ~400MB)")
+    # Sử dụng biến name để log linh hoạt
+    print(f"\n⏳ Đang tải model CLIP ({EMBEDDING_MODEL_NAME})... (lần đầu sẽ download ~400MB)")
     
     try:
         from sentence_transformers import SentenceTransformer
         from PIL import Image as PILImage
         
-        model = SentenceTransformer('clip-ViT-B-32')
+        # Sử dụng biến thay vì hardcode chuỗi 'clip-ViT-B-32'
+        model = SentenceTransformer(EMBEDDING_MODEL_NAME)
         print(f"   ✅ Model loaded! Embedding dimension: {model.get_sentence_embedding_dimension()}")
         return model, PILImage
     except ImportError as e:

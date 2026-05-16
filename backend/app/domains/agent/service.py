@@ -84,9 +84,21 @@ TOOLS = [
 
 async def execute_tool(db: Session, function_name: str, args: dict):
     print(f"[Agent] Đang thực thi Tool ngầm: {function_name} | Tham số: {args}")
+
+    def parse_coordinates(args_dict):
+        try:
+            lat = float(args_dict.get("lat"))
+            lon = float(args_dict.get("lon"))
+            if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+                raise ValueError("Tọa độ ngoài phạm vi hợp lệ")
+            return lat, lon
+        except (TypeError, ValueError):
+            return None, None
+        
     if function_name == "search_culture":
-        keyword = args.get("keyword", "")
-        if not keyword: return {"status": "error", "message": "keyword is empty"}
+        keyword = args.get("keyword", "").strip()
+        if not keyword: return {"status": "error", "message": "keyword is empty hoặc không hợp lệ"}
+
         from app.domains.culture.service import search_places_by_name
         results = search_places_by_name(db, keyword)
         if not results: return {"status": "not_found", "message": "Không có địa danh nào khớp, hãy bảo khách cung cấp lại tên."}
@@ -104,8 +116,8 @@ async def execute_tool(db: Session, function_name: str, args: dict):
         return {"status": "success", "places": places}
         
     elif function_name == "check_weather":
-        lat = args.get("lat")
-        lon = args.get("lon")
+        lat, lon = parse_coordinates(args)
+        if lat is None: return {"status": "error", "message": "lat/lon bị thiếu hoặc sai định dạng"}
         url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
         try:
             async with httpx.AsyncClient(timeout=3.0) as client:
@@ -128,8 +140,8 @@ async def execute_tool(db: Session, function_name: str, args: dict):
             return {"error": "Mạng bị đứt đoạn không thể check thời tiết"}
             
     elif function_name == "search_products":
-        keyword = args.get("keyword", "")
-        if not keyword: return {"status": "error", "message": "keyword is empty"}
+        keyword = args.get("keyword", "").strip()
+        if not keyword: return {"status": "error", "message": "keyword is empty hoặc không hợp lệ"}
         from app.domains.inventory.model import Product
         products = db.query(Product).filter(Product.name.ilike(f"%{keyword}%")).limit(5).all()
         if not products: return {"status": "not_found", "message": "Không có sản phẩm nào khớp."}
@@ -140,9 +152,15 @@ async def execute_tool(db: Session, function_name: str, args: dict):
         return {"status": "success", "products": result}
 
     elif function_name == "find_stores_near":
-        lat = args.get("lat")
-        lon = args.get("lon")
-        radius = args.get("radius", 2000)
+        lat, lon = parse_coordinates(args)
+        if lat is None: return {"status": "error", "message": "lat/lon bị thiếu hoặc sai định dạng"}
+        
+        try:
+            radius = int(args.get("radius", 2000))
+            if radius <= 0: radius = 2000
+        except (TypeError, ValueError):
+            radius = 2000 # Fallback về default nếu AI truyền bậy
+
         from app.domains.inventory.model import Store
         from sqlalchemy import func
         from sqlalchemy.sql import text
@@ -161,12 +179,23 @@ async def execute_tool(db: Session, function_name: str, args: dict):
         return {"status": "success", "stores": result}
         
     elif function_name == "create_itinerary":
-        lat = args.get("lat")
-        lon = args.get("lon")
-        keywords = args.get("keywords", "")
-        radius = int(args.get("radius", 3000))
-        max_budget = args.get("max_budget")
+        lat, lon = parse_coordinates(args)
+        if lat is None: return {"status": "error", "message": "lat/lon bị thiếu hoặc sai định dạng"}
         
+        keywords = str(args.get("keywords", "")).strip()
+        if not keywords: return {"status": "error", "message": "Bắt buộc phải có keywords mua sắm"}
+        
+        try:
+            radius = int(args.get("radius", 3000))
+        except (TypeError, ValueError):
+            radius = 3000
+            
+        try:
+            max_budget_raw = args.get("max_budget")
+            max_budget = int(max_budget_raw) if max_budget_raw is not None else None
+        except (TypeError, ValueError):
+            max_budget = None
+            
         from app.domains.planner.service import generate_smart_itinerary
         from app.domains.planner.schema import PlannerRequest
         
