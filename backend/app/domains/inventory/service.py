@@ -1,19 +1,27 @@
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
-from app.domains.inventory.model import Product, InventoryLock, Store, Inventory, Order
-from app.domains.inventory.schema import LockRequest, OrderCreate
-from redis.asyncio import Redis
-from datetime import datetime, timezone, timedelta
 import logging
 import random
 import string
 import urllib.parse
+from datetime import datetime, timezone
+
+from fastapi import HTTPException
+from redis.asyncio import Redis
+from sqlalchemy.orm import Session
+
+from app.domains.inventory.model import Inventory, InventoryLock, Order, Product, Store
+from app.domains.inventory.schema import LockRequest, OrderCreate
 
 logger = logging.getLogger(__name__)
 
 
+def _lock_key(product_id: int, store_id: int | None = None) -> str:
+    store_part = f":store:{store_id}" if store_id is not None else ""
+    return f"lock:prod:{product_id}{store_part}"
+
+
 def get_all_stores(db: Session, place_id: str | None = None):
     from sqlalchemy import func
+
     from app.domains.culture.model import Place
 
     query = db.query(Store).filter(Store.category == 'shopping')
@@ -24,7 +32,7 @@ def get_all_stores(db: Session, place_id: str | None = None):
             query = query.filter(func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), 2000))
         else:
             return []
-            
+
     return query.limit(20).all()
 
 def get_product_by_id(db: Session, product_id: int):
@@ -36,7 +44,7 @@ def get_products_by_store(db: Session, store_id: int):
     results = db.query(Product, Inventory).join(
         Inventory, Product.product_id == Inventory.product_id
     ).filter(Inventory.store_id == store_id).limit(50).all()
-    
+
     products = []
     for prod, inv in results:
         prod_dict = {
@@ -50,7 +58,7 @@ def get_products_by_store(db: Session, store_id: int):
             "store_id": inv.store_id
         }
         products.append(prod_dict)
-    
+
     return products
 
 
@@ -60,18 +68,18 @@ def search_stores_and_products(db: Session, query: str):
     Trả về dict { stores: [...], products: [...] }.
     """
     keyword = f"%{query}%"
-    
+
     stores = db.query(Store).filter(
         Store.name.ilike(keyword)
     ).limit(10).all()
-    
+
     # Tìm product qua tên hoặc description
     product_rows = db.query(Product, Inventory).join(
         Inventory, Product.product_id == Inventory.product_id
     ).filter(
         Product.name.ilike(keyword)
     ).limit(20).all()
-    
+
     products = []
     for prod, inv in product_rows:
         products.append({
@@ -84,7 +92,7 @@ def search_stores_and_products(db: Session, query: str):
             "stock": inv.stock,
             "store_id": inv.store_id,
         })
-    
+
     return {"stores": stores, "products": products}
 
 
@@ -94,7 +102,7 @@ def compare_product_prices(db: Session, product_id: int, current_store_id: int, 
     Trả về list[dict] gồm store info + price + stock.
     """
     from sqlalchemy import func
-    
+
     product = db.query(Product).filter(Product.product_id == product_id).first()
     if not product:
         return []
@@ -106,16 +114,16 @@ def compare_product_prices(db: Session, product_id: int, current_store_id: int, 
         Inventory.product_id == product_id,
         Inventory.stock > 0,
     )
-    
+
     # Filter theo bán kính nếu có tọa độ
     if lat and lon:
         point = f"SRID=4326;POINT({lon} {lat})"
         query = query.filter(
             func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), radius)
         )
-    
+
     rows = query.limit(10).all()
-    
+
     comparisons = []
     for inv, store in rows:
         comparisons.append({
@@ -127,40 +135,51 @@ def compare_product_prices(db: Session, product_id: int, current_store_id: int, 
             "is_current": store.store_id == current_store_id,
             "category": store.category,
         })
-    
+
     # Sort: current store first, then by price ascending
     comparisons.sort(key=lambda x: (0 if x["is_current"] else 1, x["price"]))
-    
+
     return comparisons
 
 
 async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: int):
     from app.core.config import settings
-    lock_key = f"lock:prod:{request.product_id}"
+    lock_key = _lock_key(request.product_id, request.store_id)
 
-    # === PHASE 1: REDIS GATE ===
-    is_locked = await redis.get(lock_key)
-    if is_locked and str(is_locked) != str(user_id):
+    # === PHASE 1: REDIS ATOMIC GATE ===
+    lock_acquired = await redis.set(
+        lock_key,
+        str(user_id),
+        nx=True,
+        ex=settings.INVENTORY_LOCK_TTL,
+    )
+
+    if not lock_acquired:
         raise HTTPException(
             status_code=409,
-            detail="Sản phẩm này đang nằm trong giỏ của người khác! Vui lòng thử lại sau."
+            detail="Sản phẩm đang được người khác giữ."
         )
 
     # === PHASE 2: POSTGRES ROW LOCK (Qua bảng Inventory) ===
     # Lấy thông tin Tồn kho của Product (DBeaver tách riêng bảng)
-    inv = db.query(Inventory).filter(
-        Inventory.product_id == request.product_id
-    ).with_for_update().first()
+    inv_query = db.query(Inventory).filter(Inventory.product_id == request.product_id)
+    if request.store_id:
+        inv_query = inv_query.filter(Inventory.store_id == request.store_id)
+    inv = inv_query.with_for_update().first()
 
     if not inv:
+        await redis.delete(lock_key)
         raise HTTPException(status_code=404, detail="Sản phẩm không có thông tin tồn kho hoặc đã hết.")
 
     # Lấy TỔNG tồn kho có sẵn từ TẤT CẢ Store có bán product này
-    # (1 product có thể được bán tại nhiều store trong travel_app)
-    total_available = sum(max(0, i.stock - i.locked_stock) for i in db.query(Inventory).filter(
-        Inventory.product_id == request.product_id
-    ).all())
+    total_available_query = db.query(Inventory).filter(Inventory.product_id == request.product_id)
+    if request.store_id:
+        total_available_query = total_available_query.filter(Inventory.store_id == request.store_id)
+
+    total_available = sum(max(0, i.stock - i.locked_stock) for i in total_available_query.all())
+
     if total_available < request.quantity:
+        await redis.delete(lock_key)
         raise HTTPException(status_code=400, detail=f"Không đủ hàng. Tồn kho còn: {total_available}")
 
     # Chuẩn bị ghi DB - trừ từ inventory record đầu tiên còn hàng
@@ -168,27 +187,23 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.INVENTORY_LOCK_TTL)
     new_lock = InventoryLock(
         product_id=inv.product_id,
+        store_id=inv.store_id,
         user_id=user_id,
         quantity=request.quantity,
         status="soft_locked",
         expires_at=expires_at
     )
-    db.add(new_lock)
-    db.flush()
-
-    # === PHASE 3: SET REDIS TTL ===
     try:
-        await redis.set(lock_key, user_id, ex=settings.INVENTORY_LOCK_TTL)
-    except Exception as redis_error:
+        db.add(new_lock)
+        db.flush()
+        # Phase 3 đã được gom vào Phase 1 bằng lệnh Atomic phía trên.
+        db.commit()
+    except Exception:
         db.rollback()
-        logger.error(f"Redis SET thất bại cho lock_key={lock_key}: {redis_error}")
-        raise HTTPException(
-            status_code=503,
-            detail="Hệ thống đang có sự cố. Vui lòng thử lại."
-        )
+        await redis.delete(lock_key)
+        logger.exception("Tạo DB lock thất bại, đã rollback và xóa Redis key=%s", lock_key)
+        raise
 
-    # === PHASE 4: COMMIT ===
-    db.commit()
     db.refresh(new_lock)
     return new_lock
 
@@ -201,12 +216,13 @@ async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id: int):
     results = []
     for lock in locks:
         try:
-            ttl = await redis.ttl(f"lock:prod:{lock.product_id}")
+            ttl = await redis.ttl(_lock_key(lock.product_id, lock.store_id))
         except Exception:
             ttl = -1
         results.append({
             "id": lock.id,
             "product_id": lock.product_id,
+            "store_id": lock.store_id,
             "quantity": lock.quantity,
             "status": lock.status,
             "expires_at": lock.expires_at,
@@ -224,7 +240,10 @@ def check_and_release_expired_locks(db: Session) -> int:
 
     released_count = 0
     for lock in expired_locks:
-        inv = db.query(Inventory).filter(Inventory.product_id == lock.product_id).first()
+        inv_query = db.query(Inventory).filter(Inventory.product_id == lock.product_id)
+        if lock.store_id is not None:
+            inv_query = inv_query.filter(Inventory.store_id == lock.store_id)
+        inv = inv_query.with_for_update().first()
         if inv:
             inv.locked_stock = max(0, inv.locked_stock - lock.quantity)
         lock.status = "expired"
@@ -255,7 +274,7 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     1. Tìm product, tính tổng tiền
     2. Xóa Redis lock (nếu có)
     3. Trừ tồn kho vĩnh viễn trong PostgreSQL
-    4. Tạo Order record với trạng thái PENDING_SHIP
+    4. Tạo Order record với trạng thái AWAITING_PAYMENT
     """
     product = db.query(Product).filter(Product.product_id == data.product_id).first()
     if not product:
@@ -264,48 +283,57 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     total_amount = int(product.price * data.quantity)
     order_code = _generate_order_code()
 
-    # Xóa Redis lock
-    lock_key = f"lock:prod:{data.product_id}"
-    try:
-        await redis.delete(lock_key)
-    except Exception:
-        pass  # Non-critical
+    # Order chỉ được tạo từ một soft-lock hợp lệ của chính user.
+    lock_query = db.query(InventoryLock).filter(
+        InventoryLock.product_id == data.product_id,
+        InventoryLock.user_id == user_id,
+        InventoryLock.status == "soft_locked",
+    )
+    if data.store_id is not None:
+        lock_query = lock_query.filter(InventoryLock.store_id == data.store_id)
+    existing_lock = lock_query.with_for_update().first()
+
+    if not existing_lock:
+        raise HTTPException(status_code=409, detail="Bạn cần giữ hàng trước khi tạo đơn.")
+    if existing_lock.quantity < data.quantity:
+        raise HTTPException(status_code=400, detail="Số lượng đặt hàng vượt quá số lượng đã giữ.")
 
     # Trừ tồn kho vĩnh viễn
     inv_query = db.query(Inventory).filter(Inventory.product_id == data.product_id)
-    if data.store_id:
-        inv_query = inv_query.filter(Inventory.store_id == data.store_id)
+    order_store_id = data.store_id if data.store_id is not None else existing_lock.store_id
+    if order_store_id is not None:
+        inv_query = inv_query.filter(Inventory.store_id == order_store_id)
     inv = inv_query.with_for_update().first()
-    
-    if inv:
-        inv.stock = max(0, inv.stock - data.quantity)
-        inv.locked_stock = max(0, inv.locked_stock - data.quantity)
-    
-    # Đánh dấu lock cũ là completed
-    existing_lock = db.query(InventoryLock).filter(
-        InventoryLock.product_id == data.product_id,
-        InventoryLock.user_id == user_id,
-        InventoryLock.status == "soft_locked"
-    ).first()
-    if existing_lock:
-        existing_lock.status = "completed"
+    if not inv:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tồn kho cho sản phẩm đã giữ.")
+    if inv.stock < data.quantity:
+        raise HTTPException(status_code=400, detail="Tồn kho không còn đủ để tạo đơn.")
+
+    inv.stock = max(0, inv.stock - data.quantity)
+    inv.locked_stock = max(0, inv.locked_stock - data.quantity)
+    existing_lock.status = "completed"
 
     # Tạo Order
     new_order = Order(
         user_id=user_id,
         product_id=data.product_id,
-        store_id=data.store_id,
+        store_id=order_store_id,
         quantity=data.quantity,
         total_amount=total_amount,
         full_name=data.full_name,
         phone=data.phone,
         address=data.address,
-        status="PENDING_SHIP",
+        status="AWAITING_PAYMENT",
         order_code=order_code,
     )
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
+
+    try:
+        await redis.delete(_lock_key(data.product_id, order_store_id))
+    except Exception:
+        logger.warning("Không thể xóa Redis lock cho product_id=%s store_id=%s", data.product_id, order_store_id)
 
     vietqr_url = _build_vietqr_url(total_amount, order_code)
 

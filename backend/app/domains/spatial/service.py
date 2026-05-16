@@ -112,6 +112,41 @@ def get_nearby_places(db: Session, lat: float, lon: float, radius_meters: int = 
         for p, d in results
     ]
 
+def get_nearby_stores(db: Session, lat: float, lon: float, radius_meters: int = 3000, category: str = None, min_rating: float = 0.0, order_by: str = "rating"):
+    user_location = cast(WKTElement(f'POINT({lon} {lat})', srid=4326), Geography(srid=4326))
+    
+    distance_col = ST_Distance(Store.geom.cast(Geography(srid=4326)), user_location).label('distance')
+    query = db.query(Store, distance_col) \
+              .filter(ST_DWithin(Store.geom.cast(Geography(srid=4326)), user_location, radius_meters))
+              
+    if category:
+        query = query.filter(Store.category == category)
+        
+    if min_rating > 0:
+        query = query.filter(Store.rating >= min_rating)
+        
+    if order_by == "distance":
+        query = query.order_by(distance_col)
+    else:
+        query = query.order_by(Store.rating.desc(), distance_col)
+        
+    results = query.all()
+    
+    return [
+        {
+            "store_id": s.store_id, 
+            "name": s.name, 
+            "category": s.category, 
+            "rating": float(s.rating) if s.rating else None,
+            "lat": float(s.lat) if s.lat else None, 
+            "lon": float(s.lon) if s.lon else None, 
+            "distance_m": round(float(d), 2) if d else None,
+            "address": s.address
+        } 
+        for s, d in results
+    ]
+
+
 def cluster_stores_around_places(db: Session, place_ids: list[int]):
     places = db.query(Place).filter(Place.id.in_(place_ids)).all()
     if not places:

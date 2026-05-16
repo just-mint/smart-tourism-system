@@ -6,11 +6,13 @@ Idempotent: Uses SELECT … FOR UPDATE SKIP LOCKED to prevent double-release
 across concurrent worker replicas.
 """
 
-from workers.ai_worker.celery_app import celery_app
+import logging
+import os
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import os
-import logging
+
+from workers.ai_worker.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +63,7 @@ def sweep_expired_locks(self):
         expired_locks = (
             session.execute(
                 text("""
-                    SELECT id, product_id, quantity
+                    SELECT id, product_id, store_id, quantity
                     FROM inventory_locks
                     WHERE status = 'soft_locked'
                       AND expires_at <= (NOW() - INTERVAL '1 minute')
@@ -81,16 +83,26 @@ def sweep_expired_locks(self):
         for lock_row in expired_locks:
             lock_id = lock_row[0]
             product_id = lock_row[1]
-            quantity = lock_row[2]
+            store_id = lock_row[2]
+            quantity = lock_row[3]
 
             # ── BƯỚC 2: Giảm locked_stock (clamp tại 0) ──
             session.execute(
                 text("""
+                    WITH target_inventory AS (
+                        SELECT inventory_id
+                        FROM inventory
+                        WHERE product_id = :pid
+                          AND (:sid IS NULL OR store_id = :sid)
+                        ORDER BY inventory_id
+                        LIMIT 1
+                        FOR UPDATE
+                    )
                     UPDATE inventory
                     SET locked_stock = GREATEST(0, locked_stock - :qty)
-                    WHERE product_id = :pid
+                    WHERE inventory_id IN (SELECT inventory_id FROM target_inventory)
                 """),
-                {"qty": quantity, "pid": product_id},
+                {"qty": quantity, "pid": product_id, "sid": store_id},
             )
 
             lock_ids.append(lock_id)

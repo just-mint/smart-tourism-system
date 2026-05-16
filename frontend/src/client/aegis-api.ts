@@ -89,6 +89,15 @@ export interface StoreResponse {
   phone?: string
   rating?: number
 }
+export interface NearbyStoreItem extends StoreResponse {
+  distance_m?: number
+}
+export interface NearbyStoreResponse {
+  user_location: { lat: number; lon: number }
+  search_radius_meters: number
+  total_found: number
+  stores: NearbyStoreItem[]
+}
 export interface ClusterItem {
   cluster_id: number
   center: { lat: number; lon: number }
@@ -155,6 +164,7 @@ export interface ProductResponse {
 export interface LockResponseItem {
   id: number
   product_id: number
+  store_id?: number
   quantity: number
   status: string
   ttl_seconds: number
@@ -217,6 +227,12 @@ export const SpatialAPI = {
       signal,
     }),
 
+  nearbyStores: (lat: number, lon: number, radius_m = 3000, category?: string, min_rating = 0.0, order_by = "distance", signal?: AbortSignal) =>
+    aegisClient.get<NearbyStoreResponse>("/spatial/nearby-stores", {
+      params: { lat, lon, radius_m, category: category === "Tất cả" ? undefined : category, min_rating, order_by },
+      signal,
+    }),
+
   clusterStores: (place_ids: number[]) =>
     aegisClient.post<ClusterResponse>("/spatial/cluster-stores", { place_ids }),
 
@@ -268,10 +284,10 @@ export const InventoryAPI = {
   search: (q: string) =>
     aegisClient.get<SearchResult>("/inventory/search", { params: { q } }),
 
-  createLock: (product_id: number, quantity = 1) =>
+  createLock: (product_id: number, quantity = 1, store_id?: number) =>
     aegisClient.post<{ message: string; lock_id: number; expires_at: string }>(
       "/inventory/lock",
-      { product_id, quantity }
+      { product_id, quantity, store_id }
     ),
 
   getMyLocks: () =>
