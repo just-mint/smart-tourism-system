@@ -5,7 +5,7 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
-backend/app/infrastructure/osrm_data/vietnam.osm.pbf
+backend/app/infrastructure/osrm_data/
 .env
 .env.*
 !.env.example

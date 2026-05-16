@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.build.json && vite build",
+    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
     "lint": "biome check --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "format": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "preview": "vite preview",

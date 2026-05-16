@@ -1,0 +1,170 @@
+name: Quality Gates
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+  workflow_dispatch:
+
+concurrency:
+  group: quality-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-lint-test:
+    name: Backend lint and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: cp .env.example .env
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            backend/pyproject.toml
+      - name: Install backend dependencies
+        run: uv sync --all-groups
+        working-directory: backend
+      - name: Backend lint
+        run: uv run bash scripts/lint.sh
+        working-directory: backend
+      - name: Start backend dependencies
+        run: docker compose up -d db redis rabbitmq mailcatcher
+      - name: Migrate and seed
+        run: uv run bash scripts/prestart.sh
+        working-directory: backend
+      - name: Backend tests
+        run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
+        working-directory: backend
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v --remove-orphans
+
+  frontend-typecheck-build:
+    name: Frontend lint, typecheck, and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock', 'package.json', 'frontend/package.json') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+      - name: Install frontend dependencies
+        run: bun ci
+        working-directory: frontend
+      - name: Frontend lint
+        run: bun run lint
+        working-directory: frontend
+      - name: Frontend typecheck
+        run: bun run typecheck
+        working-directory: frontend
+      - name: Frontend build
+        run: bun run build
+        working-directory: frontend
+
+  openapi-contract:
+    name: OpenAPI contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: cp .env.example .env
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            backend/pyproject.toml
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock', 'package.json', 'frontend/package.json') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+      - name: Install backend dependencies
+        run: uv sync
+        working-directory: backend
+      - name: Install frontend dependencies
+        run: bun ci
+        working-directory: frontend
+      - name: Check generated OpenAPI client is current
+        run: bash scripts/check-openapi-client.sh
+
+  migration-seed-empty-db:
+    name: Migration and seed on empty DB
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: cp .env.example .env
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            uv.lock
+            backend/pyproject.toml
+      - name: Install backend dependencies
+        run: uv sync
+        working-directory: backend
+      - name: Start empty DB
+        run: docker compose up -d db
+      - name: Migration test
+        run: uv run bash scripts/test_migration.sh
+        working-directory: backend
+      - name: Seed test
+        run: uv run bash scripts/test_seed.sh
+        working-directory: backend
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v --remove-orphans
+
+  playwright-o2o-smoke:
+    name: Playwright O2O smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: cp .env.example .env
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock', 'package.json', 'frontend/package.json') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+      - name: Install frontend dependencies
+        run: bun ci
+        working-directory: frontend
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Run O2O domain smoke tests
+        run: bunx playwright test tests/o2o.spec.ts --project=chromium --no-deps --workers=1
+        working-directory: frontend
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: cp .env.example .env
+      - name: Build compose images
+        run: docker compose build
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v --remove-orphans
