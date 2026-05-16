@@ -1,13 +1,14 @@
 import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlalchemy.orm import Session
 from redis.asyncio import Redis
-from app.db.session import get_db
-from app.db.redis_client import get_redis
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_current_user
+from app.db.redis_client import get_redis
+from app.db.session import get_db
+from app.domains.inventory import schema, service
 from app.models import User
-from app.domains.inventory import service, schema
 
 router = APIRouter()
 
@@ -46,7 +47,8 @@ def get_stores(place_id: str | None = None, db: Session = Depends(get_db)):
 @router.get("/products/{id}", response_model=schema.ProductResponse)
 def get_product(id: int, db: Session = Depends(get_db)):
     prod = service.get_product_by_id(db=db, product_id=id)
-    if not prod: raise HTTPException(status_code=404, detail="Không thấy Product")
+    if not prod:
+        raise HTTPException(status_code=404, detail="Không thấy Product")
     return prod
 
 @router.get("/stores/{store_id}/products", response_model=list[schema.ProductResponse])

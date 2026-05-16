@@ -7,14 +7,13 @@ TRƯỚC khi chuẩn hóa Min-Max, đảm bảo context thực sự ảnh hưở
 """
 
 from __future__ import annotations
-import math
+
 import logging
+import math
 from typing import Any
 
 from optimization_service.core.algorithms.context_analyzer import (
     apply_context_adjustment,
-    analyze_time_context,
-    analyze_weather_context,
 )
 
 logger = logging.getLogger(__name__)

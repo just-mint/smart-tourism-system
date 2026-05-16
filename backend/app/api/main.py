@@ -1,21 +1,18 @@
 from fastapi import APIRouter
 
 from app.api.routes import items, login, users, utils
-from app.core.config import settings
+from app.domains.agent.router import router as agent_router
+from app.domains.culture.router import router as culture_router
+from app.domains.inventory.router import router as inventory_router
+from app.domains.planner.router import router as planner_router
+from app.domains.spatial.router import router as spatial_router
+from app.domains.vision.router import router as vision_router
 
 api_router = APIRouter()
 api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
 api_router.include_router(items.router)
-
-
-from app.domains.agent.router import router as agent_router
-from app.domains.culture.router import router as culture_router
-from app.domains.spatial.router import router as spatial_router
-from app.domains.inventory.router import router as inventory_router
-from app.domains.vision.router import router as vision_router
-from app.domains.planner.router import router as planner_router
 
 # if settings.ENVIRONMENT == "local":
 #     api_router.include_router(private.router)

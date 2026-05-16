@@ -10,8 +10,8 @@ Lộ trình:
   5. Fallback: Haversine nếu OSRM timeout/lỗi hoàn toàn
 """
 
-import math
 import logging
+import math
 import os
 from typing import Any
 

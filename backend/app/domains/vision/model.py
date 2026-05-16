@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
-from app.db.session import Base
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, DateTime
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import DateTime, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.session import Base
+
 
 class VisionTask(Base):
     __tablename__ = "vision_tasks"

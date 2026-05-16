@@ -3,22 +3,28 @@ AEGIS Optimization Service — Unit & Integration Tests
 Chạy: python -m optimization_service.main_test (từ thư mục backend/)
 """
 
-from optimization_service.core.algorithms.ranking import rank_items, haversine
+import logging
+
+from optimization_service.core.algorithms.ranking import haversine, rank_items
 from optimization_service.core.algorithms.tsp_solver import (
     run_tsp_pipeline,
-    _build_haversine_matrix,
-    _nearest_neighbor,
-    _two_opt,
+)
+from optimization_service.schemas.payload import (
+    OptimizeRequest,
+    ShopCoords,
+    ShopItem,
+    WeightConfig,
 )
 from optimization_service.services.optimizer import optimize_pipeline
-from optimization_service.schemas.payload import OptimizeRequest, ShopItem, ShopCoords, WeightConfig
+
+logger = logging.getLogger(__name__)
 
 
 def test_haversine():
     """Test Haversine: HCM → Hà Nội ≈ 1,138 km"""
     d = haversine(10.7769, 106.7009, 21.0285, 105.8542)
     assert 1100 < d < 1200, f"Haversine sai: {d}km"
-    print(f"✅ Haversine HCM→HN = {d:.1f}km")
+    logger.info("Haversine HCM→HN = %.1fkm", d)
 
 
 def test_ranking():
@@ -31,7 +37,7 @@ def test_ranking():
     result = rank_items(shops, user_lat=10.7720, user_lon=106.6983, weights={"rating": 0.4, "distance": 0.3, "price": 0.3})
     assert len(result) == 3
     # Shop có rating cao + gần + giá rẻ nên xếp trước
-    print(f"✅ Ranking: {[(s['name'], s['final_score']) for s in result]}")
+    logger.info("Ranking: %s", [(s["name"], s["final_score"]) for s in result])
 
 
 def test_tsp_pipeline():
@@ -45,7 +51,13 @@ def test_tsp_pipeline():
     assert len(ordered) == 3
     assert metrics["total_distance_km"] >= 0
     has_geo = route_geometry is not None and route_geometry.get("geojson") is not None
-    print(f"✅ TSP Pipeline: order={[s['name'] for s in ordered]}, distance={metrics['total_distance_km']}km, fallback={metrics['routing_fallback_used']}, has_osrm_geo={has_geo}")
+    logger.info(
+        "TSP Pipeline: order=%s, distance=%skm, fallback=%s, has_osrm_geo=%s",
+        [s["name"] for s in ordered],
+        metrics["total_distance_km"],
+        metrics["routing_fallback_used"],
+        has_geo,
+    )
 
 
 def test_full_pipeline():
@@ -67,21 +79,26 @@ def test_full_pipeline():
     assert result.status == "success"
     assert len(result.data.reordered_shops) <= 5
     assert result.data.metrics.total_distance_km >= 0
-    print(f"✅ Full Pipeline: {len(result.data.reordered_shops)} shops, distance={result.data.metrics.total_distance_km}km")
-    print(f"   Thứ tự: {[s['name'] for s in result.data.reordered_shops]}")
-    print(f"   Metrics: price={result.data.metrics.total_price}, fallback={result.data.metrics.routing_fallback_used}")
+    logger.info(
+        "Full Pipeline: %s shops, distance=%skm",
+        len(result.data.reordered_shops),
+        result.data.metrics.total_distance_km,
+    )
+    logger.info("Thứ tự: %s", [s["name"] for s in result.data.reordered_shops])
+    logger.info(
+        "Metrics: price=%s, fallback=%s",
+        result.data.metrics.total_price,
+        result.data.metrics.routing_fallback_used,
+    )
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("AEGIS Optimization Service — Test Suite")
-    print("=" * 60)
-    
+    logging.basicConfig(level=logging.INFO)
+    logger.info("AEGIS Optimization Service — Test Suite")
+
     test_haversine()
     test_ranking()
     test_tsp_pipeline()
     test_full_pipeline()
-    
-    print("\n" + "=" * 60)
-    print("🎉 ALL TESTS PASSED!")
-    print("=" * 60)
+
+    logger.info("ALL TESTS PASSED")

@@ -1,240 +1,163 @@
 # AEGIS O2O
 
-AEGIS O2O (Online-to-Offline) is a modern full-stack application designed for high-performance spatial and inventory management.
+AEGIS O2O is a smart tourism and online-to-offline commerce platform. It combines spatial search, route planning, culture/heritage content, inventory locking, checkout flows, and AI-assisted product discovery in one FastAPI + React codebase.
 
-## 🚀 Technology Stack
+## What Is Inside
 
-- **Backend**: FastAPI, SQLModel, PostgreSQL (with PostGIS & pgvector extensions), Redis, Celery.
-- **Frontend**: React, Vite, Tailwind CSS, shadcn/ui, TanStack Query, TanStack Router.
-- **Infrastructure**: Docker Compose, Traefik, Adminer.
+- Spatial discovery: nearby places and stores with PostGIS geometry queries.
+- Smart itinerary planner: ranks stores, optimizes the route, and enriches each stop with products.
+- Inventory and O2O checkout: stock by store, soft locks, store-specific pricing, and order creation.
+- Vision and closet: upload images, detect/organize closet items, and mix-and-match products.
+- Culture and heritage: place detail, AI story generation, reviews, and contextual tourism data.
+- Optimization service: independent FastAPI service for ranking and TSP route optimization.
+- Background workers: Celery workers for AI, vision, inventory, and context tasks.
+- Admin/auth baseline: users, login, settings, admin table, and item CRUD from the original full-stack template.
 
----
+## Stack
 
-## 🚀 Dành cho Developer mới (Hướng dẫn Setup)
+- Backend: FastAPI, SQLModel/SQLAlchemy, Alembic, PostgreSQL, PostGIS, pgvector, Redis, Celery.
+- Frontend: React, Vite, TypeScript, TanStack Router, TanStack Query, Tailwind CSS, Radix UI, Leaflet, Playwright.
+- Tooling: `uv` for Python, Bun for frontend dependencies, Docker Compose for local infrastructure.
 
-Đồng đội clone code về hãy làm theo 4 bước sau để môi trường có đủ bảng và dữ liệu thật:
-
-**Bước 1:** Clone code về máy
-```bash
-git clone <repository_url> aegis-o2o
-cd aegis-o2o
-```
-
-**Bước 2:** Cấu hình biến môi trường
-Copy file `.env.example` thành `.env` (tại thư mục gốc hoặc `backend/`) và điền thông tin Database PostgreSQL của bạn.
-
-**Bước 3:** Chạy DB và nạp toàn bộ Dữ Liệu
-Chạy script dưới đây. Kịch bản này sẽ tự động bật Database Container (qua Docker) và nạp toàn bộ cấu trúc bảng, dữ liệu mẫu, vector AI từ file `travel_app_full_data.sql`:
-```bash
-bash setup_local.sh
-```
-> **Lưu ý:** Bạn cần phải cài đặt Docker và bật Docker Desktop trước khi chạy lệnh này.
-
-**Bước 4:** Tạo môi trường ảo (venv) và chạy ứng dụng
-Sau khi Database đã có đủ dữ liệu, bạn chỉ việc cài môi trường và chạy code:
-```bash
-# 1. Tạo và kích hoạt venv
-python -m venv venv
-source venv/bin/activate  # (Trên Windows dùng: venv\Scripts\activate)
-
-# 2. Cài đặt thư viện Backend
-cd backend
-pip install -r requirements.txt  # Hoặc: uv sync
-uv run fastapi dev app/main.py   # Chạy Backend ở localhost:8000
-```
-```bash
-# 3. Mở tab Terminal khác cho Frontend
-cd frontend
-bun install
-bun run dev                      # Chạy Frontend ở localhost:5173
-```
-
----
-
-## 🛠️ How To Run the Project
-
-You can run the project either fully containerized via Docker (easiest), or natively on your local machine for active development.
-
-### Option 1: Running with Docker Compose (Recommended)
-
-To start the entire stack (Database, Backend, Frontend, and Traefik Proxy), use:
-
-```bash
-docker compose watch
-```
-
-Once the containers are up and running, you can access the services at:
-
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **Database Adminer**: http://localhost:8080
-- **Traefik UI**: http://localhost:8090
-
-> **Note:** The first time you start the stack, it might take a minute for the database to initialize and the backend migrations to run. You can view logs with `docker compose logs -f backend`.
-
-### Option 2: Running Locally (Native Development)
-
-If you prefer to run the application processes natively on your machine (e.g., Ubuntu), follow these steps:
-
-#### 1. Start the Database Infrastructure
-First, start only the database container:
-```bash
-docker compose up -d db
-```
-
-#### 2. Start the Backend
-The backend uses `uv` for lightning-fast dependency management.
-
-```bash
-cd backend
-
-# Install dependencies
-uv sync
-
-# Run the FastAPI development server
-uv run fastapi dev app/main.py
-```
-*(The backend will be available at http://localhost:8000)*
-
-#### 3. Start the Frontend
-The frontend uses `bun` for package management.
-
-```bash
-cd frontend
-
-# Install dependencies
-bun install
-
-# Start the Vite development server
-bun run dev
-```
-*(The frontend will be available at http://localhost:5173)*
-
----
-
-## 📚 Further Documentation
-
-For more detailed information, please refer to the following documents:
-- **Backend Guide**: [backend/README.md](./backend/README.md)
-- **Frontend Guide**: [frontend/README.md](./frontend/README.md)
-- **Advanced Development & Docker**: [development.md](./development.md)
-- **Deployment Instructions**: [deployment.md](./deployment.md)
-
-## 🧠 AEGIS Optimization Service (Week 2 Core)
-
-### 1. 🏗 TỔNG QUAN & KIẾN TRÚC HỆ THỐNG (SYSTEM ARCHITECTURE)
-
-**Vai trò trong hệ sinh thái AEGIS O2O:**
-**AEGIS Optimization Service** là một Microservice độc lập chuyên biệt chịu trách nhiệm giải quyết hai bài toán nặng về tính toán nhất của nền tảng:
-1. **Multi-Criteria Decision Making (MCDM):** Đánh giá và xếp hạng cửa hàng (Ranking).
-2. **Traveling Salesperson Problem (TSP):** Tối ưu hóa lộ trình di chuyển (Routing).
-
-Bằng cách tách rời logic này, chúng ta đảm bảo **Core Server** không bị nghẽn (bottleneck) khi phải xử lý các tính toán ma trận OSRM phức tạp.
-
-**Tech Stack:**
-- **Framework:** FastAPI
-- **Validation:** Pydantic
-- **Language:** Python 3.10+
-- **Routing Engine:** OSRM (Open Source Routing Machine)
-
-**Triết lý Domain-Driven Design (DDD):**
-Dự án áp dụng chặt chẽ kiến trúc DDD nhằm phân tách ranh giới giữa giao thức mạng (API) và lõi thuật toán nghiệp vụ (Core Algorithms).
+## Repository Layout
 
 ```text
-aegis_optimization_service/
-├── api/                   # Controller Layer: Định tuyến các endpoints
-│   └── v1/
-│       └── optimize.py    # Endpoint POST /api/v1/optimize
-├── core/                  # Domain Layer: Chứa não bộ thuật toán
-│   └── algorithms/
-│       ├── ranking.py     # MCDM, Min-Max Scaler
-│       └── tsp_solver.py  # Greedy, 2-Opt, Haversine Fallback
-├── schemas/               # Data Transfer Objects (Pydantic Models)
-│   └── payload.py         # Request/Response schemas validation
-├── services/              # Application Layer: Điều phối logic giữa API & Core
-│   └── optimizer.py       # Orchestrator gom Ranking & TSP
-├── main.py                # Điểm khởi chạy FastAPI (App Entrypoint)
-├── main_test.py           # Kịch bản test nội bộ (Unit/Integration Test)
-└── requirements.txt       # Danh sách dependencies
+.
+├── backend/
+│   ├── app/                      # Main FastAPI API
+│   ├── app/domains/              # Agent, culture, inventory, planner, spatial, vision
+│   ├── app/alembic/              # Database migrations
+│   ├── optimization_service/     # Ranking and route optimization microservice
+│   ├── workers/                  # Celery workers and beat tasks
+│   └── scripts/                  # Backend maintenance/test scripts
+├── frontend/
+│   ├── src/routes/               # App pages
+│   ├── src/components/           # Shared UI and feature components
+│   ├── src/client/               # OpenAPI/generated API client plus local wrapper
+│   └── tests/                    # Playwright specs
+├── scripts/                      # Cross-project data/vector/client utilities
+├── compose.yml                   # Main local/prod-ish stack
+├── compose.override.yml          # Local development overrides
+└── .env.example                  # Environment template
 ```
 
-### 2. 🧠 CHI TIẾT LÕI THUẬT TOÁN (CORE ALGORITHMS - CẬP NHẬT TUẦN 2)
+## Prerequisites
 
-- **Ranking System (MCDM):** Hệ thống sử dụng thuật toán Đa tiêu chí, áp dụng **Min-Max Scaler** để đưa các thang đo (Rating, Price, Distance) về dải `[0, 1]`. Khoảng cách đã được **THAM SỐ HÓA**, nhận động `user_lat` và `user_lon` từ request API để tính toán real-time, thay vì fix cứng.
-- **TSP Optimizer (Tối ưu lộ trình):** Luồng xử lý qua 3 bước: Lấy OSRM Matrix -> Tìm Nearest Neighbor (Greedy) -> Tối ưu 2-Opt. Hàm `reorder_shops` giúp trả về danh sách cửa hàng thực tế (Dict objects) thay vì Index vô nghĩa.
-- **Tính toán Chi phí:** Hàm `calculate_total_metrics` tự động tính toán tổng `total_price` và `total_distance_km` từ lộ trình chốt.
-- **Cơ chế Fallback Sinh Tồn:** OSRM public API có thể bị timeout. Hệ thống đã tích hợp sẵn cơ chế tự động chuyển sang công thức **Haversine** (Đường chim bay) nếu OSRM lỗi, đảm bảo hệ thống luôn trả về lộ trình mà không bị crash.
+- Docker and Docker Compose.
+- Python 3.10+ and `uv`.
+- Bun.
 
-### 3. 💻 HƯỚNG DẪN VẬN HÀNH DÀNH CHO TEAM (LOCAL SETUP & RUN)
+## Environment
 
-**Bước 1:** Clone repo và checkout nhánh.
+Create the local environment file from the template:
+
 ```bash
-git clone <repository_url> aegis_optimization_service
-cd aegis_optimization_service
-git checkout develop
+cp .env.example .env
 ```
 
-**Bước 2:** Cài đặt môi trường.
+For local development, update at least these values:
+
+- `SECRET_KEY`
+- `FIRST_SUPERUSER`
+- `FIRST_SUPERUSER_PASSWORD`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `INTERNAL_SECRET_KEY`
+- `GEMINI_API_KEY` if the AI features need a real Gemini key
+
+The backend reads the repository-level `.env` file, so commands can be run from either the repository root or `backend/`.
+
+## Run With Docker Compose
+
+Start the full stack:
+
 ```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+docker compose up --build
 ```
 
-**Bước 3:** Chạy kịch bản test nội bộ (để kiểm tra Fallback Haversine).
+Useful local URLs:
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- Backend OpenAPI: http://localhost:8000/docs
+- Optimization service: http://localhost:8002
+- Adminer: http://localhost:8080
+- Redis: `localhost:6380` from the override file
+
+To run worker services too:
+
 ```bash
-python main_test.py
+docker compose --profile worker up --build
 ```
 
-**Bước 4:** Khởi động server.
+## Run Locally For Development
+
+Start infrastructure:
+
 ```bash
-uvicorn main:app --port 8001 --reload
+docker compose up -d db redis rabbitmq
 ```
 
-### 4. 🔌 TÀI LIỆU TÍCH HỢP API (INTEGRATION GUIDE FOR MEMBER F)
+Run the backend API:
 
-- **Endpoint:** `POST /api/v1/optimize`
-- **Request Payload mẫu (JSON):** Cần có tọa độ user (`user_lat`, `user_lng`), danh sách shop thô (`shops`) lấy từ `data.json`, và bộ trọng số `weights`.
-
-```json
-{
-  "user_lat": 10.7720,
-  "user_lng": 106.6983,
-  "weights": {
-    "rating": 0.4,
-    "distance": 0.3,
-    "price": 0.3
-  },
-  "shops": [
-    {
-      "id": "tour_1",
-      "name": "Nón Lá Việt Traditional",
-      "coords": {"lat": 10.7720, "lng": 106.6983},
-      "price": 85000,
-      "rating": 4.6
-    }
-  ]
-}
+```bash
+cd backend
+uv sync
+uv run alembic upgrade head
+uv run fastapi dev app/main.py
 ```
 
-- **Response Format mẫu (JSON):** Phải thể hiện rõ danh sách shop đã được sắp xếp (`reordered_shops`) và trường `metrics` chứa tổng giá/quãng đường dự kiến.
+Run the optimization service in another terminal:
 
-```json
-{
-  "status": "success",
-  "data": {
-    "reordered_shops": [ ... ],
-    "metrics": {
-      "total_price": 85000,
-      "total_distance_km": 0.0,
-      "routing_fallback_used": false
-    }
-  }
-}
+```bash
+cd backend
+uv run uvicorn optimization_service.main:app --reload --port 8001
 ```
 
----
+Run the frontend:
 
-## 📄 License
-This project is licensed under the terms of the MIT license.
+```bash
+cd frontend
+bun install
+bun run dev
+```
+
+## Common Commands
+
+```bash
+# Backend tests
+uv run --project backend pytest
+
+# Backend lint for changed Python files or the full backend
+uv run --project backend ruff check backend
+
+# Frontend lint from repo root
+npm run lint
+
+# Frontend production build
+cd frontend && bun run build
+
+# Regenerate frontend API client after backend schema changes
+bash scripts/generate-client.sh
+```
+
+## Data And Maintenance Scripts
+
+- `backend/scripts/seed_stores.py`: seed store/place data.
+- `backend/scripts/upgrade_products.py`: product maintenance helper.
+- `scripts/seed_github_products.py`: import product/store SQL data from the configured GitHub source.
+- `scripts/sync_product_vectors.py`: generate CLIP embeddings for products.
+- `scripts/db_audit.py`: quick database audit for product embeddings.
+
+Runtime uploads are stored under `backend/uploads/` and are intentionally ignored by Git.
+
+## Documentation
+
+- Backend guide: [backend/README.md](backend/README.md)
+- Frontend guide: [frontend/README.md](frontend/README.md)
+- Security notes: [SECURITY.md](SECURITY.md)
+- Audit notes, if you need the historical review: [aegis_o2o_audit.md](aegis_o2o_audit.md)
+
+## License
+
+This project is licensed under the MIT license. See [LICENSE](LICENSE).

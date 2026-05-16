@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+
 from app.db.session import get_db
-from app.domains.spatial import service, schema
+from app.domains.spatial import schema, service
 
 router = APIRouter()
 
@@ -27,8 +28,8 @@ def find_nearby_places(
     try:
         places = service.get_nearby_places(db=db, lat=lat, lon=lon, radius_meters=radius)
         return {
-            "user_location": {"lat": lat, "lon": lon}, 
-            "search_radius_meters": radius, 
+            "user_location": {"lat": lat, "lon": lon},
+            "search_radius_meters": radius,
             "total_found": len(places),
             "places": places
         }
@@ -47,17 +48,17 @@ def find_nearby_stores(
 ):
     try:
         stores = service.get_nearby_stores(
-            db=db, 
-            lat=lat, 
-            lon=lon, 
-            radius_meters=radius_m, 
-            category=category, 
-            min_rating=min_rating, 
+            db=db,
+            lat=lat,
+            lon=lon,
+            radius_meters=radius_m,
+            category=category,
+            min_rating=min_rating,
             order_by=order_by
         )
         return {
-            "user_location": {"lat": lat, "lon": lon}, 
-            "search_radius_meters": radius_m, 
+            "user_location": {"lat": lat, "lon": lon},
+            "search_radius_meters": radius_m,
             "total_found": len(stores),
             "stores": stores
         }
@@ -67,7 +68,8 @@ def find_nearby_stores(
 @router.post("/cluster-stores", response_model=schema.ClusterResponse)
 def cluster_and_group_stores(request: schema.ClusterRequest, db: Session = Depends(get_db)):
     """Gom cụm Places & Stores bằng KMeans và ST_DWithin"""
-    if not request.place_ids: raise HTTPException(status_code=400, detail="Cần ít nhất 1 place_id")
+    if not request.place_ids:
+        raise HTTPException(status_code=400, detail="Cần ít nhất 1 place_id")
     try:
         return service.cluster_stores_around_places(db=db, place_ids=request.place_ids)
     except Exception as e:

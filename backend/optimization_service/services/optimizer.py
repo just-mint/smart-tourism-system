@@ -8,14 +8,18 @@ AEGIS Optimization Service — Optimizer Orchestrator
 import logging
 from typing import Any
 
+from optimization_service.core.algorithms.context_analyzer import (
+    analyze_time_context,
+    analyze_weather_context,
+)
 from optimization_service.core.algorithms.ranking import rank_items
 from optimization_service.core.algorithms.tsp_solver import run_tsp_pipeline
-from optimization_service.core.algorithms.context_analyzer import (
-    analyze_time_context, analyze_weather_context
-)
 from optimization_service.schemas.payload import (
-    OptimizeRequest, OptimizeResponse, OptimizeResponseData,
-    MetricsResponse, RouteGeometry,
+    MetricsResponse,
+    OptimizeRequest,
+    OptimizeResponse,
+    OptimizeResponseData,
+    RouteGeometry,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,11 +52,11 @@ def optimize_pipeline(request: OptimizeRequest) -> OptimizeResponse:
     time_ctx = None
     if request.local_hour is not None:
         time_ctx = analyze_time_context(request.local_hour)
-    
+
     weather_ctx = None
     if request.weather_condition:
         weather_ctx = analyze_weather_context(
-            request.weather_condition, 
+            request.weather_condition,
             request.weather_temp
         )
 

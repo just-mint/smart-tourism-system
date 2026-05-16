@@ -3,8 +3,8 @@ AEGIS Planner Domain — Pydantic Schemas
 Request/Response cho POST /api/v1/planner/generate
 """
 
+
 from pydantic import BaseModel, Field
-from typing import Optional, Any
 
 
 class WeightConfig(BaseModel):
@@ -25,11 +25,11 @@ class PlannerRequest(BaseModel):
     weights: WeightConfig = WeightConfig()
     top_n: int = Field(default=5, ge=1, le=10, description="Số lượng điểm đến tối ưu")
     # [v2] Context-aware: Frontend có thể gửi local_hour (0-23), nếu không có Backend tự lấy
-    local_hour: Optional[int] = Field(
+    local_hour: int | None = Field(
         default=None, ge=0, le=23,
         description="Giờ địa phương của khách (0-23). Nếu không gửi, hệ thống tự xác định theo UTC+7."
     )
-    max_budget: Optional[int] = Field(
+    max_budget: int | None = Field(
         default=None, ge=0,
         description="Ngân sách tối đa (VNĐ). Nếu không gửi, không giới hạn ngân sách."
     )
@@ -40,28 +40,28 @@ class ProductInRoute(BaseModel):
     product_id: int
     name: str
     price: float
-    image_url: Optional[str] = None
+    image_url: str | None = None
 
 
 class StopInRoute(BaseModel):
     """Một điểm dừng trong lộ trình tối ưu."""
     order: int
-    store_id: Optional[int] = None
+    store_id: int | None = None
     name: str
-    category: Optional[str] = None
-    address: Optional[str] = None
+    category: str | None = None
+    address: str | None = None
     lat: float
     lon: float
-    rating: Optional[float] = None
-    distance_km: Optional[float] = None
-    final_score: Optional[float] = None
+    rating: float | None = None
+    distance_km: float | None = None
+    final_score: float | None = None
     products: list[ProductInRoute] = []
 
 
 class RouteGeometry(BaseModel):
     """GeoJSON geometry từ OSRM Route API — LineString đường thực tế."""
     geojson: dict      # {type: "LineString", coordinates: [[lon,lat], ...]}
-    duration_minutes: Optional[float] = None
+    duration_minutes: float | None = None
 
 
 class RouteMetrics(BaseModel):
@@ -73,9 +73,9 @@ class RouteMetrics(BaseModel):
 
 class WeatherInfo(BaseModel):
     """Thông tin thời tiết tại vị trí xuất phát."""
-    temperature: Optional[float] = None
-    condition: Optional[str] = None
-    code: Optional[int] = None
+    temperature: float | None = None
+    condition: str | None = None
+    code: int | None = None
 
 
 class ContextInfo(BaseModel):
@@ -94,7 +94,7 @@ class PlannerResponse(BaseModel):
     status: str = "success"
     optimized_route: list[StopInRoute]
     metrics: RouteMetrics
-    route_geometry: Optional[RouteGeometry] = None  # GeoJSON LineString đường thực tế
-    weather: Optional[WeatherInfo] = None
-    context_applied: Optional[ContextInfo] = None   # [v2] Ngữ cảnh đã can thiệp
+    route_geometry: RouteGeometry | None = None  # GeoJSON LineString đường thực tế
+    weather: WeatherInfo | None = None
+    context_applied: ContextInfo | None = None   # [v2] Ngữ cảnh đã can thiệp
     total_candidates: int = Field(default=0, description="Tổng số ứng viên thô trước khi lọc")

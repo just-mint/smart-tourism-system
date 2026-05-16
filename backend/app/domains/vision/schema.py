@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional, List, Dict
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class VisionUploadResponse(BaseModel):
     task_id: str
@@ -10,8 +11,8 @@ class TaskStatus(BaseModel):
     task_id: str
     status: str
     image_path: str
-    detected_objects: Optional[Dict] = None
-    matched_product_ids: Optional[List[int]] = None
+    detected_objects: dict | None = None
+    matched_product_ids: list[int] | None = None
     class Config:
         from_attributes = True
 
@@ -27,17 +28,17 @@ class ClosetItemResponse(BaseModel):
 class MixMatchProduct(BaseModel):
     product_id: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     price: int
-    original_price: Optional[int] = None
-    image_url: Optional[str] = None
+    original_price: int | None = None
+    image_url: str | None = None
     match_score: float        # 0-100%
     stock: int = 0
-    store_id: Optional[int] = None
+    store_id: int | None = None
 
 
 class MixMatchResponse(BaseModel):
     closet_item_id: int
-    matches: List[MixMatchProduct]
+    matches: list[MixMatchProduct]
     total_matches: int
 

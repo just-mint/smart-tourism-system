@@ -1,20 +1,22 @@
-from sqlalchemy import Column, Integer, String, Numeric, Text, CheckConstraint
 from geoalchemy2 import Geometry
+from sqlalchemy import CheckConstraint, Column, Integer, Numeric, String, Text
+
 from app.db.session import Base
+
 
 class Place(Base):
     __tablename__ = "places"
 
     id = Column(Integer, primary_key=True, index=True)
-    place_id = Column(String(50), unique=True, index=True) 
-    place_type = Column(String(50)) 
+    place_id = Column(String(50), unique=True, index=True)
+    place_type = Column(String(50))
     name = Column(String(255))
     category = Column(String(100), index=True)
     address = Column(Text)
     lat = Column(Numeric)
     lon = Column(Numeric)
     geom = Column(Geometry(geometry_type='POINT', srid=4326))
-    
+
     # Missing columns appended to match travel_app
     phone = Column(String(50), nullable=True)
     rating = Column(Numeric(3,1), nullable=True)

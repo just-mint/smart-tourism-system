@@ -1,29 +1,27 @@
 # Security Policy
 
-Security is very important for this project and its community. 🔒
+Security matters for AEGIS O2O because the system handles accounts, order data, uploaded images, and service-to-service credentials.
 
-Learn more about it below. 👇
+## Supported Version
 
-## Versions
+The `main` branch is the active development line and is the only supported version unless the team creates release branches later.
 
-The latest version or release is supported.
+## Reporting A Vulnerability
 
-You are encouraged to write tests for your application and update your versions frequently after ensuring that your tests are passing. This way you will benefit from the latest features, bug fixes, and **security fixes**.
+Do not open a public issue with secrets, exploit details, tokens, private database URLs, or user data.
 
-## Reporting a Vulnerability
+Report security problems privately to the repository maintainers or project owner. Include:
 
-If you think you found a vulnerability, and even if you are not sure about it, please report it right away by sending an email to: security@tiangolo.com. Please try to be as explicit as possible, describing all the steps and example code to reproduce the security issue.
+- A short description of the issue.
+- Steps to reproduce.
+- Affected endpoint, service, or file path.
+- Expected impact.
+- Any safe logs or screenshots with secrets removed.
 
-I (the author, [@tiangolo](https://twitter.com/tiangolo)) will review it thoroughly and get back to you.
+## Local Secret Handling
 
-## Public Discussions
-
-Please restrain from publicly discussing a potential security vulnerability. 🙊
-
-It's better to discuss privately and try to find a solution first, to limit the potential impact as much as possible.
-
----
-
-Thanks for your help!
-
-The community and I thank you for that. 🙇
+- Keep `.env` local. It is ignored by Git.
+- Use `.env.example` only as a template.
+- Rotate `SECRET_KEY`, `FIRST_SUPERUSER_PASSWORD`, `POSTGRES_PASSWORD`, and `INTERNAL_SECRET_KEY` before deployment.
+- Do not commit runtime uploads from `backend/uploads/`.
+- Do not commit generated local caches such as `.venv/`, `node_modules/`, `frontend/dist/`, coverage reports, or Playwright reports.

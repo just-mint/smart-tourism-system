@@ -1,15 +1,16 @@
+
 from pydantic import BaseModel
-from typing import Optional
+
 
 class PlaceDetailWithAI(BaseModel):
     id: int
     place_id: str
     name: str
-    category: Optional[str] = None
-    address: Optional[str] = None
+    category: str | None = None
+    address: str | None = None
     lat: float
     lon: float
-    ai_story: Optional[str] = None
+    ai_story: str | None = None
 
     class Config:
         from_attributes = True

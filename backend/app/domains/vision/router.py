@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.orm import Session
 import os
 import uuid
-from app.db.session import get_db
-from app.domains.vision import service, schema
-from app.core.config import settings
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_current_user
+from app.core.config import settings
+from app.db.session import get_db
+from app.domains.vision import schema, service
 from app.models import User
 
 router = APIRouter()
@@ -45,7 +48,11 @@ def validate_and_save(file: UploadFile, folder: str) -> str:
 
 
 @router.post("/scan", response_model=schema.VisionUploadResponse)
-def upload_and_scan(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def upload_and_scan(
+    file: UploadFile = File(...),
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Upload ảnh để AI scan sản phẩm (non-blocking, trả task_id ngay)"""
     file_path = validate_and_save(file, "uploads/scans/")
     task = service.create_vision_task(db=db, image_path=file_path)
@@ -53,19 +60,22 @@ def upload_and_scan(file: UploadFile = File(...), current_user: User = Depends(g
 
 
 @router.get("/tasks/{task_id}", response_model=schema.TaskStatus)
-def check_task_status(task_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    from datetime import datetime, timezone
+def check_task_status(
+    task_id: str,
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     task = service.get_vision_task(db=db, task_id=task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task không tồn tại")
-    
+
     if task.status == "processing":
         delta = (datetime.now(timezone.utc) - task.created_at).total_seconds()
         if delta > 30:
             task.status = "failed"
             task.detected_objects = {"error": "AI Worker Timeout"}
             db.commit()
-            
+
     return task
 
 
@@ -100,4 +110,3 @@ def get_mix_match(item_id: int, current_user: User = Depends(get_current_user), 
         matches=matches,
         total_matches=len(matches),
     )
-

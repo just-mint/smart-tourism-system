@@ -1,8 +1,9 @@
-from sqlalchemy.orm import Session
-from app.domains.vision.model import VisionTask, VirtualCloset
-import uuid
 import logging
-import threading
+import uuid
+
+from sqlalchemy.orm import Session
+
+from app.domains.vision.model import VirtualCloset, VisionTask
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def add_to_closet(db: Session, user_id: str, image_path: str):
     db.add(new_item)
     db.commit()
     db.refresh(new_item)
-    
+
     # Ném công việc nặng (AI Vision Embeddings) cho Background Worker
     try:
         from workers.ai_worker.vision_tasks import process_closet_image
@@ -48,12 +49,12 @@ def get_user_closet(db: Session, user_id: str):
 
 def find_similar_products_for_closet(db: Session, closet_item_id: int, user_id: str, top_n: int = 5):
     """
-    Mix & Match API thật: Lấy vector 512D của closet item → tìm products 
+    Mix & Match API thật: Lấy vector 512D của closet item → tìm products
     có cosine similarity cao nhất bằng pgvector.
-    
+
     Trả về list[dict] gồm product info + match_score (0-100%).
     """
-    from app.domains.inventory.model import Product, Inventory
+    from app.domains.inventory.model import Inventory, Product
 
     closet_item = db.query(VirtualCloset).filter(VirtualCloset.id == closet_item_id).first()
     if not closet_item:
@@ -103,4 +104,3 @@ def find_similar_products_for_closet(db: Session, closet_item_id: int, user_id: 
         })
 
     return matches, None
-

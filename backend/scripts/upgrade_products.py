@@ -1,5 +1,7 @@
+import logging
 import os
 import random
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
@@ -7,6 +9,7 @@ from sqlalchemy.sql import text
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://aegis_user:aegis_secret@localhost:5432/travel_app")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
+logger = logging.getLogger(__name__)
 
 O2O_PRODUCTS = [
     {"name": "Áo dài lụa tơ tằm truyền thống", "price": 1200000, "img": "https://images.unsplash.com/photo-1549416568-154673de01f7?auto=format&fit=crop&w=500"},
@@ -29,28 +32,28 @@ O2O_PRODUCTS = [
 
 def run():
     db = SessionLocal()
-    print("Bắt đầu cập nhật 1000 sản phẩm...")
+    logger.info("Bắt đầu cập nhật sản phẩm...")
     products = db.execute(text("SELECT product_id FROM products")).fetchall()
-    
+
     count = 0
     for p in products:
         pid = p[0]
         item = random.choice(O2O_PRODUCTS)
-        
+
         # Vary price slightly to look natural
         variance = random.uniform(0.9, 1.1)
         final_price = int(item["price"] * variance)
         original_price = int(final_price * random.uniform(1.1, 1.3))
-        
+
         desc = f"Tuyệt tác {item['name'].lower()} mang đậm phong cách văn hóa du lịch địa phương. Chất lượng hoàn hảo cho khách mua sắm O2O."
-        
+
         db.execute(
             text("""
-                UPDATE products 
-                SET name = :name, 
-                    price = :price, 
-                    original_price = :original_price, 
-                    description = :desc, 
+                UPDATE products
+                SET name = :name,
+                    price = :price,
+                    original_price = :original_price,
+                    description = :desc,
                     image_url = :image_url
                 WHERE product_id = :pid
             """),
@@ -66,11 +69,12 @@ def run():
         count += 1
         if count % 100 == 0:
             db.commit()
-            print(f"Đã cập nhật {count}/1000")
-            
+            logger.info("Đã cập nhật %s sản phẩm", count)
+
     db.commit()
     db.close()
-    print("Đã hoàn tất cập nhật dữ liệu sản phẩm chuẩn O2O!")
+    logger.info("Đã hoàn tất cập nhật dữ liệu sản phẩm chuẩn O2O!")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     run()

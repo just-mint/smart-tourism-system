@@ -1,11 +1,12 @@
+
 from pydantic import BaseModel
-from typing import Optional, List
+
 
 class AgentChatRequest(BaseModel):
     query: str
-    current_lat: Optional[float] = None
-    current_lon: Optional[float] = None
+    current_lat: float | None = None
+    current_lon: float | None = None
 
 class AgentChatResponse(BaseModel):
     answer: str
-    internal_actions: List[str]
+    internal_actions: list[str]

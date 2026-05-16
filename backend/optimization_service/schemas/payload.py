@@ -3,8 +3,9 @@ AEGIS Optimization Service — Pydantic Schemas (DTOs)
 Validation nghiêm ngặt cho Request/Response của endpoint /api/v1/optimize.
 """
 
+from typing import Any
+
 from pydantic import BaseModel, Field
-from typing import Any, Optional
 
 
 class ShopCoords(BaseModel):
@@ -18,7 +19,7 @@ class ShopItem(BaseModel):
     coords: ShopCoords
     price: float = 0
     rating: float = 0
-    category: Optional[str] = None   # Cần cho context-aware ranking
+    category: str | None = None   # Cần cho context-aware ranking
 
 
 class WeightConfig(BaseModel):
@@ -40,7 +41,7 @@ class WeatherContext(BaseModel):
     outdoor_penalty: float = 0.0
     indoor_boost: float = 0.0
     condition: str = "Unknown"                # Rainy / Clear / Cloudy / Storm
-    temperature: Optional[float] = None
+    temperature: float | None = None
     reason: str = ""
 
 
@@ -54,11 +55,11 @@ class OptimizeRequest(BaseModel):
     weights: WeightConfig = WeightConfig()
     shops: list[ShopItem]
     top_n: int = Field(default=5, ge=1, le=20, description="Số lượng shops tốt nhất sau khi rank")
-    
+
     # [v2] Raw Context Fields — Đơn giản hóa cho caller
-    local_hour: Optional[int] = None
-    weather_condition: Optional[str] = None   # Rainy, Clear, etc.
-    weather_temp: Optional[float] = None
+    local_hour: int | None = None
+    weather_condition: str | None = None   # Rainy, Clear, etc.
+    weather_temp: float | None = None
 
 
 

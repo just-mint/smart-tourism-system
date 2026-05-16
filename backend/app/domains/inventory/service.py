@@ -2,7 +2,7 @@ import logging
 import random
 import string
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
@@ -346,13 +346,11 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     db.commit()
     db.refresh(new_order)
 
-    vietqr_url = _build_vietqr_url(total_amount, order_code)
-
     return {
         "order_id": new_order.order_id,
         "order_code": new_order.order_code,
         "status": new_order.status,
         "total_amount": total_amount,
         "product_name": product.name,
-        "vietqr_url": mock_payment_url,
+        "vietqr_url": _build_vietqr_url(total_amount, order_code),
     }

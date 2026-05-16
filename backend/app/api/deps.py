@@ -31,13 +31,13 @@ TokenDep = Annotated[str | None, Depends(reusable_oauth2)]
 def get_current_user(session: SessionDep, request: Request, token: TokenDep) -> User:
     # Try to get token from header (token) or cookie
     actual_token = token or request.cookies.get("access_token")
-    
+
     if not actual_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
-        
+
     try:
         payload = jwt.decode(
             actual_token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]

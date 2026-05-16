@@ -5,6 +5,7 @@ POST /api/v1/planner/generate — Endpoint chính tạo lộ trình tối ưu O2
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.db.session import get_db
 from app.domains.planner import schema, service
 
@@ -18,7 +19,7 @@ async def generate_itinerary(
 ):
     """
     🧠 AEGIS Smart Planner — Luồng Tự Động 6 Bước.
-    
+
     Nhận nhu cầu khách hàng (tọa độ, bán kính, keywords) →
     Tự động: Lọc PostGIS → Chấm điểm MCDM → TSP tối ưu lộ trình →
     Gắn sản phẩm O2O → Trả về lộ trình hoàn chỉnh.

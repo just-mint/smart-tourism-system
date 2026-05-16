@@ -40,7 +40,7 @@ def login_access_token(
     access_token = security.create_access_token(
         user.id, expires_delta=access_token_expires
     )
-    
+
     # Set httpOnly cookie
     response.set_cookie(
         key="access_token",
@@ -50,7 +50,7 @@ def login_access_token(
         samesite="lax",
         max_age=int(access_token_expires.total_seconds()),
     )
-    
+
     return Token(access_token=access_token)
 
 

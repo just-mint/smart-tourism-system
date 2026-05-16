@@ -1,5 +1,7 @@
+import logging
 import os
 import random
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
@@ -7,6 +9,7 @@ from sqlalchemy.sql import text
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://aegis_user:aegis_secret@localhost:5432/travel_app")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
+logger = logging.getLogger(__name__)
 
 IMG_COFFEE_FOOD = [
     {"name": "Cà phê Sữa Đá đập", "img": "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=500", "desc": "Thức uống đặc trưng mang đậm hương vị Việt."},
@@ -36,8 +39,8 @@ IMG_DEFAULT = [
 
 def run():
     db = SessionLocal()
-    print("Bắt đầu chuẩn hóa hình ảnh sản phẩm theo Category...")
-    
+    logger.info("Bắt đầu chuẩn hóa hình ảnh sản phẩm theo Category...")
+
     # Lấy danh sách sản phẩm cùng với category của store
     query = text("""
         SELECT p.product_id, s.category
@@ -46,19 +49,19 @@ def run():
         JOIN stores s ON i.store_id = s.store_id
     """)
     products_with_category = db.execute(query).fetchall()
-    
+
     count = 0
     # Dùng set để track các product_id đã update (vì 1 product có thể nằm ở nhiều store, update 1 lần là đủ)
     updated_pids = set()
-    
+
     for row in products_with_category:
         pid, cat = row[0], row[1]
-        
+
         if pid in updated_pids:
             continue
-            
+
         cat_lower = str(cat).lower() if cat else ""
-        
+
         # Mapping logic
         if any(x in cat_lower for x in ["cafe", "coffee", "restaurant", "food", "tea", "ăn", "uống", "nhà hàng", "trà", "cà phê"]):
             source = IMG_COFFEE_FOOD
@@ -68,14 +71,14 @@ def run():
             source = IMG_SOUVENIR
         else:
             source = IMG_DEFAULT
-            
+
         item = random.choice(source)
-        
+
         db.execute(
             text("""
-                UPDATE products 
+                UPDATE products
                 SET name = :name,
-                    description = :desc, 
+                    description = :desc,
                     image_url = :image_url
                 WHERE product_id = :pid
             """),
@@ -88,14 +91,15 @@ def run():
         )
         updated_pids.add(pid)
         count += 1
-        
+
         if count % 100 == 0:
             db.commit()
-            print(f"Đã chuẩn hóa {count} sản phẩm...")
-            
+            logger.info("Đã chuẩn hóa %s sản phẩm...", count)
+
     db.commit()
     db.close()
-    print(f"Đã hoàn tất chuẩn hóa {count} sản phẩm O2O theo Category!")
+    logger.info("Đã hoàn tất chuẩn hóa %s sản phẩm O2O theo Category!", count)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     run()

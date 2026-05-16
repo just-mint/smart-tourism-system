@@ -1,121 +1,132 @@
-# FastAPI Project - Frontend
+# AEGIS O2O Frontend
 
-The frontend is built with [Vite](https://vitejs.dev/), [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/), [TanStack Query](https://tanstack.com/query), [TanStack Router](https://tanstack.com/router) and [Tailwind CSS](https://tailwindcss.com/).
+The frontend is a Vite + React + TypeScript app for the AEGIS O2O dashboard and tourism-commerce workflows.
 
-## Requirements
+## Main Screens
 
-- [Bun](https://bun.sh/) (recommended) or [Node.js](https://nodejs.org/)
+- Dashboard: entry point for authenticated users.
+- Spatial Operations: map-based discovery of places and stores.
+- Smart Planner: multi-stop itinerary planner with route geometry and product enrichment.
+- Culture & Heritage: place detail, story, and review interactions.
+- Inventory & O2O: stores, products, price comparison, stock locks, and checkout handoff.
+- Vision & Closet: image scan, closet upload, mix-and-match, and store selection.
+- Items, Settings, Admin: baseline account and admin workflows.
 
-## Quick Start
+## Stack
+
+- React 19 and TypeScript.
+- Vite for development and production builds.
+- TanStack Router for file-based routes.
+- TanStack Query for server state.
+- Tailwind CSS and Radix UI components.
+- Leaflet and React Leaflet for maps.
+- Biome for linting/formatting.
+- Playwright for end-to-end tests.
+
+## Environment
+
+Local API URL is controlled by `VITE_API_URL`.
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+The local default is stored in `frontend/.env`. Docker builds pass the same value through build args.
+
+## Development
+
+Install dependencies:
 
 ```bash
 bun install
+```
+
+Start the dev server:
+
+```bash
 bun run dev
 ```
 
-* Then open your browser at http://localhost:5173/.
+Open http://localhost:5173.
 
-Notice that this live server is not running inside Docker, it's for local development, and that is the recommended workflow. Once you are happy with your frontend, you can build the frontend Docker image and start it, to test it in a production-like environment. But building the image at every change will not be as productive as running the local development server with live reload.
+Make sure the backend API is also running at the URL configured in `VITE_API_URL`.
 
-Check the file `package.json` to see other available options.
-
-### Removing the frontend
-
-If you are developing an API-only app and want to remove the frontend, you can do it easily:
-
-* Remove the `./frontend` directory.
-
-* In the `compose.yml` file, remove the whole service / section `frontend`.
-
-* In the `compose.override.yml` file, remove the whole service / section `frontend` and `playwright`.
-
-Done, you have a frontend-less (api-only) app. 🤓
-
----
-
-If you want, you can also remove the `FRONTEND` environment variables from:
-
-* `.env`
-* `./scripts/*.sh`
-
-But it would be only to clean them up, leaving them won't really have any effect either way.
-
-## Generate Client
-
-### Automatically
-
-* Activate the backend virtual environment.
-* From the top level project directory, run the script:
+## Scripts
 
 ```bash
-bash ./scripts/generate-client.sh
-```
+# Development server
+bun run dev
 
-* Commit the changes.
+# TypeScript compile plus production build
+bun run build
 
-### Manually
+# Biome lint/check
+bun run lint
 
-* Start the Docker Compose stack.
-
-* Download the OpenAPI JSON file from `http://localhost/api/v1/openapi.json` and copy it to a new file `openapi.json` at the root of the `frontend` directory.
-
-* To generate the frontend client, run:
-
-```bash
+# Generate OpenAPI client from frontend/openapi.json
 bun run generate-client
+
+# Playwright tests
+bun run test
+
+# Playwright UI
+bun run test:ui
 ```
 
-* Commit the changes.
+From the repository root, `npm run lint` delegates to the frontend workspace lint script.
 
-Notice that everytime the backend changes (changing the OpenAPI schema), you should follow these steps again to update the frontend client.
+## API Client
 
-## Using a Remote API
+Generated client files live under `src/client/`. The custom `src/client/aegis-api.ts` wrapper contains ergonomic calls used by newer AEGIS pages.
 
-If you want to use a remote API, you can set the environment variable `VITE_API_URL` to the URL of the remote API. For example, you can set it in the `frontend/.env` file:
-
-```env
-VITE_API_URL=https://api.my-domain.example.com
-```
-
-Then, when you run the frontend, it will use that URL as the base URL for the API.
-
-## Code Structure
-
-The frontend code is structured as follows:
-
-* `frontend/src` - The main frontend code.
-* `frontend/src/assets` - Static assets.
-* `frontend/src/client` - The generated OpenAPI client.
-* `frontend/src/components` -  The different components of the frontend.
-* `frontend/src/hooks` - Custom hooks.
-* `frontend/src/routes` - The different routes of the frontend which include the pages.
-
-## End-to-End Testing with Playwright
-
-The frontend includes initial end-to-end tests using Playwright. To run the tests, you need to have the Docker Compose stack running. Start the stack with the following command:
+After backend schema changes:
 
 ```bash
-docker compose up -d --wait backend
+cd ..
+bash scripts/generate-client.sh
 ```
 
-Then, you can run the tests with the following command:
+That script exports OpenAPI from the backend, regenerates the frontend client, and runs frontend lint.
+
+## Route And Source Layout
+
+```text
+frontend/src/
+├── routes/                  # Pages
+├── components/              # Feature and shared UI components
+├── components/ui/           # Reusable primitives
+├── client/                  # Generated SDK and AEGIS wrapper
+├── hooks/                   # Auth, toast, mobile, copy helpers
+├── lib/                     # Shared utilities
+└── main.tsx                 # App entry
+```
+
+## Testing
+
+For Playwright, run the backend stack first:
 
 ```bash
-bunx playwright test
+docker compose up -d --wait backend frontend
 ```
 
-You can also run your tests in UI mode to see the browser and interact with it running:
+Then:
 
 ```bash
-bunx playwright test --ui
+bun run test
 ```
 
-To stop and remove the Docker Compose stack and clean the data created in tests, use the following command:
+Use UI mode when debugging:
 
 ```bash
-docker compose down -v
+bun run test:ui
 ```
 
-To update the tests, navigate to the tests directory and modify the existing test files or add new ones as needed.
+Reports and test artifacts are ignored by Git.
 
-For more information on writing and running Playwright tests, refer to the official [Playwright documentation](https://playwright.dev/docs/intro).
+## Production Build
+
+```bash
+bun run build
+```
+
+The output is written to `frontend/dist/`, which is ignored by Git and served by the frontend Docker image.

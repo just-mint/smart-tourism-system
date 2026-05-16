@@ -3,9 +3,10 @@ AEGIS Optimization Service — FastAPI Entrypoint
 Khởi chạy: uvicorn optimization_service.main:app --port 8001 --reload
 """
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
 
 from optimization_service.api.v1.optimize import router as optimize_router
 

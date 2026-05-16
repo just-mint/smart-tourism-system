@@ -1,17 +1,21 @@
-import random
-import uuid
-import sys
+import logging
 import os
+import random
+import sys
+import uuid
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
+from geoalchemy2.elements import WKTElement
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from geoalchemy2.elements import WKTElement
 
 from app.core.config import settings
 from app.domains.culture.model import Place
-from app.domains.inventory.model import Store, Product, Inventory
+from app.domains.inventory.model import Inventory, Product, Store
+
+logger = logging.getLogger(__name__)
+
 
 def main():
     engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
@@ -20,19 +24,19 @@ def main():
 
     places = db.query(Place).all()
     if not places:
-        print("No places found. Ensure places are seeded first.")
+        logger.info("No places found. Ensure places are seeded first.")
         return
 
-    print(f"Found {len(places)} places total.")
+    logger.info("Found %s places total.", len(places))
     places = random.sample(places, min(500, len(places)))
-    print(f"Seeding stores around {len(places)} selected places...")
+    logger.info("Seeding stores around %s selected places...", len(places))
 
     # Seed 10 products
     products = db.query(Product).all()
     if not products:
-        print("Creating mock products...")
+        logger.info("Creating mock products...")
         product_names = [
-            "Nón Lá Sen Nghệ Thuật", "Lụa Tơ Tằm Bảo Lộc", "Gốm Sứ Bát Tràng Men", 
+            "Nón Lá Sen Nghệ Thuật", "Lụa Tơ Tằm Bảo Lộc", "Gốm Sứ Bát Tràng Men",
             "Cafe Chồn Đặc Sản", "Trà Cung Đình Huế", "Túi Thổ Cẩm Sapa",
             "Móc Khóa Lưu Niệm", "Áo Thun Cờ Đỏ Sao Vàng", "Tranh Thêu Tay Mộc",
             "Đặc Sản Bánh Kẹo Local"
@@ -56,7 +60,7 @@ def main():
     for place in places:
         if not place.lat or not place.lon:
             continue
-        
+
         # Check if already has stores around this place
         existing = db.query(Store).filter(Store.place_id == str(place.id)).count()
         if existing > 0:
@@ -84,7 +88,7 @@ def main():
             )
             db.add(store)
             db.flush() # to get store.store_id
-            
+
             # Add inventory
             for p in random.sample(products, random.randint(2, 5)):
                 inv = Inventory(
@@ -96,7 +100,8 @@ def main():
             total_stores += 1
 
     db.commit()
-    print(f"Successfully added {total_stores} new mock stores with inventory.")
+    logger.info("Successfully added %s new mock stores with inventory.", total_stores)
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()
