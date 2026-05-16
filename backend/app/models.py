@@ -5,6 +5,15 @@ from pydantic import EmailStr
 from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
+"""
+[ARCHITECTURE DECISION - ORM PATTERNS]
+Hiện tại hệ thống sử dụng song song 2 pattern:
+1. SQLModel: Được sử dụng cho các legacy domain (User, Item) để tận dụng tính năng kết hợp Pydantic và SQLAlchemy, giúp giảm thiểu boilerplate code cho CRUD cơ bản.
+2. SQLAlchemy Base (app.db.session.Base): Được sử dụng cho các domain mới (Inventory, Vision, Culture) để hỗ trợ tốt hơn các kiểu dữ liệu phức tạp của PostgreSQL như Vector(512), Geometry, JSONB mà SQLModel không hỗ trợ native mượt mà.
+
+Cả 2 metadata đều đã được tích hợp đồng thời vào Alembic (trong app/alembic/env.py) để quản lý chung một hệ thống migration. Các developer khi viết module mới có thể chọn 1 trong 2 style tùy thuộc vào độ phức tạp của model.
+"""
+
 
 def get_datetime_utc() -> datetime:
     return datetime.now(timezone.utc)

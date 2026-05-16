@@ -30,6 +30,7 @@ class Product(Base):
     original_price: Mapped[int | None] = mapped_column(Integer, nullable=True)
     image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     embedding: Mapped[list | None] = mapped_column(Vector(512), nullable=True)
+    embedding_status: Mapped[str | None] = mapped_column(String(50), default="pending", nullable=True)
     # [v2] Thuộc tính sản phẩm — phục vụ lọc cá nhân hóa
     size: Mapped[str | None] = mapped_column(String(20), nullable=True)     # S, M, L, XL, Free
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)    # Đỏ, Xanh, Trắng

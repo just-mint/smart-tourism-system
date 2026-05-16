@@ -291,6 +291,7 @@ export type ProductResponse = {
     image_url?: (string | null);
     stock?: (number | null);
     store_id?: (number | null);
+    embedding_status?: (string | null);  // P2-26: 'pending' | 'completed' | 'failed'
 };
 
 export type ReviewCreate = {

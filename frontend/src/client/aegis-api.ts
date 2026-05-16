@@ -151,6 +151,7 @@ export interface ProductResponse {
   stock?: number
   store_id?: number
   category?: string
+  embedding_status?: string | null  // P2-26: 'pending' | 'completed' | 'failed'
 }
 export interface LockResponseItem {
   id: number

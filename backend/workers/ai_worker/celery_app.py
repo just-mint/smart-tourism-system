@@ -33,4 +33,9 @@ celery_app.conf.beat_schedule = {
         "task": "workers.ai_worker.inventory_tasks.sweep_expired_locks",
         "schedule": 60.0,  # Giây
     },
+    # Chạy mỗi 5 phút: Quét và sinh embedding cho các sản phẩm chưa có
+    "sync-missing-product-embeddings-every-5-minutes": {
+        "task": "workers.ai_worker.vision_tasks.sync_missing_product_embeddings",
+        "schedule": crontab(minute='*/5'),
+    },
 }

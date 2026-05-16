@@ -11,6 +11,7 @@ class ProductResponse(BaseModel):
     image_url: Optional[str] = None
     stock: Optional[int] = 0
     store_id: Optional[int] = None
+    embedding_status: Optional[str] = None
     class Config:
         from_attributes = True
 

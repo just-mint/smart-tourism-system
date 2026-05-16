@@ -15,6 +15,9 @@ import {
   Store,
   X,
   Zap,
+  Cpu,
+  AlertCircle,
+  CircleDashed,
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import {
@@ -355,6 +358,23 @@ function Inventory() {
                         {stock > 0 && stock <= 5 && (
                           <span className="bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider backdrop-blur-md">
                             Almost Gone
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Embedding Status Badge — Admin visibility */}
+                      <div className="absolute top-3 right-3">
+                        {p.embedding_status === "completed" ? (
+                          <span title="AI Vector: Ready" className="flex items-center gap-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[9px] font-bold px-2 py-1 rounded-full backdrop-blur-md">
+                            <Cpu className="w-2.5 h-2.5" /> AI
+                          </span>
+                        ) : p.embedding_status === "failed" ? (
+                          <span title="AI Vector: Failed" className="flex items-center gap-1 bg-red-500/20 border border-red-500/40 text-red-400 text-[9px] font-bold px-2 py-1 rounded-full backdrop-blur-md">
+                            <AlertCircle className="w-2.5 h-2.5" /> ERR
+                          </span>
+                        ) : (
+                          <span title="AI Vector: Pending" className="flex items-center gap-1 bg-zinc-700/50 border border-zinc-600/40 text-zinc-400 text-[9px] font-bold px-2 py-1 rounded-full backdrop-blur-md">
+                            <CircleDashed className="w-2.5 h-2.5" /> ...
                           </span>
                         )}
                       </div>
