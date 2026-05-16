@@ -308,12 +308,14 @@ function VisionCloset() {
         <div className="flex bg-white/5 rounded-xl border border-white/10 overflow-hidden">
           <button
             onClick={() => setActiveTab("scan")}
+            data-testid="vision-scan-tab"
             className={`px-5 py-2 text-xs font-mono tracking-wider uppercase transition-all flex items-center gap-2 ${activeTab === "scan" ? "bg-emerald-500/10 text-emerald-400 border-b-2 border-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             <Eye className="w-3.5 h-3.5" /> AI Scan
           </button>
           <button
             onClick={() => setActiveTab("closet")}
+            data-testid="vision-closet-tab"
             className={`px-5 py-2 text-xs font-mono tracking-wider uppercase transition-all flex items-center gap-2 ${activeTab === "closet" ? "bg-purple-500/10 text-purple-400 border-b-2 border-purple-400" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             <Shirt className="w-3.5 h-3.5" /> Virtual Closet
