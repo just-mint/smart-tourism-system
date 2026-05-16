@@ -72,13 +72,6 @@ function VisionCloset() {
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null)
   const [isPolling, setIsPolling] = useState(false)
 
-  // Cleanup Object URL for memory management
-  useEffect(() => {
-    return () => {
-      if (scanPreview) URL.revokeObjectURL(scanPreview)
-    }
-  }, [scanPreview])
-
   // Closet
   const [closetItems, setClosetItems] = useState<ClosetItemResponse[]>([])
   const [isLoadingCloset, setIsLoadingCloset] = useState(false)
@@ -111,6 +104,16 @@ function VisionCloset() {
   const [isOrdering, setIsOrdering] = useState(false)
   const [notification, setNotification] = useState("")
   const [lockingId, setLockingId] = useState<number | null>(null)
+
+  const previewScanFile = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setScanPreview(reader.result)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleStoreSelect = (productId: number, storeId: number) => {
     setSelectedStores((prev) => ({ ...prev, [productId]: storeId }))
@@ -259,7 +262,7 @@ function VisionCloset() {
     if (file?.type.startsWith("image/")) {
       if (activeTab === "scan") {
         setScanFile(file)
-        setScanPreview(URL.createObjectURL(file))
+        previewScanFile(file)
       } else {
         setClosetFile(file)
       }
@@ -274,7 +277,7 @@ function VisionCloset() {
     if (!file) return
     if (target === "scan") {
       setScanFile(file)
-      setScanPreview(URL.createObjectURL(file))
+      previewScanFile(file)
     } else {
       setClosetFile(file)
     }
@@ -849,11 +852,11 @@ function VisionCloset() {
         open={!!checkoutProduct}
         onOpenChange={(open) => !open && closeCheckout()}
       >
-        <DialogContent className="max-w-[900px] p-0 bg-zinc-950/90 backdrop-blur-2xl border-white/10 shadow-2xl overflow-hidden">
+        <DialogContent className="!max-w-[min(900px,calc(100vw-2rem))] p-0 bg-zinc-950/90 backdrop-blur-2xl border-white/10 shadow-2xl overflow-hidden max-h-[calc(100vh-2rem)]">
           {checkoutProduct && (
-            <div className="flex flex-col md:flex-row h-full md:h-[600px]">
+            <div className="flex flex-col md:flex-row h-[min(600px,calc(100vh-2rem))]">
               {/* Left: Product Recap */}
-              <div className="w-full md:w-[400px] bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
+              <div className="w-full md:w-[400px] shrink-0 bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
                 <div>
                   <h2 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-6">
                     Order Summary
@@ -865,6 +868,10 @@ function VisionCloset() {
                     }
                     className="w-full h-48 object-cover rounded-2xl mb-6 shadow-xl"
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=600"
+                    }}
                   />
                   <h3 className="text-xl font-bold text-white mb-2">
                     {checkoutProduct.name}
@@ -883,7 +890,7 @@ function VisionCloset() {
               </div>
 
               {/* Right: Payment & Form */}
-              <div className="flex-1 p-8 overflow-y-auto">
+              <div className="flex-1 min-w-0 p-8 overflow-y-auto">
                 {orderResult ? (
                   // SUCCESS & VIETQR
                   <div className="flex flex-col items-center text-center h-full justify-center animate-in zoom-in-95 duration-500">

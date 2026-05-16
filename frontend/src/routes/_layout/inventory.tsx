@@ -40,7 +40,20 @@ const STORE_IMAGES = [
 const PRODUCT_IMAGES = [
   "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=600",
   "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=600",
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600",
+  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=600",
+  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600",
 ]
+
+const isUsableImageUrl = (url?: string | null) =>
+  !!url &&
+  !url.includes("via.placeholder.com") &&
+  !url.includes("placeholder.com")
+
+const getProductImage = (product: ProductResponse & { imageIndex?: number }) =>
+  isUsableImageUrl(product.image_url)
+    ? product.image_url
+    : PRODUCT_IMAGES[(product.imageIndex || 0) % PRODUCT_IMAGES.length]
 
 const getApiErrorDetail = (error: unknown, fallback: string) => {
   if (!axios.isAxiosError(error)) return fallback
@@ -327,9 +340,7 @@ function Inventory() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((p) => {
-                const img =
-                  p.image_url ||
-                  PRODUCT_IMAGES[(p.imageIndex || 0) % PRODUCT_IMAGES.length]
+                const img = getProductImage(p)
                 const stock = p.stock ?? 0
                 const isOut = stock === 0
                 return (
@@ -409,20 +420,17 @@ function Inventory() {
         open={!!checkoutProduct}
         onOpenChange={(open) => !open && closeCheckout()}
       >
-        <DialogContent className="max-w-[900px] p-0 bg-zinc-950/90 backdrop-blur-2xl border-white/10 shadow-2xl overflow-hidden">
+        <DialogContent className="!max-w-[min(900px,calc(100vw-2rem))] p-0 bg-zinc-950/90 backdrop-blur-2xl border-white/10 shadow-2xl overflow-hidden max-h-[calc(100vh-2rem)]">
           {checkoutProduct && (
-            <div className="flex flex-col md:flex-row h-full md:h-[600px]">
+            <div className="flex flex-col md:flex-row h-[min(600px,calc(100vh-2rem))]">
               {/* Left: Product Recap */}
-              <div className="w-full md:w-[400px] bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
+              <div className="w-full md:w-[400px] shrink-0 bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
                 <div>
                   <h2 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-6">
                     Order Summary
                   </h2>
                   <img
-                    src={
-                      checkoutProduct.image_url ||
-                      PRODUCT_IMAGES[(checkoutProduct.imageIndex || 0) % 2]
-                    }
+                    src={getProductImage(checkoutProduct)}
                     onError={(e) => (e.currentTarget.src = PRODUCT_IMAGES[0])}
                     className="w-full h-48 object-cover rounded-2xl mb-6 shadow-xl"
                     referrerPolicy="no-referrer"
@@ -445,7 +453,7 @@ function Inventory() {
               </div>
 
               {/* Right: Payment & Form */}
-              <div className="flex-1 p-8 overflow-y-auto">
+              <div className="flex-1 min-w-0 p-8 overflow-y-auto">
                 {orderResult ? (
                   // SUCCESS & VIETQR
                   <div className="flex flex-col items-center text-center h-full justify-center animate-in zoom-in-95 duration-500">

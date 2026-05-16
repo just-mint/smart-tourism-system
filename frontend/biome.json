@@ -11,6 +11,8 @@
       "!**/src/client/**/*",
       "!**/src/components/ui/**/*",
       "!**/playwright-report",
+      "!**/playwright/.auth/**/*",
+      "!**/playwright/.cache/**/*",
       "!**/blob-report/**/*",
       "!**/test-results/**/*",
       "!\\{",

@@ -263,7 +263,7 @@ test.describe("Inventory domain API states", () => {
     page,
   }) => {
     await mockInventoryCatalog(page, {
-      stores: [{ store_id: 1, name: "Store A" }],
+      stores: [{ store_id: 1, name: "Store A", address: "123 Street" }],
       products: [
         { product_id: 1, store_id: 1, name: "Item X", price: 50000, stock: 5 },
       ],
@@ -294,7 +294,8 @@ test.describe("Inventory domain API states", () => {
     await dialog.getByRole("button", { name: /VietQR/i }).click()
 
     await expect(dialog.getByText(/ORD-TEST/i)).toBeVisible()
-    await expect(dialog.getByText(/VietQR|thanh to/i).last()).toBeVisible()
+    await expect(dialog.getByAltText("VietQR")).toBeVisible()
+    await expect(dialog.getByText(/scan|qu/i).first()).toBeVisible()
 
     const content = (await page.content()).toLowerCase()
     expect(content).not.toContain("successfully paid")
