@@ -266,7 +266,9 @@ function StoreProductPanel({
                           </p>
                           <button
                             disabled={lockingProduct === p.product_id}
-                            onClick={() => handleLock(p.product_id, store.store_id!)}
+                            onClick={() =>
+                              handleLock(p.product_id, store.store_id!)
+                            }
                             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white hover:shadow-[0_0_20px_rgba(168,85,247,0.8)] shadow-[0_0_10px_rgba(168,85,247,0.4)] border border-white/10 text-[9px] font-bold font-mono uppercase tracking-widest py-1.5 rounded-lg transition-all flex justify-center items-center disabled:opacity-50"
                           >
                             {lockingProduct === p.product_id ? (
