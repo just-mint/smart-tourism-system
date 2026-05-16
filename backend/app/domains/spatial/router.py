@@ -35,6 +35,35 @@ def find_nearby_places(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
 
+@router.get("/nearby-stores", response_model=schema.NearbyStoreResponse)
+def find_nearby_stores(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    radius_m: int = Query(3000, ge=0, le=50000),
+    category: str = Query(None),
+    min_rating: float = Query(0.0, ge=0.0, le=5.0),
+    order_by: str = Query("rating"),
+    db: Session = Depends(get_db)
+):
+    try:
+        stores = service.get_nearby_stores(
+            db=db, 
+            lat=lat, 
+            lon=lon, 
+            radius_meters=radius_m, 
+            category=category, 
+            min_rating=min_rating, 
+            order_by=order_by
+        )
+        return {
+            "user_location": {"lat": lat, "lon": lon}, 
+            "search_radius_meters": radius_m, 
+            "total_found": len(stores),
+            "stores": stores
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
+
 @router.post("/cluster-stores", response_model=schema.ClusterResponse)
 def cluster_and_group_stores(request: schema.ClusterRequest, db: Session = Depends(get_db)):
     """Gom cụm Places & Stores bằng KMeans và ST_DWithin"""

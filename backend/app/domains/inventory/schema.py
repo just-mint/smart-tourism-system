@@ -1,23 +1,24 @@
-from pydantic import BaseModel, field_validator
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel, Field, field_validator
+
 
 class ProductResponse(BaseModel):
     product_id: int
     name: str
     price: float
-    original_price: Optional[int] = None
-    description: Optional[str] = None
-    image_url: Optional[str] = None
-    stock: Optional[int] = 0
-    store_id: Optional[int] = None
+    original_price: int | None = None
+    description: str | None = None
+    image_url: str | None = None
+    stock: int | None = 0
+    store_id: int | None = None
     class Config:
         from_attributes = True
 
 class LockRequest(BaseModel):
     product_id: int
     store_id: int
-    quantity: int = 1
+    quantity: int = Field(default=1, ge=1)
 
 class LockResponseItem(BaseModel):
     id: int
@@ -32,14 +33,14 @@ class LockResponseItem(BaseModel):
 
 class StoreResponse(BaseModel):
     store_id: int
-    place_id: Optional[str] = None
+    place_id: str | None = None
     name: str
-    category: Optional[str] = None
-    address: Optional[str] = None
-    lat: Optional[float] = None
-    lon: Optional[float] = None
-    phone: Optional[str] = None
-    rating: Optional[float] = None
+    category: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    phone: str | None = None
+    rating: float | None = None
     class Config:
         from_attributes = True
 
@@ -51,7 +52,7 @@ class SearchResult(BaseModel):
 # --- Order / Checkout ---
 class OrderCreate(BaseModel):
     product_id: int
-    store_id: Optional[int] = None
+    store_id: int | None = None
     lock_id: int
     quantity: int = 1
     full_name: str

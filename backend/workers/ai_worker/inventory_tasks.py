@@ -6,11 +6,13 @@ Idempotent: Uses SELECT … FOR UPDATE SKIP LOCKED to prevent double-release
 across concurrent worker replicas.
 """
 
-from workers.ai_worker.celery_app import celery_app
+import logging
+import os
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import os
-import logging
+
+from workers.ai_worker.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +89,18 @@ def sweep_expired_locks(self):
             # ── BƯỚC 2: Giảm locked_stock (clamp tại 0) cho cửa hàng tương ứng ──
             session.execute(
                 text("""
+                    WITH target_inventory AS (
+                        SELECT inventory_id
+                        FROM inventory
+                        WHERE product_id = :pid
+                          AND (:sid IS NULL OR store_id = :sid)
+                        ORDER BY inventory_id
+                        LIMIT 1
+                        FOR UPDATE
+                    )
                     UPDATE inventory
                     SET locked_stock = GREATEST(0, locked_stock - :qty)
-                    WHERE product_id = :pid AND store_id = :sid
+                    WHERE inventory_id IN (SELECT inventory_id FROM target_inventory)
                 """),
                 {"qty": quantity, "pid": product_id, "sid": store_id},
             )
