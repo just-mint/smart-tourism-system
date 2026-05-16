@@ -101,7 +101,8 @@ function VisionCloset() {
     useState<ExtendedMixMatchProduct | null>(null)
   const [orderForm, setOrderForm] = useState<OrderCreate>({
     product_id: 0,
-    store_id: undefined,
+    store_id: 0,
+    lock_id: 0,
     quantity: 1,
     full_name: "",
     phone: "",
@@ -133,6 +134,7 @@ function VisionCloset() {
         ...orderForm,
         product_id: product.product_id,
         store_id: storeId,
+        lock_id: res.data.lock_id,
       })
       setTimeout(() => setNotification(""), 3000)
     } catch (err: unknown) {
@@ -556,9 +558,6 @@ function VisionCloset() {
                                       <Lock className="w-3 h-3" />
                                     )}{" "}
                                     Mua
-                                  </button>
-                                  <button className="px-3 py-1.5 text-[10px] bg-purple-500 hover:bg-purple-600 text-white font-bold rounded flex items-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.4)] transition-all">
-                                    <Shirt className="w-3 h-3" /> Tủ đồ
                                   </button>
                                 </div>
                               </div>
@@ -993,7 +992,7 @@ function VisionCloset() {
                       ) : (
                         <Zap className="w-5 h-5" />
                       )}
-                      {isOrdering ? "Đang xử lý..." : "Thanh Toán VietQR"}
+                      {isOrdering ? "Đang tạo..." : "Tạo đơn chờ thanh toán"}
                     </button>
                   </form>
                 )}

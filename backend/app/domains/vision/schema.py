@@ -18,7 +18,7 @@ class TaskStatus(BaseModel):
 
 class ClosetItemResponse(BaseModel):
     id: int
-    user_id: int
+    user_id: str
     image_path: str
     created_at: datetime
     class Config:
@@ -42,3 +42,8 @@ class MixMatchResponse(BaseModel):
     matches: list[MixMatchProduct]
     total_matches: int
 
+
+class ProductMatchResponse(BaseModel):
+    product_id: int
+    matches: list[MixMatchProduct]
+    total_matches: int

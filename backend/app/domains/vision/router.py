@@ -1,12 +1,15 @@
-import os
+import io
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.domains.vision import schema, service
 from app.models import User
@@ -15,6 +18,9 @@ router = APIRouter()
 
 ALLOWED_TYPES = settings.ALLOWED_IMAGE_TYPES
 MAX_SIZE_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
+
+Image.MAX_IMAGE_PIXELS = 20_000_000
 
 
 def validate_and_save(file: UploadFile, folder: str) -> str:
@@ -34,27 +40,43 @@ def validate_and_save(file: UploadFile, folder: str) -> str:
             detail=f"File vượt giới hạn {settings.MAX_UPLOAD_SIZE_MB}MB. Kích thước thực: {len(contents) // 1024 // 1024}MB"
         )
 
+    try:
+        image = Image.open(io.BytesIO(contents))
+        image.verify()
+    except (UnidentifiedImageError, OSError):
+        raise HTTPException(status_code=415, detail="File không phải ảnh hợp lệ.")
+
+    extension_by_type = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+    }
+    ext = extension_by_type[file.content_type]
+
     # 3. Tạo thư mục và lưu file an toàn
-    #    ⚠️ Dùng UUID4 thay vì tên gốc để chống ghi đè + path traversal
-    os.makedirs(folder, exist_ok=True)
-    original_name = file.filename or "upload"
-    _, ext = os.path.splitext(original_name)
+    upload_root = Path(settings.UPLOAD_ROOT)
+    folder_path = upload_root / folder
+    folder_path.mkdir(parents=True, exist_ok=True)
     safe_filename = f"{uuid.uuid4().hex}{ext}"
-    file_path = os.path.join(folder, safe_filename)
-    with open(file_path, "wb") as buffer:
+    file_path = folder_path / safe_filename
+    with file_path.open("wb") as buffer:
         buffer.write(contents)
 
-    return file_path
+    return str(file_path)
 
 
-@router.post("/scan", response_model=schema.VisionUploadResponse)
+@router.post(
+    "/scan",
+    response_model=schema.VisionUploadResponse,
+    dependencies=[Depends(rate_limit(limit=10, window_seconds=60))],
+)
 def upload_and_scan(
     file: UploadFile = File(...),
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Upload ảnh để AI scan sản phẩm (non-blocking, trả task_id ngay)"""
-    file_path = validate_and_save(file, "uploads/scans/")
+    file_path = validate_and_save(file, "scans")
     task = service.create_vision_task(db=db, image_path=file_path)
     return {"task_id": task.task_id, "message": "Ảnh đang được AI xử lý. Dùng task_id để polling kết quả."}
 
@@ -86,7 +108,7 @@ def add_virtual_closet(
     db: Session = Depends(get_db)
 ):
     """Upload trang phục cá nhân vào Tủ Đồ Ảo (lưu Vector Embedding 512D qua pgvector)"""
-    file_path = validate_and_save(file, "uploads/closet/")
+    file_path = validate_and_save(file, "closet")
     item = service.add_to_closet(db=db, user_id=current_user.id, image_path=file_path)
     return item
 
@@ -107,6 +129,22 @@ def get_mix_match(item_id: int, current_user: User = Depends(get_current_user), 
         raise HTTPException(status_code=404, detail=error)
     return schema.MixMatchResponse(
         closet_item_id=item_id,
+        matches=matches,
+        total_matches=len(matches),
+    )
+
+
+@router.get("/products/{product_id}/matches", response_model=schema.ProductMatchResponse)
+def get_product_matches(
+    product_id: int,
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    matches, error = service.find_similar_products_for_product(db=db, product_id=product_id, top_n=5)
+    if matches is None:
+        raise HTTPException(status_code=404, detail=error)
+    return schema.ProductMatchResponse(
+        product_id=product_id,
         matches=matches,
         total_matches=len(matches),
     )

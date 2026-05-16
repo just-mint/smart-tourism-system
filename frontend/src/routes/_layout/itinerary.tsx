@@ -234,10 +234,14 @@ function ItineraryPage() {
     }
   }
 
-  const handleLock = async (productId: number) => {
+  const handleLock = async (productId: number, storeId?: number) => {
+    if (!storeId) {
+      toast.error("Không xác định được cửa hàng để giữ hàng")
+      return
+    }
     setLockingId(productId)
     try {
-      await InventoryAPI.createLock(productId, 1)
+      await InventoryAPI.createLock(productId, 1, storeId)
       toast.success("Đã giữ hàng thành công! (15 phút)")
     } catch {
       toast.error("Hết hàng hoặc lỗi hệ thống")
@@ -252,7 +256,7 @@ function ItineraryPage() {
     setCultureDrawerLoading(true)
     setCultureDrawerData({ name, story: "", storeId })
     try {
-      const res = await CultureAPI.getPlaceStory(storeId)
+      const res = await CultureAPI.getStoreStory(storeId)
       setCultureDrawerData({
         name,
         story: res.data.ai_story || "Chưa có câu chuyện.",
@@ -298,7 +302,7 @@ function ItineraryPage() {
     setMixMatchProduct({ name: productName, image_url: imageUrl })
     try {
       // Tìm sản phẩm tương tự trong catalog dùng vision API (CLIP 512D)
-      const res = await VisionAPI.getMixMatch(productId)
+      const res = await VisionAPI.getProductMatches(productId)
       setMixMatchResults(res.data.matches)
     } catch {
       setMixMatchResults([])
@@ -733,7 +737,9 @@ function ItineraryPage() {
                                   </p>
                                 </div>
                                 <button
-                                  onClick={() => handleLock(p.product_id)}
+                                  onClick={() =>
+                                    handleLock(p.product_id, stop.store_id)
+                                  }
                                   disabled={lockingId === p.product_id}
                                   className="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-[9px] font-mono uppercase tracking-wider px-2.5 py-1.5 rounded-lg hover:shadow-[0_0_15px_rgba(139,92,246,0.6)] transition-all disabled:opacity-50 flex items-center gap-1 shrink-0"
                                 >
@@ -1165,7 +1171,9 @@ function ItineraryPage() {
                         </span>
                       </div>
                       <button
-                        onClick={() => handleLock(prod.product_id)}
+                        onClick={() =>
+                          handleLock(prod.product_id, prod.store_id)
+                        }
                         className="w-full mt-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[9px] font-mono uppercase tracking-wider py-1.5 rounded-lg hover:shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all flex items-center justify-center gap-1"
                       >
                         <ShoppingBag className="w-3 h-3" /> Thêm vào giỏ

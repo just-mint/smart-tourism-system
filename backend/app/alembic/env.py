@@ -40,11 +40,6 @@ def include_object(object, name, type_, reflected, compare_to):
 def get_url():
     return str(settings.SQLALCHEMY_DATABASE_URI)
 
-def include_object(object, name, type_, reflected, compare_to):
-    if type_ == "table" and name == "spatial_ref_sys":
-        return False
-    return True
-
 
 def run_migrations_offline():
     url = get_url()

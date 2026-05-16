@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import logging
 import random
 import string
@@ -6,17 +8,46 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from redis.asyncio import Redis
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.domains.inventory.model import Inventory, InventoryLock, Order, Product, Store
-from app.domains.inventory.schema import LockRequest, OrderCreate
+from app.core.config import settings
+from app.domains.inventory.model import (
+    Inventory,
+    InventoryEvent,
+    InventoryLock,
+    Order,
+    Payment,
+    Product,
+    Store,
+)
+from app.domains.inventory.schema import LockRequest, OrderCreate, PaymentWebhook
 
 logger = logging.getLogger(__name__)
 
 
-def _lock_key(product_id: int, store_id: int | None = None) -> str:
-    store_part = f":store:{store_id}" if store_id is not None else ""
-    return f"lock:prod:{product_id}{store_part}"
+def _lock_key(lock_id: int) -> str:
+    return f"inventory_lock:{lock_id}"
+
+
+def _log_event(
+    db: Session,
+    *,
+    entity_type: str,
+    entity_id: str | int,
+    action: str,
+    user_id=None,
+    payload: dict | None = None,
+) -> None:
+    db.add(
+        InventoryEvent(
+            entity_type=entity_type,
+            entity_id=str(entity_id),
+            user_id=user_id,
+            action=action,
+            payload=payload or {},
+        )
+    )
 
 
 def get_all_stores(db: Session, place_id: str | None = None):
@@ -142,54 +173,27 @@ def compare_product_prices(db: Session, product_id: int, current_store_id: int, 
     return comparisons
 
 
-async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: int):
-    from app.core.config import settings
+async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id):
     if not getattr(request, "store_id", None):
         raise HTTPException(status_code=400, detail="Vui lòng cung cấp store_id để khóa hàng cho cửa hàng cụ thể.")
-    lock_key = _lock_key(request.product_id, request.store_id)
 
-    # === PHASE 1: REDIS ATOMIC GATE ===
-    lock_acquired = await redis.set(
-        lock_key,
-        str(user_id),
-        nx=True,
-        ex=settings.INVENTORY_LOCK_TTL,
-    )
-
-    if not lock_acquired:
-        raise HTTPException(
-            status_code=409,
-            detail="Sản phẩm đang được người khác giữ."
-        )
-
-    # === PHASE 2: POSTGRES ROW LOCK (Qua bảng Inventory) ===
-    # Lấy thông tin Tồn kho của Product (DBeaver tách riêng bảng)
-    inv_query = db.query(Inventory).filter(Inventory.product_id == request.product_id)
-    if request.store_id:
-        inv_query = inv_query.filter(Inventory.store_id == request.store_id)
-    inv = inv_query.with_for_update().first()
+    inv = db.query(Inventory).filter(
+        Inventory.product_id == request.product_id,
+        Inventory.store_id == request.store_id,
+    ).with_for_update().first()
 
     if not inv:
-        await redis.delete(lock_key)
         raise HTTPException(status_code=404, detail="Sản phẩm không có thông tin tồn kho hoặc đã hết.")
 
-    # Lấy TỔNG tồn kho có sẵn từ TẤT CẢ Store có bán product này nếu không có store_id cụ thể
-    total_available_query = db.query(Inventory).filter(Inventory.product_id == request.product_id)
-    if request.store_id:
-        total_available_query = total_available_query.filter(Inventory.store_id == request.store_id)
+    available = inv.stock - inv.locked_stock
+    if available < request.quantity:
+        raise HTTPException(status_code=409, detail=f"Không đủ hàng. Tồn kho còn: {available}")
 
-    total_available = sum(max(0, i.stock - i.locked_stock) for i in total_available_query.all())
-
-    if total_available < request.quantity:
-        await redis.delete(lock_key)
-        raise HTTPException(status_code=400, detail=f"Không đủ hàng. Tồn kho còn: {total_available}")
-
-    # Chuẩn bị ghi DB - trừ từ inventory record đầu tiên còn hàng
     inv.locked_stock += request.quantity
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.INVENTORY_LOCK_TTL)
     new_lock = InventoryLock(
         product_id=inv.product_id,
-        store_id=request.store_id or inv.store_id,
+        store_id=inv.store_id,
         user_id=user_id,
         quantity=request.quantity,
         status="soft_locked",
@@ -198,29 +202,58 @@ async def create_lock(db: Session, redis: Redis, request: LockRequest, user_id: 
     try:
         db.add(new_lock)
         db.flush()
-        # Phase 3 đã được gom vào Phase 1 bằng lệnh Atomic phía trên.
+        _log_event(
+            db,
+            entity_type="inventory_lock",
+            entity_id=new_lock.id,
+            action="created",
+            user_id=user_id,
+            payload={
+                "product_id": inv.product_id,
+                "store_id": inv.store_id,
+                "quantity": request.quantity,
+                "expires_at": expires_at.isoformat(),
+            },
+        )
         db.commit()
     except Exception:
         db.rollback()
-        await redis.delete(lock_key)
-        logger.exception("Tạo DB lock thất bại, đã rollback và xóa Redis key=%s", lock_key)
+        logger.exception("Tạo DB lock thất bại, đã rollback")
         raise
 
     db.refresh(new_lock)
+    try:
+        await redis.set(
+            _lock_key(new_lock.id),
+            str(user_id),
+            ex=settings.INVENTORY_LOCK_TTL,
+        )
+    except Exception:
+        logger.warning("Không thể ghi Redis TTL cho lock_id=%s", new_lock.id, exc_info=True)
     return new_lock
 
 
-async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id: int):
-    locks = db.query(InventoryLock).filter(
+async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id):
+    locks = db.query(InventoryLock, Product, Store, Inventory).join(
+        Product, InventoryLock.product_id == Product.product_id
+    ).join(
+        Store, InventoryLock.store_id == Store.store_id
+    ).join(
+        Inventory,
+        (InventoryLock.product_id == Inventory.product_id)
+        & (InventoryLock.store_id == Inventory.store_id),
+    ).filter(
         InventoryLock.user_id == user_id,
         InventoryLock.status == "soft_locked"
     ).all()
     results = []
-    for lock in locks:
+    for lock, product, store, inv in locks:
         try:
-            ttl = await redis.ttl(_lock_key(lock.product_id, lock.store_id))
+            ttl = await redis.ttl(_lock_key(lock.id))
         except Exception:
             ttl = -1
+        db_remaining = int((lock.expires_at - datetime.now(timezone.utc)).total_seconds())
+        ttl_seconds = max(ttl if ttl >= 0 else db_remaining, 0)
         results.append({
             "id": lock.id,
             "product_id": lock.product_id,
@@ -228,15 +261,52 @@ async def get_user_locks_with_ttl(db: Session, redis: Redis, user_id: int):
             "quantity": lock.quantity,
             "status": lock.status,
             "expires_at": lock.expires_at,
-            "ttl_seconds": max(ttl, 0)
+            "ttl_seconds": ttl_seconds,
+            "product_name": product.name,
+            "store_name": store.name,
+            "unit_price": inv.price_override if inv.price_override is not None else product.price,
+            "image_url": product.image_url,
         })
     return results
+
+
+async def cancel_lock(db: Session, redis: Redis, lock_id: int, user_id) -> None:
+    lock = db.query(InventoryLock).filter(
+        InventoryLock.id == lock_id,
+        InventoryLock.user_id == user_id,
+        InventoryLock.status == "soft_locked",
+    ).with_for_update().first()
+    if not lock:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lock còn hiệu lực.")
+
+    inv = db.query(Inventory).filter(
+        Inventory.product_id == lock.product_id,
+        Inventory.store_id == lock.store_id,
+    ).with_for_update().first()
+    if inv:
+        if inv.locked_stock < lock.quantity:
+            raise HTTPException(status_code=409, detail="Dữ liệu giữ hàng không nhất quán.")
+        inv.locked_stock -= lock.quantity
+    lock.status = "cancelled"
+    _log_event(
+        db,
+        entity_type="inventory_lock",
+        entity_id=lock.id,
+        action="cancelled",
+        user_id=user_id,
+        payload={"product_id": lock.product_id, "store_id": lock.store_id, "quantity": lock.quantity},
+    )
+    db.commit()
+    try:
+        await redis.delete(_lock_key(lock.id))
+    except Exception:
+        logger.warning("Không thể xóa Redis key cho lock_id=%s", lock.id, exc_info=True)
 
 
 def check_and_release_expired_locks(db: Session) -> int:
     now = datetime.now(timezone.utc)
     expired_locks = db.query(InventoryLock).filter(
-        InventoryLock.status == "soft_locked",
+        InventoryLock.status.in_(["soft_locked", "checkout_pending"]),
         InventoryLock.expires_at <= now
     ).with_for_update().all()
 
@@ -248,6 +318,11 @@ def check_and_release_expired_locks(db: Session) -> int:
         inv = inv_query.with_for_update().first()
         if inv:
             inv.locked_stock = max(0, inv.locked_stock - lock.quantity)
+        if lock.status == "checkout_pending":
+            db.query(Order).filter(
+                Order.lock_id == lock.id,
+                Order.status == "PENDING_PAYMENT",
+            ).update({"status": "EXPIRED"})
         lock.status = "expired"
         released_count += 1
 
@@ -257,8 +332,10 @@ def check_and_release_expired_locks(db: Session) -> int:
 
 
 def _generate_order_code() -> str:
-    """Sinh mã đơn hàng 8 ký tự: AE + 6 chữ số ngẫu nhiên"""
-    return "AE" + "".join(random.choices(string.digits, k=6))
+    """Sinh mã đơn hàng đủ entropy nhưng vẫn ngắn gọn."""
+    timestamp = datetime.now(timezone.utc).strftime("%y%m%d%H%M%S")
+    suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    return f"AE{timestamp}{suffix}"
 
 
 def _build_vietqr_url(amount: int, order_code: str) -> str:
@@ -270,13 +347,12 @@ def _build_vietqr_url(amount: int, order_code: str) -> str:
     return f"https://img.vietqr.io/image/{bank_id}-{account_no}-{template}.png?amount={amount}&addInfo={info}&accountName=AEGIS%20O2O"
 
 
-async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: int):
+async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id):
     """
     Hoàn tất đơn hàng O2O:
     1. Tìm product, tính tổng tiền
-    2. Xóa Redis lock (nếu có)
-    3. Trừ tồn kho vĩnh viễn trong PostgreSQL
-    4. Tạo Order record với trạng thái AWAITING_PAYMENT
+    2. Đổi lock sang checkout_pending, giữ locked_stock tới khi payment webhook về.
+    3. Tạo Order record với trạng thái PENDING_PAYMENT.
     """
     product = db.query(Product).filter(Product.product_id == data.product_id).first()
     if not product:
@@ -288,22 +364,31 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     if not getattr(data, "lock_id", None):
         raise HTTPException(status_code=400, detail="Phải cung cấp lock_id khi tạo đơn hàng.")
 
-    lock = db.query(InventoryLock).filter(InventoryLock.id == data.lock_id).first()
+    lock = db.query(InventoryLock).filter(InventoryLock.id == data.lock_id).with_for_update().first()
     if not lock or lock.user_id != user_id or lock.status != "soft_locked":
         raise HTTPException(status_code=400, detail="Lock không hợp lệ hoặc đã hết hạn.")
+    if lock.expires_at <= datetime.now(timezone.utc):
+        inv = db.query(Inventory).filter(
+            Inventory.product_id == lock.product_id,
+            Inventory.store_id == lock.store_id,
+        ).with_for_update().first()
+        if inv and inv.locked_stock >= lock.quantity:
+            inv.locked_stock -= lock.quantity
+        lock.status = "expired"
+        db.commit()
+        try:
+            await redis.delete(_lock_key(lock.id))
+        except Exception:
+            logger.warning("Không thể xóa Redis key cho expired lock_id=%s", lock.id, exc_info=True)
+        raise HTTPException(status_code=409, detail="Lock đã hết hạn. Vui lòng giữ hàng lại.")
     if lock.product_id != data.product_id or lock.quantity != data.quantity:
         raise HTTPException(status_code=400, detail="Thông tin lock không khớp với đơn hàng.")
+    if lock.store_id != data.store_id:
+        raise HTTPException(status_code=400, detail="Cửa hàng không khớp với lock.")
 
     order_store_id = lock.store_id
 
-    # Xóa Redis lock (per-store key)
-    lock_key = _lock_key(data.product_id, order_store_id)
-    try:
-        await redis.delete(lock_key)
-    except Exception:
-        pass
-
-    # Trừ tồn kho vĩnh viễn tại cửa hàng được lock
+    # Kiểm tra tồn kho tại cửa hàng được lock. Chưa trừ stock ở bước này.
     inv = db.query(Inventory).filter(
         Inventory.product_id == data.product_id,
         Inventory.store_id == order_store_id,
@@ -312,8 +397,8 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     if inv:
         if inv.stock < data.quantity:
             raise HTTPException(status_code=400, detail="Tồn kho không còn đủ để tạo đơn.")
-        inv.stock = max(0, inv.stock - data.quantity)
-        inv.locked_stock = max(0, inv.locked_stock - data.quantity)
+        if inv.locked_stock < data.quantity:
+            raise HTTPException(status_code=409, detail="Số lượng giữ hàng không hợp lệ.")
         unit_price = inv.price_override if inv.price_override is not None else product.price
     else:
         raise HTTPException(status_code=404, detail="Không tìm thấy tồn kho cho sản phẩm đã giữ.")
@@ -327,24 +412,54 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
     else:
         raise HTTPException(status_code=500, detail="Hệ thống bận, không thể tạo mã đơn hàng. Vui lòng thử lại.")
 
-    lock.status = "completed"
+    lock.status = "checkout_pending"
+    lock.expires_at = datetime.now(timezone.utc) + timedelta(seconds=settings.INVENTORY_LOCK_TTL)
 
     # Tạo Order
     new_order = Order(
         user_id=user_id,
         product_id=data.product_id,
         store_id=order_store_id,
+        lock_id=lock.id,
         quantity=data.quantity,
         total_amount=total_amount,
         full_name=data.full_name,
         phone=data.phone,
         address=data.address,
-        status="AWAITING_PAYMENT",
+        status="PENDING_PAYMENT",
         order_code=order_code,
     )
     db.add(new_order)
+    db.flush()
+    db.add(
+        Payment(
+            order_id=new_order.order_id,
+            provider=settings.PAYMENT_PROVIDER,
+            amount=total_amount,
+            status="pending",
+            raw_payload={"source": "order_created"},
+        )
+    )
+    _log_event(
+        db,
+        entity_type="order",
+        entity_id=new_order.order_id,
+        action="created_pending_payment",
+        user_id=user_id,
+        payload={
+            "lock_id": lock.id,
+            "product_id": data.product_id,
+            "store_id": order_store_id,
+            "quantity": data.quantity,
+            "total_amount": total_amount,
+        },
+    )
     db.commit()
     db.refresh(new_order)
+    try:
+        await redis.delete(_lock_key(lock.id))
+    except Exception:
+        logger.warning("Không thể xóa Redis key cho completed lock_id=%s", lock.id, exc_info=True)
 
     return {
         "order_id": new_order.order_id,
@@ -353,4 +468,124 @@ async def finalize_order(db: Session, redis: Redis, data: OrderCreate, user_id: 
         "total_amount": total_amount,
         "product_name": product.name,
         "vietqr_url": _build_vietqr_url(total_amount, order_code),
+    }
+
+
+def _verify_payment_signature(data: PaymentWebhook) -> None:
+    if not settings.PAYMENT_WEBHOOK_SECRET:
+        if settings.ENVIRONMENT == "production":
+            raise HTTPException(status_code=500, detail="Payment webhook secret chưa được cấu hình.")
+        return
+    if not data.signature:
+        raise HTTPException(status_code=401, detail="Thiếu chữ ký webhook.")
+
+    message = f"{data.provider}:{data.transaction_id}:{data.order_code}:{data.amount}:{data.status}"
+    expected = hmac.new(
+        settings.PAYMENT_WEBHOOK_SECRET.encode(),
+        message.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    if not hmac.compare_digest(expected, data.signature):
+        raise HTTPException(status_code=401, detail="Chữ ký webhook không hợp lệ.")
+
+
+def handle_payment_webhook(db: Session, data: PaymentWebhook):
+    _verify_payment_signature(data)
+
+    existing_query = db.query(Payment).filter(Payment.transaction_id == data.transaction_id)
+    if data.idempotency_key:
+        existing_query = db.query(Payment).filter(
+            or_(
+                Payment.transaction_id == data.transaction_id,
+                Payment.idempotency_key == data.idempotency_key,
+            )
+        )
+    existing = existing_query.first()
+    if existing:
+        order = db.query(Order).filter(Order.order_id == existing.order_id).first()
+        return {
+            "order_id": existing.order_id,
+            "order_code": order.order_code if order else data.order_code,
+            "order_status": order.status if order else "UNKNOWN",
+            "payment_status": existing.status,
+            "idempotent": True,
+        }
+
+    order = db.query(Order).filter(Order.order_code == data.order_code).with_for_update().first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đơn hàng.")
+    if order.total_amount != data.amount:
+        raise HTTPException(status_code=400, detail="Số tiền webhook không khớp đơn hàng.")
+    if order.status == "PAID":
+        existing_paid = db.query(Payment).filter(Payment.order_id == order.order_id, Payment.status == "paid").first()
+        return {
+            "order_id": order.order_id,
+            "order_code": order.order_code,
+            "order_status": order.status,
+            "payment_status": existing_paid.status if existing_paid else "paid",
+            "idempotent": True,
+        }
+    if order.status != "PENDING_PAYMENT":
+        raise HTTPException(status_code=409, detail=f"Đơn hàng không còn chờ thanh toán: {order.status}")
+
+    lock = db.query(InventoryLock).filter(InventoryLock.id == order.lock_id).with_for_update().first()
+    if not lock:
+        raise HTTPException(status_code=409, detail="Không tìm thấy lock của đơn hàng.")
+
+    inv = db.query(Inventory).filter(
+        Inventory.product_id == order.product_id,
+        Inventory.store_id == order.store_id,
+    ).with_for_update().first()
+    if not inv:
+        raise HTTPException(status_code=409, detail="Không tìm thấy tồn kho của đơn hàng.")
+
+    status_map = {
+        "paid": "PAID",
+        "failed": "PAYMENT_FAILED",
+        "cancelled": "CANCELLED",
+    }
+    order.status = status_map[data.status]
+    if data.status == "paid":
+        if lock.status != "checkout_pending":
+            raise HTTPException(status_code=409, detail="Lock không còn ở trạng thái chờ thanh toán.")
+        if inv.stock < order.quantity or inv.locked_stock < order.quantity:
+            raise HTTPException(status_code=409, detail="Tồn kho không đủ để xác nhận thanh toán.")
+        inv.stock -= order.quantity
+        inv.locked_stock -= order.quantity
+        lock.status = "completed"
+    else:
+        if lock.status in {"checkout_pending", "soft_locked"} and inv.locked_stock >= order.quantity:
+            inv.locked_stock -= order.quantity
+        lock.status = data.status
+
+    payment = Payment(
+        order_id=order.order_id,
+        provider=data.provider,
+        amount=data.amount,
+        status=data.status,
+        transaction_id=data.transaction_id,
+        idempotency_key=data.idempotency_key,
+        raw_payload=data.model_dump(exclude={"signature"}),
+    )
+    db.add(payment)
+    _log_event(
+        db,
+        entity_type="order",
+        entity_id=order.order_id,
+        action=f"payment_{data.status}",
+        user_id=order.user_id,
+        payload={
+            "provider": data.provider,
+            "transaction_id": data.transaction_id,
+            "amount": data.amount,
+        },
+    )
+    db.commit()
+
+    return {
+        "order_id": order.order_id,
+        "order_code": order.order_code,
+        "order_status": order.status,
+        "payment_status": payment.status,
+        "idempotent": False,
     }

@@ -14,10 +14,17 @@ def create_vision_task(db: Session, image_path: str):
     db.commit()
     db.refresh(new_task)
     try:
-        from workers.ai_worker.vision_tasks import process_image
-        process_image.delay(task_id, image_path)
+        from workers.ai_worker.celery_app import celery_app
+
+        celery_app.send_task(
+            "workers.ai_worker.vision_tasks.process_image",
+            args=[task_id, image_path],
+        )
     except Exception as e:
-        logger.warning(f"Lỗi khi xử lý process_image bằng Thread: {e}")
+        new_task.status = "failed"
+        new_task.detected_objects = {"error": "Không enqueue được AI worker"}
+        db.commit()
+        logger.warning("Không enqueue được process_image: %s", e)
     return new_task
 
 def get_vision_task(db: Session, task_id: str):
@@ -36,10 +43,14 @@ def add_to_closet(db: Session, user_id: str, image_path: str):
 
     # Ném công việc nặng (AI Vision Embeddings) cho Background Worker
     try:
-        from workers.ai_worker.vision_tasks import process_closet_image
-        process_closet_image.delay(new_item.id, image_path)
+        from workers.ai_worker.celery_app import celery_app
+
+        celery_app.send_task(
+            "workers.ai_worker.vision_tasks.process_closet_image",
+            args=[new_item.id, image_path],
+        )
     except Exception as e:
-        logger.warning(f"Lỗi khi xử lý process_closet_image bằng Thread: {e}")
+        logger.warning("Không enqueue được process_closet_image: %s", e)
 
     return new_item
 
@@ -101,6 +112,44 @@ def find_similar_products_for_closet(db: Session, closet_item_id: int, user_id: 
             "match_score": similarity,
             "stock": stock,
             "store_id": store_id,
+        })
+
+    return matches, None
+
+
+def find_similar_products_for_product(db: Session, product_id: int, top_n: int = 5):
+    from app.domains.inventory.model import Inventory, Product
+
+    source = db.query(Product).filter(Product.product_id == product_id).first()
+    if not source:
+        return None, "Product not found"
+    if source.embedding is None:
+        return None, "Product chưa có vector embedding."
+
+    results = db.query(
+        Product,
+        Product.embedding.cosine_distance(source.embedding).label("distance"),
+    ).filter(
+        Product.embedding.is_not(None),
+        Product.product_id != product_id,
+    ).order_by(
+        Product.embedding.cosine_distance(source.embedding)
+    ).limit(top_n).all()
+
+    matches = []
+    for product, distance in results:
+        similarity = round((1.0 - float(distance) / 2.0) * 100, 1)
+        inv = db.query(Inventory).filter(Inventory.product_id == product.product_id).first()
+        matches.append({
+            "product_id": product.product_id,
+            "name": product.name,
+            "description": product.description,
+            "price": inv.price_override if inv and inv.price_override is not None else product.price,
+            "original_price": product.original_price,
+            "image_url": product.image_url,
+            "match_score": similarity,
+            "stock": inv.stock if inv else 0,
+            "store_id": inv.store_id if inv else None,
         })
 
     return matches, None

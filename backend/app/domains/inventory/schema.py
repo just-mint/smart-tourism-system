@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -28,6 +29,10 @@ class LockResponseItem(BaseModel):
     status: str
     ttl_seconds: int
     expires_at: datetime
+    product_name: str | None = None
+    store_name: str | None = None
+    unit_price: int | None = None
+    image_url: str | None = None
     class Config:
         from_attributes = True
 
@@ -52,12 +57,12 @@ class SearchResult(BaseModel):
 # --- Order / Checkout ---
 class OrderCreate(BaseModel):
     product_id: int
-    store_id: int | None = None
+    store_id: int
     lock_id: int
-    quantity: int = 1
-    full_name: str
-    phone: str
-    address: str
+    quantity: int = Field(default=1, ge=1)
+    full_name: str = Field(min_length=1, max_length=255)
+    phone: str = Field(min_length=9, max_length=20)
+    address: str = Field(min_length=1, max_length=500)
 
     @field_validator("phone")
     @classmethod
@@ -83,3 +88,21 @@ class OrderResponse(BaseModel):
     vietqr_url: str
     class Config:
         from_attributes = True
+
+
+class PaymentWebhook(BaseModel):
+    provider: str = "vietqr_mock"
+    order_code: str
+    amount: int = Field(ge=0)
+    status: Literal["paid", "failed", "cancelled"]
+    transaction_id: str = Field(min_length=3, max_length=120)
+    idempotency_key: str | None = Field(default=None, max_length=120)
+    signature: str | None = None
+
+
+class PaymentWebhookResponse(BaseModel):
+    order_id: int
+    order_code: str
+    order_status: str
+    payment_status: str
+    idempotent: bool = False

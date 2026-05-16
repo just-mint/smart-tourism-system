@@ -24,6 +24,8 @@ celery_app.conf.update(
     result_serializer='json',
     timezone='Asia/Ho_Chi_Minh',
     enable_utc=True,
+    worker_prefetch_multiplier=1,
+    task_acks_late=True,
 )
 
 # === CELERY BEAT SCHEDULE — Cronjob tự động ===

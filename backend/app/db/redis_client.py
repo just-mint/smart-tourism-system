@@ -1,7 +1,8 @@
-import os
 from collections.abc import AsyncGenerator
 
 from redis.asyncio import Redis
+
+from app.core.config import settings
 
 
 async def get_redis() -> AsyncGenerator[Redis, None]:
@@ -10,9 +11,8 @@ async def get_redis() -> AsyncGenerator[Redis, None]:
     Đọc REDIS_URL từ biến môi trường. Docker Compose override qua env.
     Kết nối luôn được đóng trong finally block để tránh resource leak.
     """
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     redis: Redis = Redis.from_url(
-        redis_url,
+        settings.REDIS_URL,
         encoding="utf-8",
         decode_responses=True,  # Tự decode bytes → str, tiện dùng với string keys
     )

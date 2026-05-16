@@ -10,7 +10,6 @@ Trả về JSON hoàn chỉnh cho Frontend (Bước 5).
 """
 
 import logging
-import os
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -19,6 +18,7 @@ import httpx
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.domains.inventory.model import Inventory, Product, Store
 from app.domains.planner.schema import (
     ContextInfo,
@@ -34,8 +34,42 @@ from app.domains.spatial.service import fetch_real_weather
 
 logger = logging.getLogger(__name__)
 
-# URL của Optimization Microservice
-OPTIMIZATION_SERVICE_URL = os.getenv("OPTIMIZATION_SERVICE_URL", "http://localhost:8001/api/v1/optimize")
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    import math
+
+    radius_km = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(dlon / 2) ** 2
+    )
+    return radius_km * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _fallback_metrics(
+    shops: list[dict[str, Any]],
+    user_lat: float,
+    user_lon: float,
+) -> dict[str, Any]:
+    total_price = sum(float(shop.get("price") or 0) for shop in shops)
+    total_distance = 0.0
+    prev_lat = user_lat
+    prev_lon = user_lon
+    for shop in shops:
+        coords = shop.get("coords", {})
+        lat = float(coords.get("lat") or 0)
+        lon = float(coords.get("lng") or 0)
+        if lat and lon:
+            total_distance += _haversine_km(prev_lat, prev_lon, lat, lon)
+            prev_lat, prev_lon = lat, lon
+    return {
+        "total_price": total_price,
+        "total_distance_km": round(total_distance, 2),
+        "routing_fallback_used": True,
+    }
 
 
 def _query_stores_in_radius(
@@ -148,7 +182,11 @@ async def _call_optimization_service(
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(OPTIMIZATION_SERVICE_URL, json=payload)
+            response = await client.post(
+                settings.OPTIMIZATION_SERVICE_URL,
+                json=payload,
+                headers={"X-Internal-Secret": settings.INTERNAL_SECRET_KEY},
+            )
             if response.status_code == 200:
                 return response.json()
             else:
@@ -227,7 +265,11 @@ async def generate_smart_itinerary(
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(OPTIMIZATION_SERVICE_URL, json=payload)
+            response = await client.post(
+                settings.OPTIMIZATION_SERVICE_URL,
+                json=payload,
+                headers={"X-Internal-Secret": settings.INTERNAL_SECRET_KEY},
+            )
             if response.status_code == 200:
                 opt_result = response.json()
                 reordered_shops = opt_result["data"]["reordered_shops"]
@@ -240,7 +282,11 @@ async def generate_smart_itinerary(
         logger.error(f"[Planner] Fallback do lỗi Optimization: {e}")
         raw_candidates.sort(key=lambda x: x.get("rating", 0), reverse=True)
         reordered_shops = raw_candidates[:request.top_n]
-        metrics_data = {"total_price": 0, "total_distance_km": 0, "routing_fallback_used": True}
+        metrics_data = _fallback_metrics(
+            reordered_shops,
+            request.current_lat,
+            request.current_lon,
+        )
         route_geo = None
 
     # Fetch all products for these stores at once

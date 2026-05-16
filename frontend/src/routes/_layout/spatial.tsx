@@ -155,10 +155,10 @@ function StoreProductPanel({
 }) {
   const [lockingProduct, setLockingProduct] = useState<number | null>(null)
 
-  const handleLock = async (product_id: number) => {
+  const handleLock = async (product_id: number, store_id: number) => {
     setLockingProduct(product_id)
     try {
-      await InventoryAPI.createLock(product_id, 1)
+      await InventoryAPI.createLock(product_id, 1, store_id)
       toast.success(
         "Đã giữ hàng thành công! Vui lòng vào trang Giỏ hàng để thanh toán.",
       )
@@ -266,7 +266,7 @@ function StoreProductPanel({
                           </p>
                           <button
                             disabled={lockingProduct === p.product_id}
-                            onClick={() => handleLock(p.product_id)}
+                            onClick={() => handleLock(p.product_id, store.store_id!)}
                             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white hover:shadow-[0_0_20px_rgba(168,85,247,0.8)] shadow-[0_0_10px_rgba(168,85,247,0.4)] border border-white/10 text-[9px] font-bold font-mono uppercase tracking-widest py-1.5 rounded-lg transition-all flex justify-center items-center disabled:opacity-50"
                           >
                             {lockingProduct === p.product_id ? (
@@ -667,9 +667,10 @@ function SpatialOperations() {
   )
 
   useEffect(() => {
-    handleFindNearby()
+    handleFindNearby(21.0285, 105.8542, 2000)
+    // Run once on mount; subsequent input changes require the explicit search button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleFindNearby]) // Run once on mount
+  }, [])
 
   const handleCluster = async () => {
     if (!nearbyData || nearbyData.places.length === 0) return

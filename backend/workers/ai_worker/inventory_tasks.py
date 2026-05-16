@@ -43,7 +43,8 @@ def sweep_expired_locks(self):
     Celery Beat Task — chạy mỗi 60 giây.
 
     Logic idempotent:
-      1. Tìm tất cả InventoryLock có status='soft_locked' VÀ expires_at < NOW()
+      1. Tìm tất cả InventoryLock có status='soft_locked' hoặc 'checkout_pending'
+         VÀ expires_at < NOW()
          (tức là đã vượt quá TTL cài sẵn, cộng thêm 1 phút grace period).
       2. Sử dụng FOR UPDATE SKIP LOCKED → nếu worker khác đang xử lý row
          thì bỏ qua, tránh double-release.
@@ -65,7 +66,7 @@ def sweep_expired_locks(self):
                 text("""
                     SELECT id, product_id, quantity, store_id
                     FROM inventory_locks
-                    WHERE status = 'soft_locked'
+                    WHERE status IN ('soft_locked', 'checkout_pending')
                       AND expires_at <= (NOW() - INTERVAL '1 minute')
                     FOR UPDATE SKIP LOCKED
                 """)
@@ -110,6 +111,15 @@ def sweep_expired_locks(self):
 
         # ── BƯỚC 3: Batch update status → 'expired' ──
         if lock_ids:
+            session.execute(
+                text("""
+                    UPDATE orders
+                    SET status = 'EXPIRED'
+                    WHERE lock_id = ANY(:ids)
+                      AND status = 'PENDING_PAYMENT'
+                """),
+                {"ids": lock_ids},
+            )
             session.execute(
                 text("""
                     UPDATE inventory_locks

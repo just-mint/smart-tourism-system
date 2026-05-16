@@ -1,5 +1,5 @@
 import logging
-import os
+import math
 
 import httpx
 import numpy as np
@@ -10,10 +10,39 @@ from sklearn.cluster import KMeans
 from sqlalchemy import cast, func, text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.domains.culture.model import Place
 from app.domains.inventory.model import Store
 
 logger = logging.getLogger(__name__)
+
+
+def _haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    radius_m = 6_371_000.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(dlon / 2) ** 2
+    )
+    return radius_m * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _fallback_route_distance(
+    current_lat: float,
+    current_lon: float,
+    places: list[dict],
+) -> float:
+    total = 0.0
+    prev_lat = current_lat
+    prev_lon = current_lon
+    for place in places:
+        total += _haversine_meters(prev_lat, prev_lon, place["lat"], place["lon"])
+        prev_lat = place["lat"]
+        prev_lon = place["lon"]
+    return round(total, 2)
 
 
 def search_places_omnisearch(db: Session, query_text: str, user_lat: float = None, user_lon: float = None):
@@ -277,7 +306,7 @@ async def plan_route_osrm(db: Session, current_lat: float, current_lon: float, p
 
     coords_str = ";".join(coords)
     # 1. Use OSRM Trip API to calculate actual road distance TSP
-    osrm_base = os.getenv("OSRM_BASE_URL", "https://router.project-osrm.org")
+    osrm_base = settings.OSRM_BASE_URL
     url = f"{osrm_base}/trip/v1/driving/{coords_str}?source=first&roundtrip=false&overview=full&geometries=geojson"
 
     try:
@@ -307,17 +336,19 @@ async def plan_route_osrm(db: Session, current_lat: float, current_lon: float, p
             "waypoints": osrm_waypoints,
             "polyline": trip['geometry'],
             "optimized_order": optimized_order_ids,
-            "weather_context": weather
+            "weather_context": weather,
+            "routing_fallback_used": False,
         }
     except Exception as e:
         logger.warning(f"[Route] OSRM Trip fallback: {e}")
         # Fallback
         return {
-            "total_distance_meters": 0.0,
+            "total_distance_meters": _fallback_route_distance(current_lat, current_lon, place_dicts),
             "waypoints": [{"lat": p["lat"], "lon": p["lon"], "name": p["name"]} for p in place_dicts],
             "polyline": None,
             "optimized_order": [p['id'] for p in place_dicts],
-            "weather_context": weather
+            "weather_context": weather,
+            "routing_fallback_used": True,
         }
 
 def get_place_o2o_context(db: Session, place_id: str, radius: int = 2000):

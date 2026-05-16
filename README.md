@@ -67,12 +67,26 @@ For local development, update at least these values:
 
 The backend reads the repository-level `.env` file, so commands can be run from either the repository root or `backend/`.
 
-## Run With Docker Compose
+## 🚀 Quick Start (Local Development)
 
-Start the full stack:
+The fastest way to get everything running locally with sample data is to use the setup script:
 
 ```bash
-docker compose up --build
+bash setup_local.sh
+```
+
+This script will:
+1. Create your `.env` file with default local passwords.
+2. Build and start all Docker containers.
+3. Run database migrations.
+4. Seed the initial admin user and sample products/stores from GitHub.
+
+## Run With Docker Compose (Manual)
+
+If you prefer to start the stack manually:
+
+```bash
+docker compose up --build -d
 ```
 
 Useful local URLs:

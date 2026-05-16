@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI
@@ -36,5 +36,6 @@ if settings.all_cors_origins:
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # ── Static files: phục vụ ảnh upload cho Frontend ──
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+upload_root = Path(settings.UPLOAD_ROOT)
+upload_root.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(upload_root)), name="uploads")

@@ -58,7 +58,7 @@ export interface PlaceDetailWithAI extends PlaceResponse {
   ai_story?: string
 }
 export interface ReviewCreate {
-  author_name: string
+  author_name?: string
   rating: number
   text: string
 }
@@ -122,6 +122,7 @@ export interface RoutePlanResponse {
   polyline?: RoutePolyline | string
   optimized_order: number[]
   weather_context?: WeatherContext
+  routing_fallback_used?: boolean
 }
 
 export interface ProductCompactResponse {
@@ -164,11 +165,15 @@ export interface ProductResponse {
 export interface LockResponseItem {
   id: number
   product_id: number
-  store_id?: number
+  store_id: number
   quantity: number
   status: string
   ttl_seconds: number
   expires_at: string
+  product_name?: string
+  store_name?: string
+  unit_price?: number
+  image_url?: string
 }
 
 // Vision
@@ -190,7 +195,7 @@ export interface TaskStatus {
 }
 export interface ClosetItemResponse {
   id: number
-  user_id: number
+  user_id: string
   image_path: string
   created_at: string
 }
@@ -209,11 +214,17 @@ export const CultureAPI = {
   getPlaceStory: (id: number) =>
     aegisClient.get<PlaceDetailWithAI>(`/culture/places/${id}/story`),
 
+  getStoreStory: (storeId: number) =>
+    aegisClient.get<PlaceDetailWithAI>(`/culture/stores/${storeId}/story`),
+
   getPlaceReviews: (id: number) =>
     aegisClient.get<ReviewResponse[]>(`/culture/places/${id}/reviews`),
 
   addPlaceReview: (id: number, review: ReviewCreate) =>
     aegisClient.post<ReviewResponse>(`/culture/places/${id}/reviews`, review),
+
+  getPlaceImage: (id: number) =>
+    aegisClient.get<{ image_url: string | null }>(`/culture/places/${id}/image`),
 }
 
 // ===================== SPATIAL API =====================
@@ -250,7 +261,8 @@ export const SpatialAPI = {
 // ===================== INVENTORY API =====================
 export interface OrderCreate {
   product_id: number
-  store_id?: number
+  store_id: number
+  lock_id: number
   quantity: number
   full_name: string
   phone: string
@@ -292,6 +304,9 @@ export const InventoryAPI = {
 
   getMyLocks: () =>
     aegisClient.get<LockResponseItem[]>("/inventory/locks"),
+
+  cancelLock: (lockId: number) =>
+    aegisClient.delete<{ message: string }>(`/inventory/locks/${lockId}`),
 
   triggerRelease: () =>
     aegisClient.post<{ message: string }>("/inventory/trigger-release"),
@@ -341,6 +356,9 @@ export const VisionAPI = {
 
   getMixMatch: (closetItemId: number) =>
     aegisClient.get<MixMatchResponse>(`/vision/closet/${closetItemId}/matches`),
+
+  getProductMatches: (productId: number) =>
+    aegisClient.get<ProductMatchResponse>(`/vision/products/${productId}/matches`),
 }
 
 export interface MixMatchProduct {
@@ -357,6 +375,12 @@ export interface MixMatchProduct {
 
 export interface MixMatchResponse {
   closet_item_id: number
+  matches: MixMatchProduct[]
+  total_matches: number
+}
+
+export interface ProductMatchResponse {
+  product_id: number
   matches: MixMatchProduct[]
   total_matches: number
 }

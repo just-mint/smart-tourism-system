@@ -218,6 +218,8 @@ def calculate_total_metrics(
     ordered_shops: list[dict[str, Any]],
     fallback_used: bool = False,
     osrm_distance_km: float | None = None,
+    user_lat: float | None = None,
+    user_lon: float | None = None,
 ) -> dict[str, Any]:
     """Tính tổng giá và tổng khoảng cách từ lộ trình đã chốt."""
     total_price = sum(shop.get("price", 0) for shop in ordered_shops)
@@ -228,15 +230,19 @@ def calculate_total_metrics(
     else:
         # Fallback: Haversine chim bay
         total_distance_km = 0.0
-        for i in range(len(ordered_shops) - 1):
-            c1 = ordered_shops[i].get("coords", {})
-            c2 = ordered_shops[i + 1].get("coords", {})
+        previous_coords: dict[str, float] | None = None
+        if user_lat is not None and user_lon is not None:
+            previous_coords = {"lat": user_lat, "lng": user_lon}
+        for shop in ordered_shops:
+            c1 = previous_coords
+            c2 = shop.get("coords", {})
             if c1 and c2:
                 d = haversine(
                     c1.get("lat", 0), c1.get("lng", 0),
                     c2.get("lat", 0), c2.get("lng", 0),
                 )
                 total_distance_km += d
+            previous_coords = c2
         total_distance_km = round(total_distance_km, 2)
 
     return {
@@ -318,6 +324,12 @@ def run_tsp_pipeline(
         fallback_used = True
         logger.warning("[TSP] ⚠️ OSRM Route không khả dụng — đường chim bay được dùng làm fallback")
 
-    metrics = calculate_total_metrics(ordered_shops, fallback_used, osrm_distance_km)
+    metrics = calculate_total_metrics(
+        ordered_shops,
+        fallback_used,
+        osrm_distance_km,
+        user_lat=user_lat,
+        user_lon=user_lon,
+    )
 
     return ordered_shops, metrics, route_geometry

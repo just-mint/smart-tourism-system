@@ -1,14 +1,18 @@
 import os
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+import jwt
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from jwt.exceptions import InvalidTokenError
 from redis.asyncio import Redis
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, reusable_oauth2
+from app.core import security
+from app.core.config import settings
 from app.db.redis_client import get_redis
 from app.db.session import get_db
 from app.domains.inventory import schema, service
-from app.models import User
+from app.models import TokenPayload, User
 
 router = APIRouter()
 
@@ -17,8 +21,10 @@ INTERNAL_SECRET_KEY = os.getenv("INTERNAL_SECRET_KEY", "")
 
 
 def verify_internal_or_superuser(
+    request: Request,
     x_internal_secret: str | None = Header(None),
-    current_user: User | None = Depends(get_current_user),
+    token: str | None = Depends(reusable_oauth2),
+    db: Session = Depends(get_db),
 ) -> None:
     """
     Bảo mật 2 lớp cho endpoint nội bộ:
@@ -31,6 +37,20 @@ def verify_internal_or_superuser(
         return
 
     # Lớp 2: Superuser check
+    current_user = None
+    actual_token = token or request.cookies.get("access_token")
+    if actual_token:
+        try:
+            payload = jwt.decode(
+                actual_token,
+                settings.SECRET_KEY,
+                algorithms=[security.ALGORITHM],
+            )
+            token_data = TokenPayload(**payload)
+            current_user = db.get(User, token_data.sub) if token_data.sub else None
+        except InvalidTokenError:
+            current_user = None
+
     if current_user and current_user.is_superuser:
         return
 
@@ -73,6 +93,17 @@ async def get_my_locks(current_user: User = Depends(get_current_user), db: Sessi
     """Tra cứu Giỏ hàng & Đồng hồ đếm ngược được nuôi bởi Redis"""
     return await service.get_user_locks_with_ttl(db=db, redis=redis, user_id=current_user.id)
 
+
+@router.delete("/locks/{lock_id}", response_model=dict)
+async def cancel_my_lock(
+    lock_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+):
+    await service.cancel_lock(db=db, redis=redis, lock_id=lock_id, user_id=current_user.id)
+    return {"message": "Đã hủy giữ hàng."}
+
 @router.post("/trigger-release", dependencies=[Depends(verify_internal_or_superuser)])
 def release_expired(db: Session = Depends(get_db)):
     """API Dọn dẹp (Bảo mật): Trả lại hàng vào DB khi lock hết hạn. Chỉ Superuser hoặc Internal Service gọi được."""
@@ -104,3 +135,12 @@ async def create_order(
 ):
     """Hoàn tất đơn hàng O2O: Xóa Redis Lock → Trừ tồn kho → Tạo Order → Trả VietQR"""
     return await service.finalize_order(db=db, redis=redis, data=data, user_id=current_user.id)
+
+
+@router.post("/payments/webhook", response_model=schema.PaymentWebhookResponse)
+def payment_webhook(
+    data: schema.PaymentWebhook,
+    db: Session = Depends(get_db),
+):
+    """Webhook payment: verify HMAC signature, idempotency, then update order state."""
+    return service.handle_payment_webhook(db=db, data=data)

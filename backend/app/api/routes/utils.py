@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -9,6 +8,7 @@ from redis.asyncio import Redis
 from sqlalchemy import func, select, text
 
 from app.api.deps import SessionDep, get_current_active_superuser
+from app.core.config import settings
 from app.domains.culture.model import Place
 from app.domains.inventory.model import InventoryLock, Store
 from app.models import Message, User
@@ -57,17 +57,19 @@ async def health_check(session: SessionDep) -> JSONResponse:
         healthy = False
 
     # ── 2. Redis ──
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    redis = None
     try:
-        redis = Redis.from_url(redis_url, decode_responses=True)
+        redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
         pong = await redis.ping()
         if not pong:
             raise ConnectionError("Redis PING returned False")
-        await redis.aclose()
     except Exception as exc:
         logger.error(f"[HealthCheck] Redis FAILED: {exc}")
         status["redis"] = f"error: {exc}"
         healthy = False
+    finally:
+        if redis is not None:
+            await redis.aclose()
 
     if not healthy:
         return JSONResponse(status_code=503, content={"status": "degraded", "checks": status})
@@ -76,8 +78,7 @@ async def health_check(session: SessionDep) -> JSONResponse:
 
 @router.get("/telemetry/", dependencies=[Depends(get_current_active_superuser)])
 async def get_telemetry(session: SessionDep) -> dict:
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    redis = Redis.from_url(redis_url, decode_responses=True)
+    redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
 
     cached = await redis.get("telemetry_data")
     if cached:

@@ -150,11 +150,12 @@ function CultureHeritage() {
     return () => window.removeEventListener("keydown", handleKey)
   }, [])
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return
+  const handleSearch = async (queryOverride?: string) => {
+    const query = (queryOverride ?? searchQuery).trim()
+    if (!query) return
     setIsSearching(true)
     try {
-      const res = await CultureAPI.searchPlaces(searchQuery)
+      const res = await CultureAPI.searchPlaces(query)
       setPlaces(res.data)
     } catch {
       setPlaces([])
@@ -185,7 +186,7 @@ function CultureHeritage() {
   }
 
   const handleSubmitReview = async () => {
-    if (!selectedPlace || !reviewAuthor.trim() || !reviewText.trim()) return
+    if (!selectedPlace || !reviewText.trim()) return
     setIsSubmittingReview(true)
     try {
       const res = await CultureAPI.addPlaceReview(selectedPlace.id, {
@@ -204,7 +205,7 @@ function CultureHeritage() {
 
   const handleTrendingClick = (query: string) => {
     setSearchQuery(query)
-    setTimeout(() => handleSearch(), 50)
+    handleSearch(query)
   }
 
   const showEmptyState =
@@ -214,43 +215,15 @@ function CultureHeritage() {
 
   useEffect(() => {
     if (selectedPlace?.name) {
-      const fetchWikiImage = async () => {
+      const fetchPlaceImage = async () => {
         try {
-          const res = await fetch(
-            `https://vi.wikipedia.org/w/api.php?action=query&origin=*&titles=${encodeURIComponent(selectedPlace.name)}&prop=pageimages&format=json&pithumbsize=1200`,
-          )
-          const data = await res.json()
-          const pages = data.query?.pages
-          if (pages) {
-            const pageId = Object.keys(pages)[0]
-            const imgUrl = pages[pageId]?.thumbnail?.source
-            if (imgUrl) {
-              setWikiImage(imgUrl)
-              return
-            }
-          }
-          const searchRes = await fetch(
-            `https://vi.wikipedia.org/w/api.php?action=query&origin=*&list=search&srsearch=${encodeURIComponent(selectedPlace.name)}&utf8=&format=json`,
-          )
-          const searchData = await searchRes.json()
-          if (searchData.query?.search?.length > 0) {
-            const bestTitle = searchData.query.search[0].title
-            const imgRes = await fetch(
-              `https://vi.wikipedia.org/w/api.php?action=query&origin=*&titles=${encodeURIComponent(bestTitle)}&prop=pageimages&format=json&pithumbsize=1200`,
-            )
-            const imgData = await imgRes.json()
-            const pId = Object.keys(imgData.query.pages)[0]
-            const iUrl = imgData.query.pages[pId]?.thumbnail?.source
-            if (iUrl) setWikiImage(iUrl)
-            else setWikiImage(null)
-          } else {
-            setWikiImage(null)
-          }
+          const res = await CultureAPI.getPlaceImage(selectedPlace.id)
+          setWikiImage(res.data.image_url)
         } catch {
           setWikiImage(null)
         }
       }
-      fetchWikiImage()
+      fetchPlaceImage()
     } else {
       setWikiImage(null)
     }
@@ -421,22 +394,26 @@ function CultureHeritage() {
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
                 <Globe className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">48</div>
-                <div className="text-xs text-white/50">Di sản văn hóa</div>
+                <div className="text-xs text-white/50">
+                  Di sản văn hóa · demo
+                </div>
               </div>
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
                 <Compass className="w-8 h-8 text-purple-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">120+</div>
-                <div className="text-xs text-white/50">Điểm đến</div>
+                <div className="text-xs text-white/50">Điểm đến · demo</div>
               </div>
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
                 <Calendar className="w-8 h-8 text-pink-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">2000+</div>
-                <div className="text-xs text-white/50">Năm lịch sử</div>
+                <div className="text-xs text-white/50">Năm lịch sử · demo</div>
               </div>
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-5 text-center border border-white/10">
                 <Users className="w-8 h-8 text-amber-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">1M+</div>
-                <div className="text-xs text-white/50">Lượt khám phá</div>
+                <div className="text-xs text-white/50">
+                  Lượt khám phá · demo
+                </div>
               </div>
             </div>
           )}
@@ -602,7 +579,8 @@ function CultureHeritage() {
                     Vật Phẩm Kỷ Niệm Đề Xuất
                   </h3>
                   <p className="text-white/60 mt-2 font-sans">
-                    Được tuyển chọn từ Cửa hàng Chính Hãng AEGIS gần nhất.
+                    Được tuyển chọn từ Cửa hàng Chính Hãng AEGIS gần nhất. Dữ
+                    liệu mẫu sẽ được thay bằng khuyến nghị thật khi có catalog.
                   </p>
                 </div>
                 <button className="hidden md:flex mt-4 md:mt-0 items-center gap-2 text-sm text-white/80 hover:text-[#D4AF37] transition-colors font-mono uppercase tracking-wider">
@@ -780,11 +758,7 @@ function CultureHeritage() {
                   />
                   <button
                     onClick={handleSubmitReview}
-                    disabled={
-                      isSubmittingReview ||
-                      !reviewAuthor.trim() ||
-                      !reviewText.trim()
-                    }
+                    disabled={isSubmittingReview || !reviewText.trim()}
                     className="px-8 py-3 bg-white text-[#0B132B] font-bold font-sans text-sm rounded hover:bg-[#D4AF37] transition-colors disabled:opacity-50 disabled:hover:bg-white flex items-center justify-center gap-2 float-right"
                   >
                     {isSubmittingReview ? (

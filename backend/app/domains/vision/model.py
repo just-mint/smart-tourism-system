@@ -25,4 +25,7 @@ class VirtualCloset(Base):
     image_path: Mapped[str] = mapped_column(String(1000))
     # Nhờ cài đặt hệ xịn pgvector, lưu mảng Embedings 512D rất mạnh
     vector_embedding: Mapped[list | None] = mapped_column(Vector(512), nullable=True)
+    embedding_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    embedding_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    embedded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

@@ -18,10 +18,10 @@ class PlannerRequest(BaseModel):
     """
     Input từ Frontend (Bước 1).
     """
-    current_lat: float = Field(..., description="Vĩ độ hiện tại của khách")
-    current_lon: float = Field(..., description="Kinh độ hiện tại của khách")
-    radius: int = Field(default=2000, ge=500, le=50000, description="Bán kính tìm kiếm (mét)")
-    keywords: str = Field(default="", description="Từ khóa tìm kiếm (vd: cafe, lụa, nón lá)")
+    current_lat: float = Field(..., ge=-90, le=90, description="Vĩ độ hiện tại của khách")
+    current_lon: float = Field(..., ge=-180, le=180, description="Kinh độ hiện tại của khách")
+    radius: int = Field(default=2000, ge=500, le=20000, description="Bán kính tìm kiếm (mét)")
+    keywords: str = Field(default="", max_length=200, description="Từ khóa tìm kiếm (vd: cafe, lụa, nón lá)")
     weights: WeightConfig = WeightConfig()
     top_n: int = Field(default=5, ge=1, le=10, description="Số lượng điểm đến tối ưu")
     # [v2] Context-aware: Frontend có thể gửi local_hour (0-23), nếu không có Backend tự lấy

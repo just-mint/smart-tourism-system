@@ -70,6 +70,7 @@ class RoutePlanResponse(BaseModel):
     polyline: str | dict | None = None
     optimized_order: list[int]
     weather_context: dict | None = None
+    routing_fallback_used: bool = False
 
 class ProductCompactResponse(BaseModel):
     product_id: int

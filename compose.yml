@@ -112,6 +112,13 @@ services:
       - "8001"
     env_file:
       - .env
+    environment:
+      - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY:-}
+      - OSRM_BASE_URL=http://osrm-backend:5000
+      - BACKEND_CORS_ORIGINS=
+    depends_on:
+      redis:
+        condition: service_healthy
 
   ai_worker:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
@@ -120,7 +127,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     restart: always
-    command: ["celery", "-A", "workers.ai_worker.celery_app", "worker", "--loglevel=info"]
+    command: ["celery", "-A", "workers.ai_worker.celery_app", "worker", "--loglevel=info", "--concurrency=1", "--prefetch-multiplier=1"]
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -130,6 +137,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    volumes:
+      - app-uploads-data:/app/backend/uploads
     environment:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
@@ -138,6 +147,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - UPLOAD_ROOT=uploads
 
   ai_beat:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
@@ -205,7 +215,13 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
       - OPTIMIZATION_SERVICE_URL=http://optimization_service:8001/api/v1/optimize
       - OSRM_BASE_URL=http://osrm-backend:5000
-      - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY}
+      - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY:-}
+      - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-}
+      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-vietqr_mock}
+      - UPLOAD_ROOT=uploads
+
+    volumes:
+      - app-uploads-data:/app/backend/uploads
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
@@ -287,6 +303,7 @@ services:
 
 volumes:
   app-db-data:
+  app-uploads-data:
 
 networks:
   traefik-public:

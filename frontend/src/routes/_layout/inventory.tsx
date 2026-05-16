@@ -104,6 +104,8 @@ function Inventory() {
   >(null)
   const [orderForm, setOrderForm] = useState<OrderCreate>({
     product_id: 0,
+    store_id: 0,
+    lock_id: 0,
     quantity: 1,
     full_name: "",
     phone: "",
@@ -155,6 +157,12 @@ function Inventory() {
     loadLocks()
   }, [loadLocks])
 
+  useEffect(() => {
+    if (locks.length === 0) return
+    const interval = window.setInterval(loadLocks, 30_000)
+    return () => window.clearInterval(interval)
+  }, [loadLocks, locks.length])
+
   const handleStoreClick = async (storeId: number) => {
     setActiveStoreId(storeId)
     setSearchQuery("")
@@ -169,17 +177,24 @@ function Inventory() {
   }
 
   const handleReserveClick = async (product: ProductResponse) => {
+    const storeId = product.store_id ?? activeStoreId
+    if (!storeId) {
+      setNotification("Vui lòng chọn cửa hàng trước khi giữ hàng")
+      setTimeout(() => setNotification(""), 3000)
+      return
+    }
     setLockingId(product.product_id)
     try {
-      const res = await InventoryAPI.createLock(product.product_id, 1)
-      setNotification(`✅ ${res.data.message}`)
+      const res = await InventoryAPI.createLock(product.product_id, 1, storeId)
+      setNotification(res.data.message)
       loadLocks()
       // Open checkout modal
       setCheckoutProduct(product)
       setOrderForm({
         ...orderForm,
         product_id: product.product_id,
-        store_id: product.store_id,
+        store_id: storeId,
+        lock_id: res.data.lock_id,
       })
       setTimeout(() => setNotification(""), 3000)
     } catch (err: unknown) {
@@ -208,6 +223,37 @@ function Inventory() {
   const closeCheckout = () => {
     setCheckoutProduct(null)
     setOrderResult(null)
+  }
+
+  const handleCheckoutLock = (lock: LockResponseItem) => {
+    setCheckoutProduct({
+      product_id: lock.product_id,
+      store_id: lock.store_id,
+      name: lock.product_name || `Product #${lock.product_id}`,
+      price: lock.unit_price || 0,
+      image_url: lock.image_url,
+      stock: 1,
+    })
+    setOrderForm((prev) => ({
+      ...prev,
+      product_id: lock.product_id,
+      store_id: lock.store_id,
+      lock_id: lock.id,
+      quantity: lock.quantity,
+    }))
+    setIsCartOpen(false)
+  }
+
+  const handleCancelLock = async (lockId: number) => {
+    try {
+      await InventoryAPI.cancelLock(lockId)
+      await loadLocks()
+      setNotification("Đã hủy giữ hàng")
+    } catch (err: unknown) {
+      setNotification(getApiErrorDetail(err, "Không hủy được giữ hàng"))
+    } finally {
+      setTimeout(() => setNotification(""), 3000)
+    }
   }
 
   return (
@@ -453,7 +499,7 @@ function Inventory() {
                       <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                      Order Created!
+                      Đơn đã tạo, chờ thanh toán
                     </h2>
                     <p className="text-zinc-400 mb-8 font-mono">
                       Code:{" "}
@@ -470,8 +516,8 @@ function Inventory() {
                       />
                     </div>
                     <p className="text-sm text-zinc-500 max-w-xs">
-                      Scan with any banking app to complete payment. Your order
-                      will be shipped soon.
+                      Quét mã bằng ứng dụng ngân hàng để thanh toán. Đơn chỉ
+                      chuyển sang xử lý sau khi webhook xác nhận đã nhận tiền.
                     </p>
 
                     <button
@@ -557,7 +603,7 @@ function Inventory() {
                       ) : (
                         <Zap className="w-5 h-5" />
                       )}
-                      {isOrdering ? "Processing..." : "Place Order via VietQR"}
+                      {isOrdering ? "Đang tạo..." : "Tạo đơn chờ thanh toán"}
                     </button>
                   </form>
                 )}
@@ -603,16 +649,36 @@ function Inventory() {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-white font-bold mb-1">
-                          Product #{lock.product_id}
+                          {lock.product_name || `Product #${lock.product_id}`}
                         </p>
                         <p className="text-xs text-zinc-500 font-mono">
-                          Qty: {lock.quantity} • Lock: {lock.id}
+                          {lock.store_name || `Store #${lock.store_id}`} • Qty:{" "}
+                          {lock.quantity} • Lock: {lock.id}
                         </p>
+                        {lock.unit_price !== undefined && (
+                          <p className="text-xs text-amber-400 font-mono mt-1">
+                            {lock.unit_price.toLocaleString("vi-VN")} đ
+                          </p>
+                        )}
                       </div>
                       <CountdownTimer
                         expiresAt={lock.expires_at}
                         ttlSeconds={lock.ttl_seconds}
                       />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleCheckoutLock(lock)}
+                        className="flex-1 rounded-xl bg-amber-500 px-3 py-2 text-xs font-bold text-zinc-950 hover:bg-amber-400"
+                      >
+                        Thanh toán
+                      </button>
+                      <button
+                        onClick={() => handleCancelLock(lock.id)}
+                        className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/10"
+                      >
+                        Hủy
+                      </button>
                     </div>
                   </div>
                 ))

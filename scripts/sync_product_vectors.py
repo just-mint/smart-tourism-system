@@ -161,6 +161,9 @@ def run_pipeline():
             
             if embedding is not None:
                 product.embedding = embedding
+                product.embedding_model = "clip-ViT-B-32"
+                product.embedding_version = "sentence-transformers"
+                product.embedded_at = datetime.now(timezone.utc)
                 success_count += 1
                 
                 if i < 10 or success_count % 50 == 0:

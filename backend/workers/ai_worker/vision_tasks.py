@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 from PIL import Image
 from sentence_transformers import SentenceTransformer
@@ -156,6 +157,9 @@ def process_closet_image(closet_id: int, image_path: str):
         closet_item = db.query(VirtualCloset).filter(VirtualCloset.id == closet_id).first()
         if closet_item:
             closet_item.vector_embedding = img_emb
+            closet_item.embedding_model = "clip-ViT-B-32"
+            closet_item.embedding_version = "sentence-transformers"
+            closet_item.embedded_at = datetime.now(timezone.utc)
             db.commit()
         logger.info(f"[AI-Worker] ✅ Đã lưu Vector 512D cho tủ đồ cá nhân Item ID: {closet_id}")
     except Exception as e:

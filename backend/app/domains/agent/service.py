@@ -1,15 +1,49 @@
 import logging
 
 import httpx
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.domains.agent import schema
-from app.domains.inventory.model import Product, Store
+from app.domains.inventory.model import Product, Store, Inventory
 from app.domains.planner.schema import PlannerRequest
 from app.domains.planner.service import generate_smart_itinerary
 
 logger = logging.getLogger(__name__)
+
+
+class KeywordArgs(BaseModel):
+    keyword: str = Field(min_length=1, max_length=120)
+
+class ProductArgs(BaseModel):
+    keyword: str = Field(default="", max_length=120)
+    store_name: str | None = Field(default=None, max_length=120)
+
+
+class CoordinateArgs(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    radius: int = Field(default=2000, ge=100, le=20000)
+
+
+class ItineraryArgs(CoordinateArgs):
+    keywords: str = Field(min_length=1, max_length=200)
+    max_budget: int | None = Field(default=None, ge=0)
+
+
+def _validate_tool_args(function_name: str, args: dict) -> dict:
+    validators = {
+        "search_culture": KeywordArgs,
+        "search_products": ProductArgs,
+        "check_weather": CoordinateArgs,
+        "find_stores_near": CoordinateArgs,
+        "create_itinerary": ItineraryArgs,
+    }
+    model = validators.get(function_name)
+    if not model:
+        return args
+    return model(**args).model_dump(exclude_none=True)
 
 TOOLS = [
     {
@@ -42,16 +76,19 @@ TOOLS = [
             },
             {
                 "name": "search_products",
-                "description": "Tìm kiếm sản phẩm O2O (ví dụ: áo dài, cà phê, nón lá) để gợi ý mua sắm.",
+                "description": "Tìm kiếm sản phẩm O2O (ví dụ: áo dài, cà phê, nón lá) để gợi ý mua sắm. Có thể tìm theo tên sản phẩm và tên cửa hàng.",
                 "parameters": {
                     "type": "OBJECT",
                     "properties": {
                         "keyword": {
                             "type": "STRING",
-                            "description": "Tên sản phẩm cần tìm."
+                            "description": "Tên sản phẩm cần tìm. Có thể để trống nếu chỉ muốn xem sản phẩm của một cửa hàng."
+                        },
+                        "store_name": {
+                            "type": "STRING",
+                            "description": "Tên cửa hàng nếu khách hỏi sản phẩm tại một cửa hàng cụ thể (tùy chọn)."
                         }
-                    },
-                    "required": ["keyword"]
+                    }
                 }
             },
             {
@@ -90,7 +127,12 @@ TOOLS = [
 ]
 
 async def execute_tool(db: Session, function_name: str, args: dict):
-    logger.info("[Agent] Đang thực thi Tool ngầm: %s | Tham số: %s", function_name, args)
+    try:
+        args = _validate_tool_args(function_name, args)
+    except ValidationError as exc:
+        return {"status": "error", "message": "Tham số tool không hợp lệ", "details": exc.errors()}
+
+    logger.info("[Agent] Execute tool=%s", function_name)
     if function_name == "search_culture":
         keyword = args.get("keyword", "")
         if not keyword:
@@ -144,15 +186,28 @@ async def execute_tool(db: Session, function_name: str, args: dict):
 
     elif function_name == "search_products":
         keyword = args.get("keyword", "")
-        if not keyword:
-            return {"status": "error", "message": "keyword is empty"}
-        products = db.query(Product).filter(Product.name.ilike(f"%{keyword}%")).limit(5).all()
+        store_name = args.get("store_name")
+        if not keyword and not store_name:
+            return {"status": "error", "message": "Cần cung cấp ít nhất keyword hoặc store_name"}
+            
+        query = db.query(Product, Store.name.label("store_name")).join(
+            Inventory, Product.product_id == Inventory.product_id
+        ).join(
+            Store, Inventory.store_id == Store.store_id
+        )
+        
+        if keyword:
+            query = query.filter(Product.name.ilike(f"%{keyword}%"))
+        if store_name:
+            query = query.filter(Store.name.ilike(f"%{store_name}%"))
+            
+        products = query.limit(5).all()
         if not products:
             return {"status": "not_found", "message": "Không có sản phẩm nào khớp."}
 
         result = []
-        for p in products:
-            result.append({"product_id": p.product_id, "name": p.name, "price": p.price})
+        for p, s_name in products:
+            result.append({"product_id": p.product_id, "name": p.name, "price": p.price, "store_name": s_name})
         return {"status": "success", "products": result}
 
     elif function_name == "find_stores_near":
@@ -229,10 +284,13 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
     if not api_key:
         return schema.AgentChatResponse(answer="Bot thiếu API Key.", internal_actions=[])
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
     # Ép Gemini tuân thủ tư duy O2O Agent
-    sys_instruction_text = "Bạn là AEGIS AI, chuyên gia du lịch và gợi ý mua sắm O2O tại Việt Nam. Nếu khách hỏi địa danh, BẮT BUỘC gọi hàm search_culture. Nếu khách muốn mua sắm, BẮT BUỘC gọi search_products hoặc find_stores_near. Nếu khách muốn lên kế hoạch, tìm đường đi mua sắm, hoặc hỏi 'nên đi đâu', BẮT BUỘC gọi create_itinerary với tọa độ và từ khóa. Luôn khuyến khích khách 'Giữ hàng (Lock)' qua giao diện O2O và xem lộ trình trên tab Itinerary."
+    location_hint = ""
+    if request.current_lat is not None and request.current_lon is not None:
+        location_hint = f" Vị trí hiện tại của khách: lat={request.current_lat}, lon={request.current_lon}."
+    sys_instruction_text = "Bạn là AEGIS AI, chuyên gia du lịch và gợi ý mua sắm O2O tại Việt Nam. Nếu khách hỏi địa danh, BẮT BUỘC gọi hàm search_culture. Nếu khách muốn mua sắm, BẮT BUỘC gọi search_products hoặc find_stores_near. Nếu khách muốn lên kế hoạch, tìm đường đi mua sắm, hoặc hỏi 'nên đi đâu', BẮT BUỘC gọi create_itinerary với tọa độ và từ khóa. Không tự động mua hàng, giữ hàng, thanh toán hoặc thay đổi đơn; chỉ hướng dẫn khách dùng giao diện O2O. Luôn khuyến khích khách xem lộ trình trên tab Itinerary." + location_hint
     system_instruction = {"parts": [{"text": sys_instruction_text}]}
 
     history = [
@@ -251,9 +309,10 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
                 "tools": TOOLS
             }
 
-            res = await client.post(url, json=payload)
+            res = await client.post(url, json=payload, headers={"x-goog-api-key": api_key})
             if res.status_code != 200:
-                bot_answer = f"Lỗi gọi Gemini API: {res.text}"
+                logger.warning("Gemini agent request failed: status=%s", res.status_code)
+                bot_answer = "AEGIS Agent đang quá tải hoặc chưa sẵn sàng. Vui lòng thử lại sau."
                 break
 
             resp_data = res.json()
@@ -285,8 +344,8 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
                 f_name = function_call.get("name")
                 f_args = function_call.get("args", {})
 
-                # Tracking
-                internal_actions.append(f"{f_name}({f_args})")
+                # Tracking: chỉ trả tên tool, không trả raw args có thể chứa dữ liệu nhạy cảm.
+                internal_actions.append(str(f_name))
 
                 f_res = await execute_tool(db, f_name, f_args)
 

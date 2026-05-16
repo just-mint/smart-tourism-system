@@ -47,7 +47,12 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def all_cors_origins(self) -> list[str]:
-        return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
+        raw_origins = (
+            self.BACKEND_CORS_ORIGINS
+            if isinstance(self.BACKEND_CORS_ORIGINS, list)
+            else [self.BACKEND_CORS_ORIGINS]
+        )
+        return [str(origin).rstrip("/") for origin in raw_origins if origin] + [
             self.FRONTEND_HOST
         ]
 
@@ -100,15 +105,31 @@ class Settings(BaseSettings):
     # Inventory: Thời gian giữ Soft-lock (giây). Mặc định 15 phút.
     INVENTORY_LOCK_TTL: int = 900
 
+    # Infrastructure services
+    REDIS_URL: str = "redis://localhost:6379/0"
+    RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672//"
+    OPTIMIZATION_SERVICE_URL: str = "http://localhost:8001/api/v1/optimize"
+    OSRM_BASE_URL: str = "https://router.project-osrm.org"
+
     # Internal Secret: Dùng cho service-to-service auth (Celery → API, Cronjob → API)
     INTERNAL_SECRET_KEY: str = secrets.token_urlsafe(32)
+
+    # Rate limiting for expensive O2O endpoints
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_DEFAULT_LIMIT: int = 60
+    RATE_LIMIT_DEFAULT_WINDOW_SECONDS: int = 60
 
     # Vision Upload: Kiểu file và dung lượng tối đa cho API /vision/scan
     ALLOWED_IMAGE_TYPES: list[str] = ["image/jpeg", "image/png", "image/webp"]
     MAX_UPLOAD_SIZE_MB: int = 10
+    UPLOAD_ROOT: str = "uploads"
 
     # Gemini AI
     GEMINI_API_KEY: str | None = None
+
+    # Payment webhook guard. Production should set a stable HMAC secret.
+    PAYMENT_PROVIDER: str = "vietqr_mock"
+    PAYMENT_WEBHOOK_SECRET: str | None = None
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
@@ -128,6 +149,17 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
+        if self.ENVIRONMENT == "production":
+            raw_origins = (
+                self.BACKEND_CORS_ORIGINS
+                if isinstance(self.BACKEND_CORS_ORIGINS, list)
+                else [self.BACKEND_CORS_ORIGINS]
+            )
+            origins = [str(origin) for origin in raw_origins]
+            if "*" in origins:
+                raise ValueError("BACKEND_CORS_ORIGINS must not contain '*' in production")
+            if not self.PAYMENT_WEBHOOK_SECRET:
+                raise ValueError("PAYMENT_WEBHOOK_SECRET is required in production")
 
         return self
 

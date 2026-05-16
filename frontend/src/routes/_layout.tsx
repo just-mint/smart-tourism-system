@@ -14,7 +14,7 @@ import {
   Send,
   Settings as SettingsIcon,
 } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { type FormEvent, useEffect, useRef, useState } from "react"
 import { AgentAPI } from "@/client/aegis-api"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -245,6 +245,7 @@ function Layout() {
 
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [initialChatMessage, setInitialChatMessage] = useState("")
+  const [globalQuery, setGlobalQuery] = useState("")
 
   useEffect(() => {
     const handleOpenChatEvent = (e: Event) => {
@@ -267,6 +268,15 @@ function Layout() {
         .substring(0, 2)
         .toUpperCase()
     : currentUser?.email?.substring(0, 2).toUpperCase() || "AL"
+
+  const handleGlobalSearch = (e: FormEvent) => {
+    e.preventDefault()
+    const query = globalQuery.trim()
+    if (!query) return
+    setInitialChatMessage(query)
+    setIsChatOpen(true)
+    setGlobalQuery("")
+  }
 
   return (
     <div className="dark min-h-screen bg-black text-zinc-50 font-sans relative overflow-hidden z-0">
@@ -292,11 +302,16 @@ function Layout() {
             </div>
 
             <div className="flex items-center gap-4 sm:gap-6">
-              <div className="hidden md:flex relative group">
+              <form
+                onSubmit={handleGlobalSearch}
+                className="hidden md:flex relative group"
+              >
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-cyan-400 transition-colors" />
                 <input
                   type="text"
-                  placeholder="Query system..."
+                  value={globalQuery}
+                  onChange={(e) => setGlobalQuery(e.target.value)}
+                  placeholder="Hỏi AEGIS Agent..."
                   className="w-64 pl-10 pr-12 py-1.5 bg-black/40 border border-white/10 rounded-full text-sm text-zinc-200 outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all font-mono placeholder:text-zinc-600 shadow-inner"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -304,12 +319,11 @@ function Layout() {
                     ⌘K
                   </kbd>
                 </div>
-              </div>
+              </form>
 
               <div className="flex items-center gap-3">
                 <button className="relative p-2 text-zinc-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10">
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-500 border border-black shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></span>
                 </button>
 
                 <div className="h-6 w-px bg-white/10 hidden sm:block"></div>

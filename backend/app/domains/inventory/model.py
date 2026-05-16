@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from geoalchemy2 import Geometry
@@ -13,7 +14,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
 
@@ -49,6 +50,12 @@ class Product(Base):
     original_price: Mapped[int | None] = mapped_column(Integer, nullable=True)
     image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     embedding: Mapped[list | None] = mapped_column(Vector(512), nullable=True)
+    embedding_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    embedding_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    embedded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     # [v2] Thuộc tính sản phẩm — phục vụ lọc cá nhân hóa
     size: Mapped[str | None] = mapped_column(String(20), nullable=True)
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -107,7 +114,7 @@ class InventoryLock(Base):
         Index(
             "idx_active_locks",
             expires_at,
-            postgresql_where=(text("status IN ('soft_locked', 'active')")),
+            postgresql_where=(text("status IN ('soft_locked', 'active', 'checkout_pending')")),
         ),
     )
 
@@ -122,13 +129,70 @@ class Order(Base):
         ForeignKey("stores.store_id"),
         nullable=True,
     )
+    lock_id: Mapped[int | None] = mapped_column(
+        ForeignKey("inventory_locks.id"),
+        nullable=True,
+        index=True,
+    )
     quantity: Mapped[int] = mapped_column(Integer, default=1)
     total_amount: Mapped[int] = mapped_column(Integer, default=0)
     full_name: Mapped[str] = mapped_column(String(255))
     phone: Mapped[str] = mapped_column(String(20))
     address: Mapped[str] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String(50), default="AWAITING_PAYMENT")
+    status: Mapped[str] = mapped_column(String(50), default="PENDING_PAYMENT")
     order_code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    payment_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.order_id"), index=True)
+    provider: Mapped[str] = mapped_column(String(50), default="vietqr_mock")
+    amount: Mapped[int] = mapped_column(Integer)
+    currency: Mapped[str] = mapped_column(String(10), default="VND")
+    status: Mapped[str] = mapped_column(String(50), default="pending")
+    transaction_id: Mapped[str | None] = mapped_column(
+        String(120),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+    idempotency_key: Mapped[str | None] = mapped_column(
+        String(120),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+    raw_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    __table_args__ = (
+        CheckConstraint("amount >= 0", name="check_payment_amount_nonnegative"),
+    )
+
+
+class InventoryEvent(Base):
+    __tablename__ = "inventory_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(50), index=True)
+    entity_id: Mapped[str] = mapped_column(String(100), index=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    action: Mapped[str] = mapped_column(String(80), index=True)
+    payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
