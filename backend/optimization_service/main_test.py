@@ -28,7 +28,7 @@ def test_ranking():
         {"id": "2", "name": "Shop B", "coords": {"lat": 10.7800, "lng": 106.7000}, "price": 150000, "rating": 3.0},
         {"id": "3", "name": "Shop C", "coords": {"lat": 10.7750, "lng": 106.6950}, "price": 80000, "rating": 4.8},
     ]
-    result = rank_items(shops, user_lat=10.7720, user_lon=106.6983)
+    result = rank_items(shops, user_lat=10.7720, user_lon=106.6983, weights={"rating": 0.4, "distance": 0.3, "price": 0.3})
     assert len(result) == 3
     # Shop có rating cao + gần + giá rẻ nên xếp trước
     print(f"✅ Ranking: {[(s['name'], s['final_score']) for s in result]}")
