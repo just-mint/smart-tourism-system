@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import axios from "axios"
 import {
   CheckCircle2,
   Clock,
@@ -16,25 +17,24 @@ import {
   Zap,
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import axios from "axios"
 import {
   API_BASE,
   type ClosetItemResponse,
-  type MixMatchProduct,
-  type TaskStatus,
-  VisionAPI,
   InventoryAPI,
+  type MixMatchProduct,
   type OrderCreate,
   type OrderResponse,
+  type TaskStatus,
+  VisionAPI,
 } from "@/client/aegis-api"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 
 // Local types to avoid breaking generated sdk
 interface AvailableStore {
@@ -94,8 +94,11 @@ function VisionCloset() {
   const closetFileRef = useRef<HTMLInputElement>(null)
 
   // O2O Checkout states
-  const [selectedStores, setSelectedStores] = useState<Record<number, number>>({})
-  const [checkoutProduct, setCheckoutProduct] = useState<ExtendedMixMatchProduct | null>(null)
+  const [selectedStores, setSelectedStores] = useState<Record<number, number>>(
+    {},
+  )
+  const [checkoutProduct, setCheckoutProduct] =
+    useState<ExtendedMixMatchProduct | null>(null)
   const [orderForm, setOrderForm] = useState<OrderCreate>({
     product_id: 0,
     store_id: undefined,
@@ -489,18 +492,35 @@ function VisionCloset() {
                                   {prod.name}
                                 </h5>
                               </div>
-                              
+
                               {/* --- STORE DROPDOWN --- */}
                               <div className="mt-2">
-                                {(prod as ExtendedMixMatchProduct).available_stores && (prod as ExtendedMixMatchProduct).available_stores!.length > 0 ? (
-                                  <select 
+                                {(prod as ExtendedMixMatchProduct)
+                                  .available_stores &&
+                                (prod as ExtendedMixMatchProduct)
+                                  .available_stores!.length > 0 ? (
+                                  <select
                                     className="w-full bg-zinc-900 border border-white/10 text-xs text-white p-1.5 rounded focus:outline-none focus:border-amber-500/50"
-                                    value={selectedStores[prod.product_id] || ""}
-                                    onChange={(e) => handleStoreSelect(prod.product_id, parseInt(e.target.value))}
+                                    value={
+                                      selectedStores[prod.product_id] || ""
+                                    }
+                                    onChange={(e) =>
+                                      handleStoreSelect(
+                                        prod.product_id,
+                                        parseInt(e.target.value, 10),
+                                      )
+                                    }
                                   >
-                                    <option value="" disabled>-- Chọn cửa hàng gần bạn --</option>
-                                    {(prod as ExtendedMixMatchProduct).available_stores!.map(s => (
-                                      <option key={s.store_id} value={s.store_id}>
+                                    <option value="" disabled>
+                                      -- Chọn cửa hàng gần bạn --
+                                    </option>
+                                    {(
+                                      prod as ExtendedMixMatchProduct
+                                    ).available_stores!.map((s) => (
+                                      <option
+                                        key={s.store_id}
+                                        value={s.store_id}
+                                      >
                                         {s.name} (Còn {s.stock})
                                       </option>
                                     ))}
@@ -517,12 +537,25 @@ function VisionCloset() {
                                   {prod.price.toLocaleString()}₫
                                 </span>
                                 <div className="flex items-center gap-2">
-                                  <button 
-                                    onClick={() => handleReserveClick(prod as ExtendedMixMatchProduct)}
-                                    disabled={!(prod as ExtendedMixMatchProduct).available_stores?.length || lockingId === prod.product_id}
+                                  <button
+                                    onClick={() =>
+                                      handleReserveClick(
+                                        prod as ExtendedMixMatchProduct,
+                                      )
+                                    }
+                                    disabled={
+                                      !(prod as ExtendedMixMatchProduct)
+                                        .available_stores?.length ||
+                                      lockingId === prod.product_id
+                                    }
                                     className="px-3 py-1.5 text-[10px] bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold rounded flex items-center gap-1 shadow-[0_0_10px_rgba(245,158,11,0.4)] transition-all disabled:opacity-50"
                                   >
-                                    {lockingId === prod.product_id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Lock className="w-3 h-3" />} Mua
+                                    {lockingId === prod.product_id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Lock className="w-3 h-3" />
+                                    )}{" "}
+                                    Mua
                                   </button>
                                   <button className="px-3 py-1.5 text-[10px] bg-purple-500 hover:bg-purple-600 text-white font-bold rounded flex items-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.4)] transition-all">
                                     <Shirt className="w-3 h-3" /> Tủ đồ
@@ -726,14 +759,25 @@ function VisionCloset() {
 
                         {/* --- STORE DROPDOWN --- */}
                         <div className="mt-2">
-                          {(prod as ExtendedMixMatchProduct).available_stores && (prod as ExtendedMixMatchProduct).available_stores!.length > 0 ? (
-                            <select 
+                          {(prod as ExtendedMixMatchProduct).available_stores &&
+                          (prod as ExtendedMixMatchProduct).available_stores!
+                            .length > 0 ? (
+                            <select
                               className="w-full bg-zinc-900 border border-white/10 text-[10px] text-white p-1 rounded focus:outline-none focus:border-amber-500/50"
                               value={selectedStores[prod.product_id] || ""}
-                              onChange={(e) => handleStoreSelect(prod.product_id, parseInt(e.target.value))}
+                              onChange={(e) =>
+                                handleStoreSelect(
+                                  prod.product_id,
+                                  parseInt(e.target.value, 10),
+                                )
+                              }
                             >
-                              <option value="" disabled>-- Chọn cửa hàng --</option>
-                              {(prod as ExtendedMixMatchProduct).available_stores!.map(s => (
+                              <option value="" disabled>
+                                -- Chọn cửa hàng --
+                              </option>
+                              {(
+                                prod as ExtendedMixMatchProduct
+                              ).available_stores!.map((s) => (
                                 <option key={s.store_id} value={s.store_id}>
                                   {s.name} (Còn {s.stock})
                                 </option>
@@ -751,12 +795,22 @@ function VisionCloset() {
                             {prod.price.toLocaleString()}₫
                           </span>
                           <div className="flex items-center gap-2">
-                            <button 
-                              onClick={() => handleReserveClick(prod as ExtendedMixMatchProduct)}
-                              disabled={!(prod as ExtendedMixMatchProduct).available_stores?.length || lockingId === prod.product_id}
+                            <button
+                              onClick={() =>
+                                handleReserveClick(
+                                  prod as ExtendedMixMatchProduct,
+                                )
+                              }
+                              disabled={
+                                !(prod as ExtendedMixMatchProduct)
+                                  .available_stores?.length ||
+                                lockingId === prod.product_id
+                              }
                               className="px-2 py-1 rounded text-[10px] font-mono font-bold border bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/40 disabled:opacity-50"
                             >
-                              {lockingId === prod.product_id ? "..." : "MUA NGAY"}
+                              {lockingId === prod.product_id
+                                ? "..."
+                                : "MUA NGAY"}
                             </button>
                             <span
                               className={`px-2 py-1 rounded text-[10px] font-mono font-bold border ${
@@ -852,7 +906,8 @@ function VisionCloset() {
                       />
                     </div>
                     <p className="text-sm text-zinc-500 max-w-xs">
-                      Quét mã bằng ứng dụng ngân hàng bất kỳ để thanh toán. Đơn hàng sẽ được chuyển sau khi nhận thanh toán.
+                      Quét mã bằng ứng dụng ngân hàng bất kỳ để thanh toán. Đơn
+                      hàng sẽ được chuyển sau khi nhận thanh toán.
                     </p>
 
                     <button
@@ -869,7 +924,8 @@ function VisionCloset() {
                     className="flex flex-col h-full"
                   >
                     <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-2">
-                      <CreditCard className="w-6 h-6 text-amber-500" /> Thông tin nhận hàng
+                      <CreditCard className="w-6 h-6 text-amber-500" /> Thông
+                      tin nhận hàng
                     </h2>
 
                     <div className="space-y-5 flex-1">

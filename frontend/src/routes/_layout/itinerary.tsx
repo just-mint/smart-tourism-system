@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import type { LineString } from "geojson"
 import L from "leaflet"
 import {
   AlertTriangle,
@@ -40,13 +41,13 @@ import {
   CultureAPI,
   InventoryAPI,
   type MixMatchProduct,
+  type NearbyStoreItem,
   PlannerAPI,
   type PlannerResponse,
   type PriceComparison,
+  SpatialAPI,
   type StopInRoute,
   VisionAPI,
-  SpatialAPI,
-  type NearbyStoreItem,
 } from "@/client/aegis-api"
 import {
   Sheet,
@@ -80,7 +81,7 @@ const getStopIcon = (num: number) =>
   )
 const storeIcon = createDivIcon(
   `<div class="w-8 h-8 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center text-black shadow-[0_0_15px_rgba(245,158,11,0.8)]"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>`,
-  32
+  32,
 )
 
 function FitBounds({ points }: { points: [number, number][] }) {
@@ -110,7 +111,8 @@ function ItineraryPage() {
   const [isTracking, setIsTracking] = useState(false)
 
   // --- O2O Shopping Filter States ---
-  const [selectedShoppingCategory, setSelectedShoppingCategory] = useState<string>("Tất cả")
+  const [selectedShoppingCategory, setSelectedShoppingCategory] =
+    useState<string>("Tất cả")
   const [nearbyStores, setNearbyStores] = useState<NearbyStoreItem[]>([])
   const [loadingNearbyStores, setLoadingNearbyStores] = useState(false)
   const [errorNearbyStores, setErrorNearbyStores] = useState("")
@@ -126,10 +128,10 @@ function ItineraryPage() {
         radius,
         cat === "Tất cả" ? undefined : cat,
         0, // min_rating
-        "distance" // order_by
+        "distance", // order_by
       )
       setNearbyStores(res.data.stores)
-    } catch (err) {
+    } catch (_err) {
       setErrorNearbyStores("Lỗi tải danh sách cửa hàng")
       setNearbyStores([])
     } finally {
@@ -798,18 +800,20 @@ function ItineraryPage() {
                 onClick={() => handleShoppingCategory(cat)}
                 disabled={loadingNearbyStores}
                 className={`px-4 py-1.5 rounded-full text-xs font-medium font-mono transition-all ${
-                  selectedShoppingCategory === cat 
-                    ? "bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]" 
+                  selectedShoppingCategory === cat
+                    ? "bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]"
                     : "text-zinc-400 hover:text-white hover:bg-white/5"
                 } disabled:opacity-50 flex items-center gap-2`}
               >
-                {selectedShoppingCategory === cat && loadingNearbyStores && <Loader2 className="w-3 h-3 animate-spin" />}
+                {selectedShoppingCategory === cat && loadingNearbyStores && (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                )}
                 {cat}
               </button>
             ))}
           </div>
         </div>
-        
+
         {errorNearbyStores && (
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[400] bg-red-500/10 border border-red-500/20 text-red-400 text-xs px-3 py-1.5 rounded-full">
             {errorNearbyStores}
@@ -872,7 +876,7 @@ function ItineraryPage() {
               </Popup>
             </Marker>
           ))}
-          
+
           {/* Nearby Stores Markers */}
           {nearbyStores.map((store) => (
             <Marker
@@ -886,16 +890,25 @@ function ItineraryPage() {
                     🛍️ {store.name}
                   </strong>
                   {store.category && (
-                    <span className="text-zinc-400 bg-black/10 px-1 rounded block w-fit mb-1">{store.category}</span>
+                    <span className="text-zinc-400 bg-black/10 px-1 rounded block w-fit mb-1">
+                      {store.category}
+                    </span>
                   )}
                   {store.rating !== null && store.rating !== undefined && (
-                    <span className="text-yellow-500 block mb-1">⭐ {store.rating}</span>
+                    <span className="text-yellow-500 block mb-1">
+                      ⭐ {store.rating}
+                    </span>
                   )}
-                  {store.distance_m !== undefined && store.distance_m !== null && (
-                    <span className="text-cyan-500 font-bold block mb-2">Cách đây {store.distance_m}m</span>
-                  )}
-                  <button 
-                    onClick={() => openCultureDrawer(store.store_id!, store.name)}
+                  {store.distance_m !== undefined &&
+                    store.distance_m !== null && (
+                      <span className="text-cyan-500 font-bold block mb-2">
+                        Cách đây {store.distance_m}m
+                      </span>
+                    )}
+                  <button
+                    onClick={() =>
+                      openCultureDrawer(store.store_id!, store.name)
+                    }
                     className="w-full bg-amber-500 text-zinc-950 font-bold rounded px-2 py-1.5 hover:bg-amber-600 transition-colors shadow-lg"
                   >
                     Xem thông tin
@@ -904,7 +917,7 @@ function ItineraryPage() {
               </Popup>
             </Marker>
           ))}
-          
+
           {/* OSRM GeoJSON — đường đi thực tế uốn theo phố */}
           {result?.route_geometry?.geojson && (
             <GeoJSON
@@ -915,7 +928,7 @@ function ItineraryPage() {
                   {
                     type: "Feature",
                     properties: {},
-                    geometry: result.route_geometry.geojson as any,
+                    geometry: result.route_geometry.geojson as LineString,
                   },
                 ],
               }}
