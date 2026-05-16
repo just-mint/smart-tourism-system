@@ -20,8 +20,14 @@ fileConfig(config.config_file_name)
 
 from app.models import SQLModel  # noqa
 from app.core.config import settings # noqa
+from app.db.session import Base
 
-target_metadata = SQLModel.metadata
+# Import all domain models to ensure Alembic sees them
+from app.domains.inventory.model import Store, Product, Inventory, InventoryLock, Order
+from app.domains.culture.model import Place, Review
+from app.domains.vision.model import VisionTask, VirtualCloset
+
+target_metadata = [SQLModel.metadata, Base.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -31,6 +37,11 @@ target_metadata = SQLModel.metadata
 
 def get_url():
     return str(settings.SQLALCHEMY_DATABASE_URI)
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name == "spatial_ref_sys":
+        return False
+    return True
 
 
 def run_migrations_offline():
@@ -47,7 +58,7 @@ def run_migrations_offline():
     """
     url = get_url()
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True
+        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True, include_object=include_object
     )
 
     with context.begin_transaction():
@@ -71,7 +82,7 @@ def run_migrations_online():
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_type=True
+            connection=connection, target_metadata=target_metadata, compare_type=True, include_object=include_object
         )
 
         with context.begin_transaction():

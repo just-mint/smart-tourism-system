@@ -37,6 +37,15 @@ class StoreResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class NearbyStoreItem(StoreResponse):
+    distance_m: Optional[float] = None
+
+class NearbyStoreResponse(BaseModel):
+    user_location: dict
+    search_radius_meters: int
+    total_found: int
+    stores: List[NearbyStoreItem]
+
 class ClusterItem(BaseModel):
     cluster_id: int
     center: dict
