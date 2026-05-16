@@ -400,14 +400,19 @@ export const LockRequestSchema = {
             type: 'integer',
             title: 'Product Id'
         },
+        store_id: {
+            type: 'integer',
+            title: 'Store Id'
+        },
         quantity: {
             type: 'integer',
+            minimum: 1,
             title: 'Quantity',
             default: 1
         }
     },
     type: 'object',
-    required: ['product_id'],
+    required: ['product_id', 'store_id'],
     title: 'LockRequest'
 } as const;
 
@@ -420,6 +425,10 @@ export const LockResponseItemSchema = {
         product_id: {
             type: 'integer',
             title: 'Product Id'
+        },
+        store_id: {
+            type: 'integer',
+            title: 'Store Id'
         },
         quantity: {
             type: 'integer',
@@ -440,7 +449,7 @@ export const LockResponseItemSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'product_id', 'quantity', 'status', 'ttl_seconds', 'expires_at'],
+    required: ['id', 'product_id', 'store_id', 'quantity', 'status', 'ttl_seconds', 'expires_at'],
     title: 'LockResponseItem'
 } as const;
 
@@ -580,6 +589,131 @@ export const NearbySearchResponseSchema = {
     title: 'NearbySearchResponse'
 } as const;
 
+export const NearbyStoreItemSchema = {
+    properties: {
+        store_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Store Id'
+        },
+        place_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Place Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        category: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Category'
+        },
+        address: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Address'
+        },
+        lat: {
+            type: 'number',
+            title: 'Lat'
+        },
+        lon: {
+            type: 'number',
+            title: 'Lon'
+        },
+        phone: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Phone'
+        },
+        rating: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rating'
+        },
+        distance_m: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Distance M'
+        }
+    },
+    type: 'object',
+    required: ['name', 'lat', 'lon'],
+    title: 'NearbyStoreItem'
+} as const;
+
+export const NearbyStoreResponseSchema = {
+    properties: {
+        user_location: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'User Location'
+        },
+        search_radius_meters: {
+            type: 'integer',
+            title: 'Search Radius Meters'
+        },
+        total_found: {
+            type: 'integer',
+            title: 'Total Found'
+        },
+        stores: {
+            items: {
+                '$ref': '#/components/schemas/NearbyStoreItem'
+            },
+            type: 'array',
+            title: 'Stores'
+        }
+    },
+    type: 'object',
+    required: ['user_location', 'search_radius_meters', 'total_found', 'stores'],
+    title: 'NearbyStoreResponse'
+} as const;
+
 export const NewPasswordSchema = {
     properties: {
         token: {
@@ -633,6 +767,10 @@ export const OrderCreateSchema = {
             ],
             title: 'Store Id'
         },
+        lock_id: {
+            type: 'integer',
+            title: 'Lock Id'
+        },
         quantity: {
             type: 'integer',
             title: 'Quantity',
@@ -652,7 +790,7 @@ export const OrderCreateSchema = {
         }
     },
     type: 'object',
-    required: ['product_id', 'full_name', 'phone', 'address'],
+    required: ['product_id', 'lock_id', 'full_name', 'phone', 'address'],
     title: 'OrderCreate'
 } as const;
 

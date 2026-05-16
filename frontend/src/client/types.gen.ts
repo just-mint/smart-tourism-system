@@ -116,12 +116,14 @@ export type ItemUpdate = {
 
 export type LockRequest = {
     product_id: number;
+    store_id: number;
     quantity?: number;
 };
 
 export type LockResponseItem = {
     id: number;
     product_id: number;
+    store_id: number;
     quantity: number;
     status: string;
     ttl_seconds: number;
@@ -159,6 +161,28 @@ export type NearbySearchResponse = {
     places: Array<PlaceResponse>;
 };
 
+export type NearbyStoreItem = {
+    store_id?: (number | null);
+    place_id?: (string | null);
+    name: string;
+    category?: (string | null);
+    address?: (string | null);
+    lat: number;
+    lon: number;
+    phone?: (string | null);
+    rating?: (number | null);
+    distance_m?: (number | null);
+};
+
+export type NearbyStoreResponse = {
+    user_location: {
+        [key: string]: unknown;
+    };
+    search_radius_meters: number;
+    total_found: number;
+    stores: Array<NearbyStoreItem>;
+};
+
 export type NewPassword = {
     token: string;
     new_password: string;
@@ -172,6 +196,7 @@ export type O2OContextResponse = {
 export type OrderCreate = {
     product_id: number;
     store_id?: (number | null);
+    lock_id: number;
     quantity?: number;
     full_name: string;
     phone: string;
@@ -648,6 +673,17 @@ export type SpatialFindNearbyPlacesData = {
 };
 
 export type SpatialFindNearbyPlacesResponse = (NearbySearchResponse);
+
+export type SpatialFindNearbyStoresData = {
+    category?: string;
+    lat: number;
+    lon: number;
+    minRating?: number;
+    orderBy?: string;
+    radiusM?: number;
+};
+
+export type SpatialFindNearbyStoresResponse = (NearbyStoreResponse);
 
 export type SpatialClusterAndGroupStoresData = {
     requestBody: ClusterRequest;

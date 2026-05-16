@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import type { LineString } from "geojson"
+import type { FeatureCollection, LineString } from "geojson"
 import L from "leaflet"
 import {
   AlertTriangle,
@@ -323,6 +323,20 @@ function ItineraryPage() {
     lineCap: "round" as const,
     lineJoin: "round" as const,
   }
+
+  const routeGeoJson = useMemo<FeatureCollection<LineString> | null>(() => {
+    if (!result?.route_geometry?.geojson) return null
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: {},
+          geometry: result.route_geometry.geojson as LineString,
+        },
+      ],
+    }
+  }, [result?.route_geometry?.geojson])
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("vi-VN", {
@@ -919,24 +933,15 @@ function ItineraryPage() {
           ))}
 
           {/* OSRM GeoJSON — đường đi thực tế uốn theo phố */}
-          {result?.route_geometry?.geojson && (
+          {routeGeoJson && (
             <GeoJSON
-              key={JSON.stringify(result.route_geometry.geojson)}
-              data={{
-                type: "FeatureCollection",
-                features: [
-                  {
-                    type: "Feature",
-                    properties: {},
-                    geometry: result.route_geometry.geojson as LineString,
-                  },
-                ],
-              }}
+              key={JSON.stringify(routeGeoJson)}
+              data={routeGeoJson}
               style={geoJsonStyle}
             />
           )}
           {/* Fallback: đường chập nối thẳng khi OSRM không có geometry */}
-          {!result?.route_geometry?.geojson &&
+          {!routeGeoJson &&
             result?.optimized_route &&
             result.optimized_route.length > 0 &&
             (() => {

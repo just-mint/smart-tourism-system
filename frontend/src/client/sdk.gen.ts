@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AgentChatWithAgentEndpointData, AgentChatWithAgentEndpointResponse, CultureSearchCulturePlacesData, CultureSearchCulturePlacesResponse, CultureGetAiStoryData, CultureGetAiStoryResponse, CultureAddReviewData, CultureAddReviewResponse, CultureGetReviewsData, CultureGetReviewsResponse, InventoryGetStoresData, InventoryGetStoresResponse, InventoryGetProductData, InventoryGetProductResponse, InventoryGetStoreProductsData, InventoryGetStoreProductsResponse, InventorySearchData, InventorySearchResponse, InventoryCreateInventoryLockData, InventoryCreateInventoryLockResponse, InventoryGetMyLocksResponse, InventoryReleaseExpiredData, InventoryReleaseExpiredResponse, InventoryComparePricesData, InventoryComparePricesResponse, InventoryCreateOrderData, InventoryCreateOrderResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginLogoutResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlannerGenerateItineraryData, PlannerGenerateItineraryResponse, SpatialSearchPlacesOmniData, SpatialSearchPlacesOmniResponse, SpatialFindNearbyPlacesData, SpatialFindNearbyPlacesResponse, SpatialClusterAndGroupStoresData, SpatialClusterAndGroupStoresResponse, SpatialCreateOptimalRouteData, SpatialCreateOptimalRouteResponse, SpatialGetPlaceO2oContextApiData, SpatialGetPlaceO2oContextApiResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetTelemetryResponse, VisionUploadAndScanData, VisionUploadAndScanResponse, VisionCheckTaskStatusData, VisionCheckTaskStatusResponse, VisionMyClosetResponse, VisionAddVirtualClosetData, VisionAddVirtualClosetResponse, VisionGetMixMatchData, VisionGetMixMatchResponse } from './types.gen';
+import type { AgentChatWithAgentEndpointData, AgentChatWithAgentEndpointResponse, CultureSearchCulturePlacesData, CultureSearchCulturePlacesResponse, CultureGetAiStoryData, CultureGetAiStoryResponse, CultureAddReviewData, CultureAddReviewResponse, CultureGetReviewsData, CultureGetReviewsResponse, InventoryGetStoresData, InventoryGetStoresResponse, InventoryGetProductData, InventoryGetProductResponse, InventoryGetStoreProductsData, InventoryGetStoreProductsResponse, InventorySearchData, InventorySearchResponse, InventoryCreateInventoryLockData, InventoryCreateInventoryLockResponse, InventoryGetMyLocksResponse, InventoryReleaseExpiredData, InventoryReleaseExpiredResponse, InventoryComparePricesData, InventoryComparePricesResponse, InventoryCreateOrderData, InventoryCreateOrderResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginLogoutResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlannerGenerateItineraryData, PlannerGenerateItineraryResponse, SpatialSearchPlacesOmniData, SpatialSearchPlacesOmniResponse, SpatialFindNearbyPlacesData, SpatialFindNearbyPlacesResponse, SpatialFindNearbyStoresData, SpatialFindNearbyStoresResponse, SpatialClusterAndGroupStoresData, SpatialClusterAndGroupStoresResponse, SpatialCreateOptimalRouteData, SpatialCreateOptimalRouteResponse, SpatialGetPlaceO2oContextApiData, SpatialGetPlaceO2oContextApiResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetTelemetryResponse, VisionUploadAndScanData, VisionUploadAndScanResponse, VisionCheckTaskStatusData, VisionCheckTaskStatusResponse, VisionMyClosetResponse, VisionAddVirtualClosetData, VisionAddVirtualClosetResponse, VisionGetMixMatchData, VisionGetMixMatchResponse } from './types.gen';
 
 export class AgentService {
     /**
@@ -588,6 +588,36 @@ export class SpatialService {
                 lat: data.lat,
                 lon: data.lon,
                 radius: data.radius
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Find Nearby Stores
+     * @param data The data for the request.
+     * @param data.lat
+     * @param data.lon
+     * @param data.radiusM
+     * @param data.category
+     * @param data.minRating
+     * @param data.orderBy
+     * @returns NearbyStoreResponse Successful Response
+     * @throws ApiError
+     */
+    public static findNearbyStores(data: SpatialFindNearbyStoresData): CancelablePromise<SpatialFindNearbyStoresResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/spatial/nearby-stores',
+            query: {
+                lat: data.lat,
+                lon: data.lon,
+                radius_m: data.radiusM,
+                category: data.category,
+                min_rating: data.minRating,
+                order_by: data.orderBy
             },
             errors: {
                 422: 'Validation Error'
