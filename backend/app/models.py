@@ -24,6 +24,7 @@ class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
+    is_merchant: bool = False  # [13.3] Merchant/Store owner role
     full_name: str | None = Field(default=None, max_length=255)
 
 
@@ -63,6 +64,11 @@ class User(UserBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+
+
+# [13.3] Merchant update schema (superuser only)
+class MerchantUpdate(SQLModel):
+    is_merchant: bool
 
 
 # Properties to return via API, id is always required

@@ -37,3 +37,8 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 # ── Static files: phục vụ ảnh upload cho Frontend ──
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# ── [13.3] Product & Store image uploads ──
+STATIC_UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/app/static/uploads")
+os.makedirs(STATIC_UPLOAD_DIR, exist_ok=True)
+app.mount("/static/uploads", StaticFiles(directory=STATIC_UPLOAD_DIR), name="static_uploads")
