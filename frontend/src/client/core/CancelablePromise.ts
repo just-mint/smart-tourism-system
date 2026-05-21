@@ -111,8 +111,7 @@ export class CancelablePromise<T> implements Promise<T> {
 				for (const cancelHandler of this.cancelHandlers) {
 					cancelHandler();
 				}
-			} catch (error) {
-				console.warn('Cancellation threw an error', error);
+			} catch {
 				return;
 			}
 		}

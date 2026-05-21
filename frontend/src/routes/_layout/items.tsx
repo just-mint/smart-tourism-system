@@ -1,6 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Package, Search } from "lucide-react"
 import { Suspense } from "react"
 
 import { ItemsService } from "@/client"
@@ -32,20 +31,24 @@ function ItemsTableContent() {
 
   if (items.data.length === 0) {
     return (
-      <div className="glass-card p-12 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
-          <Search className="h-8 w-8 text-zinc-600" />
+      <div className="flex flex-col items-center justify-center py-20 text-center animate-in zoom-in duration-700">
+        <div className="relative w-72 h-48 mb-8 flex items-center justify-center group">
+          <img 
+            src="https://images.unsplash.com/photo-1554350331-561ce1982b52?q=80&w=800" 
+            alt="Vintage Trunk" 
+            className="w-full h-full object-contain drop-shadow-2xl group-hover:scale-105 transition-transform duration-700"
+          />
         </div>
-        <h3 className="text-lg font-semibold text-zinc-300">No items yet</h3>
-        <p className="text-zinc-500 text-sm mt-1">
-          Add a new item to get started
+        <h3 className="text-2xl font-bold text-zinc-900 mb-2 font-serif">Chưa có sản phẩm nào.</h3>
+        <p className="text-zinc-600 text-sm max-w-xs leading-relaxed">
+          Hãy bắt đầu hành trình của bạn bằng cách thêm sản phẩm mới.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="overflow-hidden">
       <DataTable columns={columns} data={items.data} />
     </div>
   )
@@ -61,24 +64,38 @@ function ItemsTable() {
 
 function Items() {
   return (
-    <div className="p-6 md:p-8 w-full max-w-[1800px] mx-auto flex flex-col gap-6 animate-in fade-in duration-700">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 glow-cyan">
-            <Package className="w-6 h-6 text-cyan-400" />
-          </div>
+    <div className="w-full min-h-screen bg-gradient-to-br from-[#FDFBF7] via-[#FFF8F0] to-[#FFF3E0] font-sans text-zinc-900 selection:bg-amber-500/30 overflow-hidden relative">
+      {/* Background Texture/Curves Simulation */}
+      <div className="absolute top-0 left-0 w-full h-96 overflow-hidden pointer-events-none opacity-[0.35] mix-blend-multiply">
+        <svg viewBox="0 0 1440 320" className="absolute top-0 left-0 w-full h-full preserve-3d">
+          <path fill="#F4E3C5" fillOpacity="1" d="M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,192C672,213,768,203,864,170.7C960,139,1056,85,1152,74.7C1248,64,1344,96,1392,112L1440,128L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
+          <path fill="#D4AF37" fillOpacity="0.1" d="M0,32L80,37.3C160,43,320,53,480,85.3C640,117,800,171,960,192C1120,213,1280,203,1360,197.3L1440,192L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"></path>
+        </svg>
+      </div>
+
+      <div className="max-w-[1600px] mx-auto flex flex-col animate-in fade-in duration-700 relative z-10 pt-12 px-6 md:px-10 gap-10">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 w-full mt-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">
-              Items
+            <h1 className="text-4xl md:text-[2.75rem] font-bold text-zinc-900 font-serif mb-3 tracking-tight" style={{ color: '#2d2a26' }}>
+              Quản lý Tài nguyên & Sản phẩm
             </h1>
-            <p className="text-sm text-cyan-400/70 font-mono mt-0.5 tracking-widest uppercase">
-              Create & Manage Resources
+            <p className="text-[15px] text-zinc-700 font-medium tracking-wide">
+              Tạo & Quản lý tài nguyên cao cấp
             </p>
           </div>
+          
+          <div className="mt-2 md:mt-0 relative z-20">
+             <div className="flex items-center gap-3">
+               <AddItem />
+             </div>
+          </div>
         </div>
-        <AddItem />
+        
+        {/* Table Container */}
+        <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white p-6 md:p-10 min-h-[600px] flex flex-col justify-center">
+           <ItemsTable />
+        </div>
       </div>
-      <ItemsTable />
     </div>
   )
 }

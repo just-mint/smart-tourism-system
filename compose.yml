@@ -114,15 +114,25 @@ services:
       - .env
     environment:
       - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY:-}
-      - OSRM_BASE_URL=http://osrm-backend:5000
+      - OSRM_BASE_URL=${OSRM_BASE_URL:-https://router.project-osrm.org}
       - BACKEND_CORS_ORIGINS=
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/', timeout=5).read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ai_worker:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
-    profiles: ["worker"]
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -151,7 +161,6 @@ services:
 
   ai_beat:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
-    profiles: ["worker"]
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -191,6 +200,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      optimization_service:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -214,7 +225,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
       - OPTIMIZATION_SERVICE_URL=http://optimization_service:8001/api/v1/optimize
-      - OSRM_BASE_URL=http://osrm-backend:5000
+      - OSRM_BASE_URL=${OSRM_BASE_URL:-https://router.project-osrm.org}
       - INTERNAL_SECRET_KEY=${INTERNAL_SECRET_KEY:-}
       - PAYMENT_WEBHOOK_SECRET=${PAYMENT_WEBHOOK_SECRET:-}
       - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-vietqr_mock}
@@ -224,7 +235,13 @@ services:
       - app-uploads-data:/app/backend/uploads
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/utils/health-check/', timeout=5).read()",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

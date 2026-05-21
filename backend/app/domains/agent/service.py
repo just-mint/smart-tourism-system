@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.domains.agent import schema
-from app.domains.inventory.model import Product, Store, Inventory
+from app.domains.inventory.model import Inventory, Product, Store
 from app.domains.planner.schema import PlannerRequest
 from app.domains.planner.service import generate_smart_itinerary
 
@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class KeywordArgs(BaseModel):
     keyword: str = Field(min_length=1, max_length=120)
+
 
 class ProductArgs(BaseModel):
     keyword: str = Field(default="", max_length=120)
@@ -45,6 +46,7 @@ def _validate_tool_args(function_name: str, args: dict) -> dict:
         return args
     return model(**args).model_dump(exclude_none=True)
 
+
 TOOLS = [
     {
         "functionDeclarations": [
@@ -56,11 +58,11 @@ TOOLS = [
                     "properties": {
                         "keyword": {
                             "type": "STRING",
-                            "description": "Tên địa điểm cần tìm."
+                            "description": "Tên địa điểm cần tìm.",
                         }
                     },
-                    "required": ["keyword"]
-                }
+                    "required": ["keyword"],
+                },
             },
             {
                 "name": "check_weather",
@@ -69,10 +71,10 @@ TOOLS = [
                     "type": "OBJECT",
                     "properties": {
                         "lat": {"type": "NUMBER"},
-                        "lon": {"type": "NUMBER"}
+                        "lon": {"type": "NUMBER"},
                     },
-                    "required": ["lat", "lon"]
-                }
+                    "required": ["lat", "lon"],
+                },
             },
             {
                 "name": "search_products",
@@ -82,14 +84,14 @@ TOOLS = [
                     "properties": {
                         "keyword": {
                             "type": "STRING",
-                            "description": "Tên sản phẩm cần tìm. Có thể để trống nếu chỉ muốn xem sản phẩm của một cửa hàng."
+                            "description": "Tên sản phẩm cần tìm. Có thể để trống nếu chỉ muốn xem sản phẩm của một cửa hàng.",
                         },
                         "store_name": {
                             "type": "STRING",
-                            "description": "Tên cửa hàng nếu khách hỏi sản phẩm tại một cửa hàng cụ thể (tùy chọn)."
-                        }
-                    }
-                }
+                            "description": "Tên cửa hàng nếu khách hỏi sản phẩm tại một cửa hàng cụ thể (tùy chọn).",
+                        },
+                    },
+                },
             },
             {
                 "name": "find_stores_near",
@@ -101,11 +103,11 @@ TOOLS = [
                         "lon": {"type": "NUMBER"},
                         "radius": {
                             "type": "NUMBER",
-                            "description": "Bán kính tìm kiếm bằng mét (mặc định 2000)"
-                        }
+                            "description": "Bán kính tìm kiếm bằng mét (mặc định 2000)",
+                        },
                     },
-                    "required": ["lat", "lon"]
-                }
+                    "required": ["lat", "lon"],
+                },
             },
             {
                 "name": "create_itinerary",
@@ -113,24 +115,44 @@ TOOLS = [
                 "parameters": {
                     "type": "OBJECT",
                     "properties": {
-                        "lat": {"type": "NUMBER", "description": "Vĩ độ vị trí xuất phát"},
-                        "lon": {"type": "NUMBER", "description": "Kinh độ vị trí xuất phát"},
-                        "keywords": {"type": "STRING", "description": "Từ khóa mua sắm, vd: lụa, nón lá, café"},
-                        "radius": {"type": "NUMBER", "description": "Bán kính tìm kiếm mét (mặc định 3000)"},
-                        "max_budget": {"type": "NUMBER", "description": "Ngân sách tối đa VNĐ (optional)"}
+                        "lat": {
+                            "type": "NUMBER",
+                            "description": "Vĩ độ vị trí xuất phát",
+                        },
+                        "lon": {
+                            "type": "NUMBER",
+                            "description": "Kinh độ vị trí xuất phát",
+                        },
+                        "keywords": {
+                            "type": "STRING",
+                            "description": "Từ khóa mua sắm, vd: lụa, nón lá, café",
+                        },
+                        "radius": {
+                            "type": "NUMBER",
+                            "description": "Bán kính tìm kiếm mét (mặc định 3000)",
+                        },
+                        "max_budget": {
+                            "type": "NUMBER",
+                            "description": "Ngân sách tối đa VNĐ (optional)",
+                        },
                     },
-                    "required": ["lat", "lon", "keywords"]
-                }
-            }
+                    "required": ["lat", "lon", "keywords"],
+                },
+            },
         ]
     }
 ]
+
 
 async def execute_tool(db: Session, function_name: str, args: dict):
     try:
         args = _validate_tool_args(function_name, args)
     except ValidationError as exc:
-        return {"status": "error", "message": "Tham số tool không hợp lệ", "details": exc.errors()}
+        return {
+            "status": "error",
+            "message": "Tham số tool không hợp lệ",
+            "details": exc.errors(),
+        }
 
     logger.info("[Agent] Execute tool=%s", function_name)
     if function_name == "search_culture":
@@ -138,6 +160,7 @@ async def execute_tool(db: Session, function_name: str, args: dict):
         if not keyword:
             return {"status": "error", "message": "keyword is empty"}
         from app.domains.culture.service import search_places_by_name
+
         results = search_places_by_name(db, keyword)
         if not results:
             return {
@@ -179,7 +202,7 @@ async def execute_tool(db: Session, function_name: str, args: dict):
                     return {
                         "temperature": cw.get("temperature"),
                         "condition": cond,
-                        "windspeed": cw.get("windspeed")
+                        "windspeed": cw.get("windspeed"),
                     }
         except Exception:
             return {"error": "Mạng bị đứt đoạn không thể check thời tiết"}
@@ -188,26 +211,36 @@ async def execute_tool(db: Session, function_name: str, args: dict):
         keyword = args.get("keyword", "")
         store_name = args.get("store_name")
         if not keyword and not store_name:
-            return {"status": "error", "message": "Cần cung cấp ít nhất keyword hoặc store_name"}
-            
-        query = db.query(Product, Store.name.label("store_name")).join(
-            Inventory, Product.product_id == Inventory.product_id
-        ).join(
-            Store, Inventory.store_id == Store.store_id
+            return {
+                "status": "error",
+                "message": "Cần cung cấp ít nhất keyword hoặc store_name",
+            }
+
+        query = (
+            db.query(Product, Store.name.label("store_name"))
+            .join(Inventory, Product.product_id == Inventory.product_id)
+            .join(Store, Inventory.store_id == Store.store_id)
         )
-        
+
         if keyword:
             query = query.filter(Product.name.ilike(f"%{keyword}%"))
         if store_name:
             query = query.filter(Store.name.ilike(f"%{store_name}%"))
-            
+
         products = query.limit(5).all()
         if not products:
             return {"status": "not_found", "message": "Không có sản phẩm nào khớp."}
 
         result = []
         for p, s_name in products:
-            result.append({"product_id": p.product_id, "name": p.name, "price": p.price, "store_name": s_name})
+            result.append(
+                {
+                    "product_id": p.product_id,
+                    "name": p.name,
+                    "price": p.price,
+                    "store_name": s_name,
+                }
+            )
         return {"status": "success", "products": result}
 
     elif function_name == "find_stores_near":
@@ -217,16 +250,26 @@ async def execute_tool(db: Session, function_name: str, args: dict):
 
         # Use simple coordinate bounding box or PostGIS ST_DWithin
         point = f"SRID=4326;POINT({lon} {lat})"
-        stores = db.query(Store).filter(
-            func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), radius)
-        ).limit(5).all()
+        stores = (
+            db.query(Store)
+            .filter(func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), radius))
+            .limit(5)
+            .all()
+        )
 
         if not stores:
             return {"status": "not_found", "message": "Không có cửa hàng nào gần đó."}
 
         result = []
         for s in stores:
-            result.append({"store_id": s.store_id, "name": s.name, "category": s.category, "address": s.address})
+            result.append(
+                {
+                    "store_id": s.store_id,
+                    "name": s.name,
+                    "category": s.category,
+                    "address": s.address,
+                }
+            )
         return {"status": "success", "stores": result}
 
     elif function_name == "create_itinerary":
@@ -238,8 +281,10 @@ async def execute_tool(db: Session, function_name: str, args: dict):
 
         try:
             req = PlannerRequest(
-                current_lat=lat, current_lon=lon,
-                radius=radius, keywords=keywords,
+                current_lat=lat,
+                current_lon=lon,
+                radius=radius,
+                keywords=keywords,
                 top_n=5,
                 max_budget=int(max_budget) if max_budget else None,
             )
@@ -253,14 +298,16 @@ async def execute_tool(db: Session, function_name: str, args: dict):
 
             stops = []
             for stop in result.optimized_route:
-                stops.append({
-                    "order": stop.order,
-                    "name": stop.name,
-                    "category": stop.category,
-                    "rating": stop.rating,
-                    "distance_km": stop.distance_km,
-                    "products_count": len(stop.products),
-                })
+                stops.append(
+                    {
+                        "order": stop.order,
+                        "name": stop.name,
+                        "category": stop.category,
+                        "rating": stop.rating,
+                        "distance_km": stop.distance_km,
+                        "products_count": len(stop.products),
+                    }
+                )
 
             return {
                 "status": "success",
@@ -268,21 +315,25 @@ async def execute_tool(db: Session, function_name: str, args: dict):
                 "total_distance_km": result.metrics.total_distance_km,
                 "stops": stops,
                 "weather": result.weather.condition if result.weather else None,
-                "message": "Lộ trình đã được tạo! Khách có thể xem chi tiết trên tab Itinerary."
+                "message": "Lộ trình đã được tạo! Khách có thể xem chi tiết trên tab Itinerary.",
             }
         except Exception as e:
             return {"status": "error", "message": f"Lỗi tạo lộ trình: {str(e)}"}
 
     return {"error": f"Unknown tool: {function_name}"}
 
+
 async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
     from app.core.config import settings
+
     api_key = settings.GEMINI_API_KEY
     internal_actions = []
     bot_answer = "Oh, có lỗi xảy ra hoặc tôi đang bảo trì. Vui lòng thử lại sau!"
 
     if not api_key:
-        return schema.AgentChatResponse(answer="Bot thiếu API Key.", internal_actions=[])
+        return schema.AgentChatResponse(
+            answer="Bot thiếu API Key.", internal_actions=[]
+        )
 
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
@@ -290,12 +341,13 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
     location_hint = ""
     if request.current_lat is not None and request.current_lon is not None:
         location_hint = f" Vị trí hiện tại của khách: lat={request.current_lat}, lon={request.current_lon}."
-    sys_instruction_text = "Bạn là AEGIS AI, chuyên gia du lịch và gợi ý mua sắm O2O tại Việt Nam. Nếu khách hỏi địa danh, BẮT BUỘC gọi hàm search_culture. Nếu khách muốn mua sắm, BẮT BUỘC gọi search_products hoặc find_stores_near. Nếu khách muốn lên kế hoạch, tìm đường đi mua sắm, hoặc hỏi 'nên đi đâu', BẮT BUỘC gọi create_itinerary với tọa độ và từ khóa. Không tự động mua hàng, giữ hàng, thanh toán hoặc thay đổi đơn; chỉ hướng dẫn khách dùng giao diện O2O. Luôn khuyến khích khách xem lộ trình trên tab Itinerary." + location_hint
+    sys_instruction_text = (
+        "Bạn là AEGIS AI, chuyên gia du lịch và gợi ý mua sắm O2O tại Việt Nam. Nếu khách hỏi địa danh, BẮT BUỘC gọi hàm search_culture. Nếu khách muốn mua sắm, BẮT BUỘC gọi search_products hoặc find_stores_near. Nếu khách muốn lên kế hoạch, tìm đường đi mua sắm, hoặc hỏi 'nên đi đâu', BẮT BUỘC gọi create_itinerary với tọa độ và từ khóa. Không tự động mua hàng, giữ hàng, thanh toán hoặc thay đổi đơn; chỉ hướng dẫn khách dùng giao diện O2O. Luôn khuyến khích khách xem lộ trình trên tab Itinerary."
+        + location_hint
+    )
     system_instruction = {"parts": [{"text": sys_instruction_text}]}
 
-    history = [
-        {"role": "user", "parts": [{"text": request.query}]}
-    ]
+    history = [{"role": "user", "parts": [{"text": request.query}]}]
 
     max_loops = 5
     loop = 0
@@ -306,13 +358,19 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
             payload = {
                 "systemInstruction": system_instruction,
                 "contents": history,
-                "tools": TOOLS
+                "tools": TOOLS,
             }
 
-            res = await client.post(url, json=payload, headers={"x-goog-api-key": api_key})
+            res = await client.post(
+                url, json=payload, headers={"x-goog-api-key": api_key}
+            )
             if res.status_code != 200:
-                logger.warning("Gemini agent request failed: status=%s", res.status_code)
-                bot_answer = "AEGIS Agent đang quá tải hoặc chưa sẵn sàng. Vui lòng thử lại sau."
+                logger.warning(
+                    "Gemini agent request failed: status=%s", res.status_code
+                )
+                bot_answer = (
+                    "AEGIS Agent đang quá tải hoặc chưa sẵn sàng. Vui lòng thử lại sau."
+                )
                 break
 
             resp_data = res.json()
@@ -352,12 +410,14 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
                 # Trả response ngược lại cho Model dưới dạng role "user" part "functionResponse" hoặc role "function"  -> Theo Spec của Google là array parts
                 func_response_msg = {
                     "role": "user",
-                    "parts": [{
-                        "functionResponse": {
-                            "name": f_name,
-                            "response": {"name": f_name, "content": f_res}
+                    "parts": [
+                        {
+                            "functionResponse": {
+                                "name": f_name,
+                                "response": {"name": f_name, "content": f_res},
+                            }
                         }
-                    }]
+                    ],
                 }
                 history.append(func_response_msg)
 
@@ -370,6 +430,5 @@ async def chat_with_agent(db: Session, request: schema.AgentChatRequest):
                 break
 
     return schema.AgentChatResponse(
-        answer=bot_answer,
-        internal_actions=internal_actions
+        answer=bot_answer, internal_actions=internal_actions
     )

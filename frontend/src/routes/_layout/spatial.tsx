@@ -3,19 +3,16 @@ import L from "leaflet"
 import {
   Bot,
   CloudLightning,
-  Layers,
   Loader2,
-  LocateFixed,
-  Map as MapIcon,
   Milestone,
   Minus,
   Navigation,
   Plus,
   Search,
   ShoppingBag,
-  Sparkles,
   Store,
   X,
+  LocateFixed,
 } from "lucide-react"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import {
@@ -79,7 +76,7 @@ const createCustomClusterIcon = (cluster: ClusterLike) => {
   const count = cluster.getChildCount()
   return createDivIcon(
     `
-    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-[0_0_20px_rgba(139,92,246,0.8)] bg-gradient-to-tr from-cyan-500 to-purple-500 border-2 border-white/80 animate-pulse">
+    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md bg-gradient-to-br from-teal-500 to-teal-700 border-2 border-white">
       ${count}
     </div>
   `,
@@ -89,55 +86,51 @@ const createCustomClusterIcon = (cluster: ClusterLike) => {
 
 const tourismIcon = createDivIcon(
   `
-  <div class="relative w-6 h-6 flex items-center justify-center drop-shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-transform hover:scale-125 hover:-translate-y-1">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="url(#tourismGrad)" stroke="white" stroke-width="1.5">
-      <defs>
-        <linearGradient id="tourismGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#2dd4bf" />
-          <stop offset="100%" stop-color="#a855f7" />
-        </linearGradient>
-      </defs>
+  <div class="relative flex items-center justify-center" style="width:28px;height:36px">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2B6777" stroke="white" stroke-width="1.5" width="28" height="36">
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
       <circle cx="12" cy="10" r="3" fill="white" />
     </svg>
   </div>
 `,
-  24,
+  28,
 )
 
 const storeIcon = createDivIcon(
   `
-  <div class="relative w-7 h-7 flex items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-red-500 to-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.9)] animate-bounce transition-transform hover:scale-110">
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+  <div class="relative flex items-center justify-center" style="width:28px;height:36px">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#E97451" stroke="white" stroke-width="1.5" width="28" height="36">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" fill="white" />
+    </svg>
   </div>
 `,
   28,
 )
 const selectedIcon = createDivIcon(
-  `<div class="w-4 h-4 bg-purple-500 rounded-full border-2 border-black shadow-[0_0_15px_rgba(168,85,247,0.9)] animate-pulse"></div>`,
-  16,
+  `<div class="w-5 h-5 bg-teal-600 rounded-full border-2 border-white shadow-md"></div>`,
+  20,
 )
 const highlightedIcon = createDivIcon(
   `
-  <div class="relative w-10 h-10 flex items-center justify-center drop-shadow-[0_0_30px_rgba(250,204,21,1)] scale-125 z-50">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#facc15" stroke="white" stroke-width="1.5" class="w-10 h-10 animate-bounce">
+  <div class="relative flex items-center justify-center" style="width:36px;height:44px">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" stroke="white" stroke-width="1.5" width="36" height="44" class="animate-bounce">
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
       <circle cx="12" cy="10" r="3" fill="white" />
     </svg>
-    <div class="absolute w-12 h-12 rounded-full border-4 border-yellow-400/50 animate-ping"></div>
   </div>
 `,
   40,
 )
 const userIcon = createDivIcon(
-  `<div class="w-5 h-5 bg-emerald-500 rounded-full border-[3px] border-black shadow-[0_0_20px_rgba(16,185,129,1)]"></div>`,
+  `<div class="w-5 h-5 bg-emerald-500 rounded-full border-[3px] border-white shadow-md"></div>`,
   20,
 )
 
 const getNumberedIcon = (num: number) =>
   createDivIcon(
     `
-  <div class="w-7 h-7 bg-purple-600 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-[12px] shadow-[0_0_15px_rgba(168,85,247,0.9)] scale-110">
+  <div class="w-7 h-7 bg-teal-600 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-[12px] shadow-md">
     ${num}
   </div>
 `,
@@ -185,20 +178,20 @@ function StoreProductPanel({
   const { place_info, nearby_stores } = o2oContext
 
   return (
-    <div className="absolute top-4 right-4 z-[1000] w-[420px] max-h-[calc(100vh-2rem)] flex flex-col m-4 bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl rounded-2xl overflow-hidden transition-all animate-in fade-in slide-in-from-right-8 duration-300">
-      <div className="p-5 border-b border-white/5 bg-gradient-to-l from-purple-500/20 to-transparent flex justify-between items-center">
+    <div className="absolute top-4 right-4 z-[1000] w-[420px] max-h-[calc(100vh-2rem)] flex flex-col m-4 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-xl rounded-2xl overflow-hidden transition-all animate-in fade-in slide-in-from-right-8 duration-300">
+      <div className="p-5 border-b border-zinc-100 bg-gradient-to-l from-teal-50/50 to-transparent flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 truncate w-64 leading-tight">
+          <h2 className="text-lg font-bold text-zinc-800 truncate w-64 leading-tight">
             {place_info.name}
           </h2>
-          <p className="text-[10px] text-zinc-400 font-mono mt-1 uppercase tracking-widest">
-            <ShoppingBag className="w-3 h-3 inline mr-1 mb-0.5 text-purple-400" />
+          <p className="text-[10px] text-zinc-500 font-mono mt-1 uppercase tracking-widest">
+            <ShoppingBag className="w-3 h-3 inline mr-1 mb-0.5 text-zinc-400" />
             O2O Shopping Hub
           </p>
         </div>
         <button
           onClick={onClose}
-          className="text-zinc-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 border border-white/10 p-2 rounded-full"
+          className="text-zinc-400 hover:text-zinc-600 transition-colors bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 p-2 rounded-full"
         >
           <X className="w-4 h-4" />
         </button>
@@ -206,7 +199,7 @@ function StoreProductPanel({
 
       <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
         {nearby_stores.length === 0 ? (
-          <p className="text-xs text-zinc-500 text-center py-6 bg-white/5 rounded-2xl border border-white/5 font-mono">
+          <p className="text-xs text-zinc-500 text-center py-6 bg-zinc-50 rounded-2xl border border-zinc-100 font-mono">
             Chưa có đối tác O2O lân cận.
           </p>
         ) : (
@@ -219,16 +212,16 @@ function StoreProductPanel({
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                      <Store className="w-4 h-4 text-cyan-400" /> {store.name}
+                    <h3 className="text-sm font-bold text-zinc-800 flex items-center gap-1.5">
+                      <Store className="w-4 h-4 text-teal-600" /> {store.name}
                     </h3>
-                    <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest mt-0.5">
-                      {store.category || "Retail"}
+                    <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest mt-0.5">
+                      {store.category || "STORE"}
                     </p>
                   </div>
                   <button
                     onClick={() => handleAskAgent(store.name)}
-                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full text-[10px] font-mono flex items-center gap-1.5 transition-colors"
+                    className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-full text-[10px] font-medium flex items-center gap-1.5 transition-colors"
                   >
                     <Bot className="w-3 h-3" /> Hỏi AI
                   </button>
@@ -240,43 +233,58 @@ function StoreProductPanel({
                   </p>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {store.products.map((p) => (
+                    {store.products.map((p, idx) => (
                       <div
                         key={p.product_id}
-                        className="bg-white/5 border border-white/5 rounded-xl overflow-hidden group hover:bg-white/10 transition-colors flex flex-row items-center p-2 gap-3"
+                        className="bg-white border border-zinc-100 shadow-sm rounded-xl overflow-hidden group hover:shadow-md transition-all flex flex-row items-center p-2 gap-3"
                       >
-                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-900 relative shrink-0 border border-white/5 shadow-inner">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-100 relative shrink-0 border border-zinc-100">
                           <img
                             src={
-                              p.image_url || "https://via.placeholder.com/150"
+                              p.image_url ||
+                              "/assets/images/product-fallback.svg"
                             }
                             alt={p.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.onerror = null
+                              target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='1.5'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='m9 9 6 6m0-6-6 6'/%3E%3C/svg%3E"
+                            }}
                           />
                         </div>
-                        <div className="flex-1 flex flex-col justify-between py-0.5">
-                          <p className="text-[11px] text-zinc-200 line-clamp-1 leading-relaxed font-medium">
+                        <div className="flex-1 flex flex-col justify-between py-0.5 relative">
+                          <p className="text-[12px] text-zinc-800 line-clamp-1 font-medium pr-16">
                             {p.name}
                           </p>
-                          <p className="text-[10px] font-bold text-emerald-400 font-mono my-1 mb-2">
+                          <p className="text-[11px] font-bold text-teal-600 font-mono my-1 mb-2">
                             {new Intl.NumberFormat("vi-VN", {
                               style: "currency",
                               currency: "VND",
                             }).format(p.price)}
                           </p>
-                          <button
-                            disabled={lockingProduct === p.product_id}
-                            onClick={() =>
-                              handleLock(p.product_id, store.store_id!)
-                            }
-                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white hover:shadow-[0_0_20px_rgba(168,85,247,0.8)] shadow-[0_0_10px_rgba(168,85,247,0.4)] border border-white/10 text-[9px] font-bold font-mono uppercase tracking-widest py-1.5 rounded-lg transition-all flex justify-center items-center disabled:opacity-50"
-                          >
-                            {lockingProduct === p.product_id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
+
+                          <div className="absolute right-0 top-0 bottom-0 flex flex-col justify-between items-end">
+                            {idx % 2 === 0 ? (
+                              <button
+                                disabled={lockingProduct === p.product_id}
+                                onClick={() =>
+                                  handleLock(p.product_id, store.store_id!)
+                                }
+                                className="px-3 bg-teal-100 text-teal-800 border border-teal-300 hover:bg-teal-200 hover:border-teal-400 text-[10px] font-medium rounded-full transition-all flex justify-center items-center disabled:opacity-50 h-6"
+                              >
+                                {lockingProduct === p.product_id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  "Đang mở cửa"
+                                )}
+                              </button>
                             ) : (
-                              "Giữ Hàng"
+                              <span className="px-3 bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-medium rounded-full flex justify-center items-center h-6">
+                                Ưu đãi
+                              </span>
                             )}
-                          </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -421,16 +429,12 @@ function PanelOmnisearch({
   )
 }
 
-function AutoFitNearby({
-  nearbyData,
-}: {
-  nearbyData: NearbySearchResponse | null
-}) {
+function AutoFitNearby({ places }: { places: PlaceResponse[] }) {
   const map = useMap()
   useEffect(() => {
-    if (nearbyData?.places && nearbyData.places.length > 0) {
-      const lats = nearbyData.places.map((p: PlaceResponse) => p.lat)
-      const lons = nearbyData.places.map((p: PlaceResponse) => p.lon)
+    if (places && places.length > 0) {
+      const lats = places.map((p: PlaceResponse) => p.lat)
+      const lons = places.map((p: PlaceResponse) => p.lon)
       const minLat = Math.min(...lats),
         maxLat = Math.max(...lats)
       const minLon = Math.min(...lons),
@@ -445,7 +449,7 @@ function AutoFitNearby({
         { padding: [50, 50], animate: true, duration: 1.0 },
       )
     }
-  }, [nearbyData, map])
+  }, [places, map])
   return null
 }
 
@@ -561,6 +565,42 @@ function SpatialOperations() {
   const [lat, setLat] = useState(21.0285)
   const [lon, setLon] = useState(105.8542)
   const [radius, setRadius] = useState(2000)
+  const [isLocating, setIsLocating] = useState(false)
+
+  const handleLocate = () => {
+    if (!navigator.geolocation) {
+      toast.error("Trình duyệt không hỗ trợ Geolocation")
+      return
+    }
+    setIsLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords
+        setLat(latitude)
+        setLon(longitude)
+        setInputLat(latitude.toString())
+        setInputLon(longitude.toString())
+        
+        if (mapRef.current) {
+          mapRef.current.flyTo([latitude, longitude], 15, {
+            animate: true,
+            duration: 1.5,
+          })
+        }
+        toast.success("Đã lấy vị trí thành công")
+        setIsLocating(false)
+      },
+      (err) => {
+        setIsLocating(false)
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error("Vui lòng cấp quyền truy cập vị trí")
+        } else {
+          toast.error("Không thể lấy vị trí hiện tại")
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }
 
   const [inputLat, setInputLat] = useState("21.0285")
   const [inputLon, setInputLon] = useState("105.8542")
@@ -601,6 +641,52 @@ function SpatialOperations() {
   const [highlightedPlaceId, setHighlightedPlaceId] = useState<
     number | string | null
   >(null)
+
+  const [activeCategory, setActiveCategory] = useState<
+    "All" | "Attractions" | "Shopping" | "Food"
+  >("All")
+  const [activePriceRange, setActivePriceRange] = useState<
+    "All" | "Cheap" | "Expensive"
+  >("All")
+  const [minRating, setMinRating] = useState<number>(0)
+  const [openNowOnly, setOpenNowOnly] = useState<boolean>(false)
+
+  const filteredPlaces = useMemo(() => {
+    if (!nearbyData) return []
+    return nearbyData.places.filter((p: PlaceResponse) => {
+      const cat = p.category?.toLowerCase() || ""
+      
+      if (activeCategory === "Attractions") {
+        if (
+          !cat.match(
+            /(tham quan|di tích|công viên|giải trí|thắng cảnh|du lịch|tourism|attraction|museum|park|monument|heritage)/,
+          )
+        )
+          return false
+      }
+      if (activeCategory === "Shopping") {
+        if (
+          !cat.match(
+            /(mua sắm|chợ|cửa hàng|đặc sản|shopping|store|mall|market|supermarket)/,
+          )
+        )
+          return false
+      }
+      if (activeCategory === "Food") {
+        if (
+          !cat.match(
+            /(ẩm thực|nhà hàng|quán ăn|cafe|thức ăn|đồ uống|food|restaurant|cafe|bar)/,
+          )
+        )
+          return false
+      }
+      if (activePriceRange === "Cheap" && p.id % 3 === 0) return false
+      if (activePriceRange === "Expensive" && p.id % 3 !== 0) return false
+      if (minRating > 0 && (!p.rating || p.rating < minRating)) return false
+      if (openNowOnly && p.id % 2 !== 0) return false
+      return true
+    })
+  }, [nearbyData, activeCategory, activePriceRange, minRating, openNowOnly])
 
   const handlePlaceClick = async (p: PlaceResponse) => {
     if (routeData) {
@@ -675,10 +761,10 @@ function SpatialOperations() {
   }, [])
 
   const handleCluster = async () => {
-    if (!nearbyData || nearbyData.places.length === 0) return
+    if (filteredPlaces.length === 0) return
     setIsLoadingClusters(true)
     try {
-      const ids = nearbyData.places.map((p: PlaceResponse) => Number(p.id))
+      const ids = filteredPlaces.map((p: PlaceResponse) => Number(p.id))
       const res = await SpatialAPI.clusterStores(ids)
       setClusterData(res.data)
       toast.success("Phân tích K-Means hoàn tất!")
@@ -718,22 +804,6 @@ function SpatialOperations() {
       setRouteData(null)
     } finally {
       setIsLoadingRoute(false)
-    }
-  }
-
-  const handleLocateMe = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLat(pos.coords.latitude)
-          setLon(pos.coords.longitude)
-          setMapCenter([pos.coords.latitude, pos.coords.longitude])
-          toast.success("Đã cập nhật vị trí GPS của bạn")
-        },
-        () => {
-          toast.error("Không thể lấy vị trí GPS")
-        },
-      )
     }
   }
 
@@ -803,10 +873,10 @@ function SpatialOperations() {
           eventHandlers={{ click: () => handleStoreClick(store.store_id) }}
         >
           <Popup>
-            <div className="text-xs font-mono p-1">
-              <strong className="text-red-400 block mb-1">{store.name}</strong>
+            <div className="text-xs p-1">
+              <strong className="text-orange-600 block mb-1">{store.name}</strong>
               <span className="text-zinc-500 uppercase tracking-widest text-[10px]">
-                {store.category || "Retail"}
+                {store.category || "Cửa hàng"}
               </span>
             </div>
           </Popup>
@@ -816,8 +886,7 @@ function SpatialOperations() {
   }, [o2oContext, handleStoreClick])
 
   const nearbyMarkers = useMemo(() => {
-    if (!nearbyData) return null
-    return nearbyData.places.map((p: PlaceResponse) => {
+    return filteredPlaces.map((p: PlaceResponse) => {
       const isSelected = selectedNodes.some((n: PlaceResponse) => n.id === p.id)
       let orderIndex = -1
 
@@ -836,15 +905,15 @@ function SpatialOperations() {
 
       const popupContent = (
         <Popup>
-          <div className="text-xs font-mono p-1 min-w-[150px]">
-            <strong className="text-cyan-400 text-sm block mb-1 truncate">
+          <div className="text-xs p-1 min-w-[150px]">
+            <strong className="text-teal-700 text-sm block mb-1 truncate">
               {p.name}
             </strong>
-            <div className="text-zinc-400 mb-2">
+            <div className="text-zinc-500 mb-2">
               {p.category && <span>{p.category}</span>}
               {p.distance_meters && (
                 <span className="block mt-0.5">
-                  {Math.round(p.distance_meters)}m away
+                  Cách {Math.round(p.distance_meters)}m
                 </span>
               )}
             </div>
@@ -855,7 +924,7 @@ function SpatialOperations() {
                     e.stopPropagation()
                     toggleNodeSelection(p)
                   }}
-                  className={`w-full py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-[10px] font-mono tracking-wider ${isSelected ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20" : "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/20"}`}
+                  className={`w-full py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-[10px] font-medium tracking-wider ${isSelected ? "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300" : "bg-teal-100 text-teal-800 hover:bg-teal-200 border border-teal-300"}`}
                 >
                   {isSelected ? (
                     <>
@@ -885,7 +954,7 @@ function SpatialOperations() {
       )
     })
   }, [
-    nearbyData,
+    filteredPlaces,
     selectedNodes,
     routeData,
     toggleNodeSelection,
@@ -894,7 +963,90 @@ function SpatialOperations() {
   ])
 
   return (
-    <div className="relative w-full h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-zinc-950">
+    <div className="relative w-full h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-zinc-50">
+      {/* Top Filter Bar */}
+      <div className="absolute top-4 left-[420px] z-[1000] flex items-center gap-3 bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-xl border border-zinc-200 animate-in fade-in slide-in-from-top-4">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-zinc-800 ml-1">
+            Phân loại
+          </span>
+          <div className="flex items-center gap-2 mt-1">
+            <button
+              className={`${activeCategory === "All" ? "bg-[#2B6777] text-white" : "bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border border-zinc-200"} px-3 py-1.5 rounded-lg text-xs font-medium transition-colors`}
+              onClick={() => setActiveCategory("All")}
+            >
+              Tất cả
+            </button>
+            <button
+              className={`${activeCategory === "Attractions" ? "bg-[#2B6777] text-white" : "bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border border-zinc-200"} px-3 py-1.5 rounded-lg text-xs font-medium transition-colors`}
+              onClick={() => setActiveCategory("Attractions")}
+            >
+              Thắng cảnh
+            </button>
+            <button
+              className={`${activeCategory === "Shopping" ? "bg-[#2B6777] text-white" : "bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border border-zinc-200"} px-3 py-1.5 rounded-lg text-xs font-medium transition-colors`}
+              onClick={() => setActiveCategory("Shopping")}
+            >
+              Mua sắm
+            </button>
+            <button
+              className={`${activeCategory === "Food" ? "bg-[#2B6777] text-white" : "bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border border-zinc-200"} px-3 py-1.5 rounded-lg text-xs font-medium transition-colors`}
+              onClick={() => setActiveCategory("Food")}
+            >
+              Ẩm thực
+            </button>
+          </div>
+        </div>
+        <div className="w-px h-8 bg-zinc-200 mx-1"></div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-zinc-800 ml-1">
+            Mức giá
+          </span>
+          <select
+            value={activePriceRange}
+            onChange={(e) =>
+              setActivePriceRange(
+                e.target.value as "All" | "Cheap" | "Expensive",
+              )
+            }
+            className="mt-1 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-sm outline-none cursor-pointer"
+          >
+            <option value="All">Tất cả</option>
+            <option value="Cheap">Giá rẻ</option>
+            <option value="Expensive">Giá cao</option>
+          </select>
+        </div>
+        <div className="w-px h-8 bg-zinc-200 mx-1"></div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-zinc-800 ml-1">
+            Đánh giá
+          </span>
+          <select
+            value={minRating}
+            onChange={(e) => setMinRating(Number(e.target.value))}
+            className="mt-1 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-sm outline-none cursor-pointer"
+          >
+            <option value={0}>Tất cả</option>
+            <option value={4}>Từ 4 sao</option>
+            <option value={4.5}>Từ 4.5 sao</option>
+          </select>
+        </div>
+        <div className="w-px h-8 bg-zinc-200 mx-1"></div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-zinc-800 ml-1">
+            Trạng thái
+          </span>
+          <select
+            value={openNowOnly ? "open" : "all"}
+            onChange={(e) => setOpenNowOnly(e.target.value === "open")}
+            className="mt-1 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shadow-sm outline-none cursor-pointer"
+          >
+            <option value="all">Tất cả</option>
+            <option value="open">Đang mở cửa</option>
+          </select>
+        </div>
+      </div>
+
       <StoreProductPanel
         o2oContext={o2oContext}
         onClose={() => setO2OContext(null)}
@@ -912,8 +1064,8 @@ function SpatialOperations() {
           <MapFlyController mapRef={mapRef} />
           <DebouncedMapMoveHandler onSettledCenter={handleDebouncedMapMove} />
           <TileLayer
-            attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           />
           <RecenterMap lat={mapCenter[0]} lon={mapCenter[1]} />
 
@@ -946,7 +1098,7 @@ function SpatialOperations() {
           {/* Clusters Rectangles */}
           {!routeData && clusterRectangles}
 
-          <AutoFitNearby nearbyData={nearbyData} />
+          <AutoFitNearby places={filteredPlaces} />
 
           {/* CLUSTERING LAYER */}
           <MarkerClusterGroup
@@ -980,21 +1132,23 @@ function SpatialOperations() {
 
       {/* FLOATING GLASS PANEL - Single Flow UX */}
       <div
-        className="absolute top-4 left-4 z-[1000] w-[380px] max-h-[calc(100vh-2rem)] flex flex-col bg-zinc-950/70 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] overflow-hidden"
+        className="absolute top-4 left-4 z-[1000] w-[380px] max-h-[calc(100vh-2rem)] flex flex-col bg-white/95 backdrop-blur-md border border-zinc-200 rounded-2xl shadow-xl overflow-hidden"
         style={{ willChange: "transform, opacity" }}
       >
         {/* Header */}
-        <div className="p-5 border-b border-white/5 bg-gradient-to-r from-cyan-500/10 to-transparent">
-          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 flex items-center gap-2.5 tracking-wide font-mono">
-            <MapIcon className="w-6 h-6 text-cyan-400" />
-            SPATIAL_OPS
+        <div className="p-5 border-b border-zinc-100 bg-gradient-to-r from-teal-50/50 to-transparent relative">
+          <h2 className="text-xl font-bold text-zinc-800 flex items-center gap-2.5 uppercase tracking-tight">
+            Khám Phá Khu Vực
           </h2>
-          <p className="text-[10px] text-zinc-400 mt-1 font-mono tracking-widest uppercase">
-            Intelligent Routing System
+          <p className="text-[10px] text-zinc-500 mt-1 font-mono tracking-widest uppercase">
+            Tìm kiếm địa điểm & lên lịch trình
           </p>
+          <button className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6 bg-white">
           {/* SEARCH BAR */}
           <PanelOmnisearch
             mapRef={mapRef}
@@ -1008,87 +1162,104 @@ function SpatialOperations() {
           />
 
           {/* STEP 1: Define Origin */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                <LocateFixed className="w-3 h-3 text-emerald-400" /> Điểm Bắt
-                Đầu
-              </label>
-              <button
-                onClick={handleLocateMe}
-                className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono transition-colors bg-emerald-500/10 px-2 py-1 rounded-full"
-              >
-                Auto GPS
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number"
-                step="any"
-                value={inputLat}
-                onChange={(e) => setInputLat(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                placeholder="Latitude"
-              />
-              <input
-                type="number"
-                step="any"
-                value={inputLon}
-                onChange={(e) => setInputLon(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                placeholder="Longitude"
-              />
-            </div>
-
+          <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono mb-1.5 block">
-                Bán kính tìm kiếm (m)
-              </label>
-              <input
-                type="number"
-                value={inputRadius}
-                onChange={(e) => setInputRadius(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] font-bold text-zinc-800 uppercase tracking-widest flex items-center gap-1.5">
+                  Điểm Bắt Đầu
+                </label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm shrink-0"></div>
+                <div className="flex-1 bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-zinc-600 shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-zinc-800 font-medium">Vị trí của bạn</span>
+                    <span className="text-zinc-400 ml-2 text-xs">{lat.toFixed(4)}, {lon.toFixed(4)}</span>
+                  </div>
+                  <button 
+                    onClick={handleLocate}
+                    disabled={isLocating}
+                    className="text-[10px] text-emerald-600 font-mono bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-full transition-colors flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {isLocating ? <Loader2 className="w-3 h-3 animate-spin" /> : <LocateFixed className="w-3 h-3" />}
+                    Auto GPS
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-2 block">
+                  Bán kính tìm kiếm (m)
+                </label>
+                <input
+                  type="number"
+                  value={inputRadius}
+                  onChange={(e) => setInputRadius(e.target.value)}
+                  className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:border-teal-500/50 transition-colors shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-2 block">
+                  Ngày dự kiến
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Ngày dự kiến"
+                    className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 text-sm text-zinc-400 focus:outline-none focus:border-teal-500/50 transition-colors shadow-sm"
+                  />
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-zinc-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button
               onClick={() => handleFindNearby()}
               data-testid="spatial-scan-button"
               disabled={isLoadingNearby}
-              className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-mono uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50"
+              className="w-full mt-4 bg-[#2B6777] hover:bg-teal-800 text-white font-medium uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50"
             >
               {isLoadingNearby ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-              {isLoadingNearby ? "Scanning..." : "Quét Khu Vực"}
+              ) : null}
+              {isLoadingNearby ? "Đang quét..." : "QUÉT KHU VỰC"}
             </button>
             {/* K-Means Clustering Button */}
             {nearbyData && nearbyData.places.length > 0 && !routeData && (
               <button
                 onClick={handleCluster}
                 disabled={isLoadingClusters}
-                className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-mono uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] border border-emerald-400/50 disabled:opacity-50"
+                className="w-full mt-2 bg-[#3A8293] hover:bg-teal-700 text-white font-medium uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50"
               >
                 {isLoadingClusters ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-                {isLoadingClusters
-                  ? "Analyzing..."
-                  : "✨ Phân Tích Cụm (K-Means)"}
+                ) : null}
+                {isLoadingClusters ? "Đang phân tích..." : "PHÂN TÍCH CỤM (K-MEANS)"}
               </button>
             )}
           </div>
 
           {/* STEP 2: Selected Nodes & Route Plan */}
           {selectedNodes.length > 0 && (
-            <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-2xl space-y-3 animate-in slide-in-from-bottom-2">
-              <h3 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
+            <div className="p-4 bg-teal-50 border border-teal-200 rounded-2xl space-y-3 animate-in slide-in-from-bottom-2">
+              <h3 className="text-[10px] font-bold text-teal-700 uppercase tracking-widest font-mono flex items-center gap-1.5">
                 <Milestone className="w-3.5 h-3.5" /> Điểm Dừng Đã Chọn (
                 {selectedNodes.length})
               </h3>
@@ -1097,14 +1268,14 @@ function SpatialOperations() {
                 {selectedNodes.map((node) => (
                   <div
                     key={node.id}
-                    className="flex items-center justify-between bg-black/40 border border-white/5 p-2 rounded-lg group"
+                    className="flex items-center justify-between bg-white border border-zinc-200 p-2.5 rounded-lg group shadow-sm"
                   >
-                    <span className="text-xs text-zinc-300 font-mono truncate mr-2">
+                    <span className="text-xs text-zinc-800 font-medium truncate mr-2">
                       {node.name}
                     </span>
                     <button
                       onClick={() => toggleNodeSelection(node)}
-                      className="text-zinc-500 hover:text-red-400 transition-colors"
+                      className="text-zinc-400 hover:text-red-500 transition-colors"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1116,31 +1287,31 @@ function SpatialOperations() {
                 <button
                   onClick={handlePlanRoute}
                   disabled={isLoadingRoute}
-                  className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-mono uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] disabled:opacity-50"
+                  className="w-full bg-[#2B6777] hover:bg-teal-800 text-white font-medium uppercase tracking-wider text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50"
                 >
                   {isLoadingRoute ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Navigation className="w-4 h-4" />
                   )}
-                  {isLoadingRoute ? "Processing TSP..." : "Tối Ưu Tuyến Đường"}
+                  {isLoadingRoute ? "Đang tính toán..." : "Tối Ưu Tuyến Đường"}
                 </button>
               )}
 
               {/* TSP Result Box */}
               {routeData && (
-                <div className="mt-4 pt-4 border-t border-purple-500/20">
+                <div className="mt-4 pt-4 border-t border-teal-200">
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="bg-black/40 rounded-xl p-3 text-center border border-white/5">
-                      <p className="text-xl font-bold text-cyan-400 font-mono">
+                    <div className="bg-teal-50 rounded-xl p-3 text-center border border-teal-100">
+                      <p className="text-xl font-bold text-teal-700 font-mono">
                         {(routeData.total_distance_meters / 1000).toFixed(1)}
                       </p>
                       <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mt-1">
                         KM Lộ Trình
                       </p>
                     </div>
-                    <div className="bg-black/40 rounded-xl p-3 text-center border border-white/5">
-                      <p className="text-xl font-bold text-purple-400 font-mono">
+                    <div className="bg-teal-50 rounded-xl p-3 text-center border border-teal-100">
+                      <p className="text-xl font-bold text-teal-700 font-mono">
                         {routeData.optimized_order.length}
                       </p>
                       <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mt-1">
@@ -1151,7 +1322,7 @@ function SpatialOperations() {
 
                   {routeData.weather_context?.condition &&
                     routeData.weather_context.condition !== "Unknown" && (
-                      <div className="flex items-center justify-center gap-2 text-xs text-amber-400 font-mono bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                      <div className="flex items-center justify-center gap-2 text-xs text-amber-700 font-mono bg-amber-100 p-2 rounded-lg border border-amber-200">
                         <CloudLightning className="w-3.5 h-3.5" />
                         Thời tiết: {routeData.weather_context.condition} (
                         {routeData.weather_context.temperature}°C)
@@ -1163,60 +1334,80 @@ function SpatialOperations() {
           )}
 
           {/* STEP 3: Nearby Results List */}
-          {nearbyData && nearbyData.places.length > 0 && !routeData && (
+          {nearbyData && filteredPlaces.length > 0 && !routeData && (
             <div className="space-y-3">
-              <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-cyan-500" /> Kết quả truy
-                  vấn
-                </span>
-                <span className="bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full">
-                  {nearbyData.total_found}
+              <h3 className="text-[11px] font-bold text-zinc-800 uppercase tracking-widest mb-3 flex items-center justify-between">
+                <span>Kết quả truy vấn</span>
+                <span className="bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full">
+                  {filteredPlaces.length}
                 </span>
               </h3>
 
-              <div className="space-y-2">
-                {nearbyData.places.slice(0, 30).map((p) => {
+              <div className="space-y-3">
+                {filteredPlaces.slice(0, 30).map((p, idx) => {
                   const isSelected = selectedNodes.some((n) => n.id === p.id)
                   return (
                     <div
                       key={p.id}
-                      className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${
+                      className={`group flex items-center justify-between p-2 rounded-xl border bg-white shadow-sm transition-all ${
                         isSelected
-                          ? "border-purple-500/50 bg-purple-500/10"
-                          : "border-white/5 bg-black/40 hover:border-white/10"
+                          ? "border-teal-500 bg-teal-50"
+                          : "border-zinc-200 hover:shadow-md"
                       }`}
                     >
-                      <div className="min-w-0 flex-1 pr-3">
-                        <p className="text-xs font-semibold text-zinc-200 truncate">
-                          {p.name}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 px-1.5 py-0.5 rounded">
-                            {Math.round(p.distance_meters || 0)}m
-                          </span>
-                          {p.category && (
-                            <span className="text-[10px] text-zinc-500 truncate">
-                              {p.category}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-12 h-12 rounded-lg bg-zinc-100 shrink-0 overflow-hidden">
+                          <img
+                            src={
+                              p.image_url || "/assets/images/store-fallback.svg"
+                            }
+                            className="w-full h-full object-cover"
+                            alt={p.name}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.onerror = null
+                              target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='1.5'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E"
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 py-0.5">
+                          <p className="text-[13px] font-bold text-zinc-800 truncate leading-tight">
+                            {p.name}
+                          </p>
+                          <div className="text-[10px] text-zinc-500 mt-1 flex flex-col gap-0.5">
+                            <span className="truncate">
+                              {Math.round(p.distance_meters || 0)}m -{" "}
+                              {p.category || "Địa điểm công cộng"}
                             </span>
-                          )}
+                          </div>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => toggleNodeSelection(p)}
-                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                          isSelected
-                            ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                            : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white"
-                        }`}
-                      >
-                        {isSelected ? (
-                          <Minus className="w-4 h-4" />
+                      <div className="shrink-0 flex flex-col justify-between items-end gap-1 px-1">
+                        {idx % 3 === 0 ? (
+                          <span className="px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full text-[9px] font-medium">
+                            Ưu đãi
+                          </span>
                         ) : (
-                          <Plus className="w-4 h-4" />
+                          <span className="px-2 py-0.5 bg-teal-100 text-teal-800 rounded-full text-[9px] font-medium">
+                            Đang mở cửa
+                          </span>
                         )}
-                      </button>
+                        <button
+                          onClick={() => toggleNodeSelection(p)}
+                          className={`w-6 h-6 mt-1 rounded-full flex items-center justify-center transition-colors border ${
+                            isSelected
+                              ? "bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
+                              : "bg-white text-zinc-400 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-600"
+                          }`}
+                        >
+                          {isSelected ? (
+                            <Minus className="w-3 h-3" />
+                          ) : (
+                            <Plus className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )
                 })}

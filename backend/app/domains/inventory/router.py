@@ -64,6 +64,7 @@ def verify_internal_or_superuser(
 def get_stores(place_id: str | None = None, db: Session = Depends(get_db)):
     return service.get_all_stores(db=db, place_id=place_id)
 
+
 @router.get("/products/{id}", response_model=schema.ProductResponse)
 def get_product(id: int, db: Session = Depends(get_db)):
     prod = service.get_product_by_id(db=db, product_id=id)
@@ -71,9 +72,11 @@ def get_product(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Không thấy Product")
     return prod
 
+
 @router.get("/stores/{store_id}/products", response_model=list[schema.ProductResponse])
 def get_store_products(store_id: int, db: Session = Depends(get_db)):
     return service.get_products_by_store(db=db, store_id=store_id)
+
 
 @router.get("/search", response_model=schema.SearchResult)
 def search(q: str = "", db: Session = Depends(get_db)):
@@ -82,16 +85,35 @@ def search(q: str = "", db: Session = Depends(get_db)):
         return {"stores": [], "products": []}
     return service.search_stores_and_products(db=db, query=q.strip())
 
+
 @router.post("/lock", response_model=dict)
-async def create_inventory_lock(request: schema.LockRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db), redis: Redis = Depends(get_redis)):
+async def create_inventory_lock(
+    request: schema.LockRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+):
     """API Phân tầng: Chạm phanh Redis trước, Lock Postgres sau. An toàn giữ hàng O2O."""
-    lock = await service.create_lock(db=db, redis=redis, request=request, user_id=current_user.id)
-    return {"message": "Đã chặn (Soft-lock) thành công trong 15 phút đa Server", "lock_id": lock.id, "expires_at": lock.expires_at}
+    lock = await service.create_lock(
+        db=db, redis=redis, request=request, user_id=current_user.id
+    )
+    return {
+        "message": "Đã chặn (Soft-lock) thành công trong 15 phút đa Server",
+        "lock_id": lock.id,
+        "expires_at": lock.expires_at,
+    }
+
 
 @router.get("/locks", response_model=list[schema.LockResponseItem])
-async def get_my_locks(current_user: User = Depends(get_current_user), db: Session = Depends(get_db), redis: Redis = Depends(get_redis)):
+async def get_my_locks(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+):
     """Tra cứu Giỏ hàng & Đồng hồ đếm ngược được nuôi bởi Redis"""
-    return await service.get_user_locks_with_ttl(db=db, redis=redis, user_id=current_user.id)
+    return await service.get_user_locks_with_ttl(
+        db=db, redis=redis, user_id=current_user.id
+    )
 
 
 @router.delete("/locks/{lock_id}", response_model=dict)
@@ -101,14 +123,19 @@ async def cancel_my_lock(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    await service.cancel_lock(db=db, redis=redis, lock_id=lock_id, user_id=current_user.id)
+    await service.cancel_lock(
+        db=db, redis=redis, lock_id=lock_id, user_id=current_user.id
+    )
     return {"message": "Đã hủy giữ hàng."}
+
 
 @router.post("/trigger-release", dependencies=[Depends(verify_internal_or_superuser)])
 def release_expired(db: Session = Depends(get_db)):
     """API Dọn dẹp (Bảo mật): Trả lại hàng vào DB khi lock hết hạn. Chỉ Superuser hoặc Internal Service gọi được."""
     count = service.check_and_release_expired_locks(db=db)
-    return {"message": f"Hệ thống đã tự động hoàn trả tồn kho cho {count} giao dịch không thanh toán."}
+    return {
+        "message": f"Hệ thống đã tự động hoàn trả tồn kho cho {count} giao dịch không thanh toán."
+    }
 
 
 @router.get("/products/{product_id}/compare")
@@ -121,8 +148,11 @@ def compare_prices(
 ):
     """So sánh giá sản phẩm tại nhiều cửa hàng gần nhau — dùng cho PriceCompareModal"""
     return service.compare_product_prices(
-        db=db, product_id=product_id, current_store_id=store_id,
-        lat=lat, lon=lon,
+        db=db,
+        product_id=product_id,
+        current_store_id=store_id,
+        lat=lat,
+        lon=lon,
     )
 
 
@@ -134,7 +164,39 @@ async def create_order(
     redis: Redis = Depends(get_redis),
 ):
     """Hoàn tất đơn hàng O2O: Xóa Redis Lock → Trừ tồn kho → Tạo Order → Trả VietQR"""
-    return await service.finalize_order(db=db, redis=redis, data=data, user_id=current_user.id)
+    return await service.finalize_order(
+        db=db, redis=redis, data=data, user_id=current_user.id
+    )
+
+
+@router.get("/orders/me", response_model=list[schema.OrderDetailResponse])
+def get_my_orders(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Lấy danh sách đơn hàng của tôi"""
+    return service.get_user_orders(db=db, user_id=current_user.id)
+
+
+@router.get("/orders/{order_id}", response_model=schema.OrderDetailResponse)
+def get_order_detail(
+    order_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Lấy chi tiết đơn hàng"""
+    return service.get_order(db=db, order_id=order_id, user_id=current_user.id)
+
+
+@router.post("/orders/{order_id}/cancel", response_model=dict)
+def cancel_order(
+    order_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Hủy đơn hàng và giải phóng tồn kho"""
+    service.cancel_order(db=db, order_id=order_id, user_id=current_user.id)
+    return {"message": "Đã hủy đơn hàng thành công"}
 
 
 @router.post("/payments/webhook", response_model=schema.PaymentWebhookResponse)

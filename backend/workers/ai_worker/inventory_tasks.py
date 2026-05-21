@@ -61,18 +61,15 @@ def sweep_expired_locks(self):
         # ── BƯỚC 1: Lấy các lock hết hạn (idempotent với SKIP LOCKED) ──
         # Grace period: TTL + 1 phút (60 giây) đảm bảo không sweep lock
         # mà Redis vẫn đang giữ hợp lệ.
-        expired_locks = (
-            session.execute(
-                text("""
+        expired_locks = session.execute(
+            text("""
                     SELECT id, product_id, quantity, store_id
                     FROM inventory_locks
                     WHERE status IN ('soft_locked', 'checkout_pending')
                       AND expires_at <= (NOW() - INTERVAL '1 minute')
                     FOR UPDATE SKIP LOCKED
                 """)
-            )
-            .fetchall()
-        )
+        ).fetchall()
 
         if not expired_locks:
             logger.debug("[Sweep Task] No expired locks found. Clean state.")

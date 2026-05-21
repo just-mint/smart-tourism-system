@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 
 # Các "slot" thời gian trong ngày
 TIME_SLOTS = {
-    "morning":   (6,  11),   # 06:00 – 10:59
-    "lunch":     (11, 14),   # 11:00 – 13:59
-    "afternoon": (14, 18),   # 14:00 – 17:59
-    "evening":   (18, 22),   # 18:00 – 21:59
-    "night":     (22, 6),    # 22:00 – 05:59 (vượt nửa đêm)
+    "morning": (6, 11),  # 06:00 – 10:59
+    "lunch": (11, 14),  # 11:00 – 13:59
+    "afternoon": (14, 18),  # 14:00 – 17:59
+    "evening": (18, 22),  # 18:00 – 21:59
+    "night": (22, 6),  # 22:00 – 05:59 (vượt nửa đêm)
 }
 
 # Boost / penalty của từng category theo time slot
@@ -32,53 +32,53 @@ TIME_SLOTS = {
 # Giá trị âm = penalty
 TIME_CATEGORY_RULES: dict[str, dict[str, float]] = {
     "morning": {
-        "cafe":        +1.5,
-        "coffee":      +1.5,
-        "breakfast":   +1.5,
-        "museum":      +1.0,
-        "park":        +1.0,
-        "market":      +0.8,
-        "bar":         -2.0,
-        "pub":         -2.0,
+        "cafe": +1.5,
+        "coffee": +1.5,
+        "breakfast": +1.5,
+        "museum": +1.0,
+        "park": +1.0,
+        "market": +0.8,
+        "bar": -2.0,
+        "pub": -2.0,
         "night_market": -3.0,
-        "club":        -3.0,
+        "club": -3.0,
     },
     "lunch": {
-        "restaurant":  +2.0,
-        "food":        +1.5,
-        "indoor":      +0.8,
-        "mall":        +0.5,
-        "museum":      +0.3,
-        "outdoor":     -0.5,
+        "restaurant": +2.0,
+        "food": +1.5,
+        "indoor": +0.8,
+        "mall": +0.5,
+        "museum": +0.3,
+        "outdoor": -0.5,
     },
     "afternoon": {
-        "mall":        +1.0,
-        "indoor":      +0.8,
-        "cafe":        +0.8,
-        "museum":      +0.5,
-        "outdoor":     +0.3,
+        "mall": +1.0,
+        "indoor": +0.8,
+        "cafe": +0.8,
+        "museum": +0.5,
+        "outdoor": +0.3,
     },
     "evening": {
-        "restaurant":  +1.5,
-        "food":        +1.2,
+        "restaurant": +1.5,
+        "food": +1.2,
         "night_market": +3.0,
-        "bar":         +2.5,
-        "pub":         +2.5,
-        "club":        +2.0,
-        "shopping":    +1.0,
-        "museum":      -3.0,   # Đóng cửa 17-18h
-        "park":        -1.5,
+        "bar": +2.5,
+        "pub": +2.5,
+        "club": +2.0,
+        "shopping": +1.0,
+        "museum": -3.0,  # Đóng cửa 17-18h
+        "park": -1.5,
     },
     "night": {
         "night_market": +3.0,
-        "bar":         +3.0,
-        "pub":         +3.0,
-        "club":        +2.5,
-        "restaurant":  +1.0,
-        "museum":      -5.0,   # Đóng cửa hoàn toàn
-        "park":        -3.0,
-        "cafe":        -1.0,
-        "market":      -1.0,
+        "bar": +3.0,
+        "pub": +3.0,
+        "club": +2.5,
+        "restaurant": +1.0,
+        "museum": -5.0,  # Đóng cửa hoàn toàn
+        "park": -3.0,
+        "cafe": -1.0,
+        "market": -1.0,
     },
 }
 
@@ -87,8 +87,19 @@ TIME_CATEGORY_RULES: dict[str, dict[str, float]] = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 OUTDOOR_CATEGORIES = {"outdoor", "park", "nature", "beach", "garden", "monument"}
-INDOOR_CATEGORIES  = {"indoor", "mall", "cafe", "coffee", "museum", "gallery",
-                       "restaurant", "food", "bar", "club", "shopping"}
+INDOOR_CATEGORIES = {
+    "indoor",
+    "mall",
+    "cafe",
+    "coffee",
+    "museum",
+    "gallery",
+    "restaurant",
+    "food",
+    "bar",
+    "club",
+    "shopping",
+}
 
 
 def _get_time_slot(hour: int) -> str:
@@ -122,11 +133,11 @@ def analyze_time_context(hour: int) -> dict[str, Any]:
     rules = TIME_CATEGORY_RULES.get(slot, {})
 
     descriptions = {
-        "morning":   "Buổi sáng — ưu tiên café, bảo tàng, công viên",
-        "lunch":     "Buổi trưa — ưu tiên nhà hàng, địa điểm trong nhà",
+        "morning": "Buổi sáng — ưu tiên café, bảo tàng, công viên",
+        "lunch": "Buổi trưa — ưu tiên nhà hàng, địa điểm trong nhà",
         "afternoon": "Buổi chiều — ưu tiên trung tâm thương mại, café",
-        "evening":   "Buổi tối — ưu tiên chợ đêm, quán bar, nhà hàng",
-        "night":     "Đêm khuya — ưu tiên chợ đêm, bar; tắt bảo tàng/công viên",
+        "evening": "Buổi tối — ưu tiên chợ đêm, quán bar, nhà hàng",
+        "night": "Đêm khuya — ưu tiên chợ đêm, bar; tắt bảo tàng/công viên",
     }
 
     logger.info(f"[Context] Giờ {hour}h → Slot: {slot} | Áp dụng {len(rules)} quy tắc")
@@ -138,7 +149,9 @@ def analyze_time_context(hour: int) -> dict[str, Any]:
     }
 
 
-def analyze_weather_context(condition: str, temperature: float | None) -> dict[str, Any]:
+def analyze_weather_context(
+    condition: str, temperature: float | None
+) -> dict[str, Any]:
     """
     Phân tích ngữ cảnh thời tiết.
 
@@ -216,7 +229,9 @@ def apply_context_adjustment(
         if tag in time_rules:
             adjustment = time_rules[tag]
             delta += adjustment
-            logger.debug(f"[Context] Shop '{shop.get('name')}' tag='{tag}' time_adj={adjustment:+.1f}")
+            logger.debug(
+                f"[Context] Shop '{shop.get('name')}' tag='{tag}' time_adj={adjustment:+.1f}"
+            )
 
     # ── 2. WEATHER RULES ──
     outdoor_penalty: float = weather_ctx.get("outdoor_penalty", 0.0)
@@ -227,10 +242,14 @@ def apply_context_adjustment(
 
     if is_outdoor and outdoor_penalty != 0.0:
         delta += outdoor_penalty
-        logger.debug(f"[Context] Shop '{shop.get('name')}' outdoor→ weather_penalty={outdoor_penalty:+.1f}")
+        logger.debug(
+            f"[Context] Shop '{shop.get('name')}' outdoor→ weather_penalty={outdoor_penalty:+.1f}"
+        )
 
     if is_indoor and indoor_boost != 0.0:
         delta += indoor_boost
-        logger.debug(f"[Context] Shop '{shop.get('name')}' indoor → weather_boost={indoor_boost:+.1f}")
+        logger.debug(
+            f"[Context] Shop '{shop.get('name')}' indoor → weather_boost={indoor_boost:+.1f}"
+        )
 
     return delta

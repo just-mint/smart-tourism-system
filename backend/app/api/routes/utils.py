@@ -72,9 +72,14 @@ async def health_check(session: SessionDep) -> JSONResponse:
             await redis.aclose()
 
     if not healthy:
-        return JSONResponse(status_code=503, content={"status": "degraded", "checks": status})
+        return JSONResponse(
+            status_code=503, content={"status": "degraded", "checks": status}
+        )
 
-    return JSONResponse(status_code=200, content={"status": "healthy", "checks": status})
+    return JSONResponse(
+        status_code=200, content={"status": "healthy", "checks": status}
+    )
+
 
 @router.get("/telemetry/", dependencies=[Depends(get_current_active_superuser)])
 async def get_telemetry(session: SessionDep) -> dict:

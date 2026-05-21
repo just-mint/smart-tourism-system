@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Local shop">
+  <rect width="800" height="600" fill="#eef7f3"/>
+  <rect x="110" y="220" width="580" height="250" rx="24" fill="#ffffff" stroke="#bed9cf" stroke-width="8"/>
+  <path d="M150 210h500l-44-90H194z" fill="#0f766e"/>
+  <path d="M150 210h95l-18-90h-33zM340 210h120l-10-90H350zM555 210h95l-44-90h-33z" fill="#f59e0b"/>
+  <rect x="180" y="300" width="145" height="170" rx="12" fill="#dbeafe"/>
+  <rect x="380" y="285" width="240" height="135" rx="18" fill="#dcfce7"/>
+  <circle cx="610" cy="120" r="42" fill="#fde68a"/>
+</svg>

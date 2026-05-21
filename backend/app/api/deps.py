@@ -14,8 +14,7 @@ from app.core.db import engine
 from app.models import TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
-    auto_error=False
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token", auto_error=False
 )
 
 
@@ -50,7 +49,9 @@ def get_current_user(session: SessionDep, request: Request, token: TokenDep) -> 
         )
     user = session.get(User, token_data.sub)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user

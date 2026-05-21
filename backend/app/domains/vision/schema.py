@@ -1,28 +1,30 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class VisionUploadResponse(BaseModel):
     task_id: str
     message: str
 
+
 class TaskStatus(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     task_id: str
     status: str
     image_path: str
     detected_objects: dict | None = None
     matched_product_ids: list[int] | None = None
-    class Config:
-        from_attributes = True
+
 
 class ClosetItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: str
     image_path: str
     created_at: datetime
-    class Config:
-        from_attributes = True
 
 
 class MixMatchProduct(BaseModel):
@@ -32,7 +34,7 @@ class MixMatchProduct(BaseModel):
     price: int
     original_price: int | None = None
     image_url: str | None = None
-    match_score: float        # 0-100%
+    match_score: float  # 0-100%
     stock: int = 0
     store_id: int | None = None
 

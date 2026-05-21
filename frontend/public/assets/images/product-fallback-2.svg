@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="Souvenir">
+  <rect width="600" height="600" fill="#ecfdf5"/>
+  <rect x="150" y="230" width="300" height="230" rx="28" fill="#ffffff" stroke="#86efac" stroke-width="10"/>
+  <path d="M150 285h300M300 230v230" stroke="#10b981" stroke-width="16"/>
+  <path d="M250 210c-80-55-110 40-30 55M350 210c80-55 110 40 30 55" fill="none" stroke="#f59e0b" stroke-width="18" stroke-linecap="round"/>
+</svg>

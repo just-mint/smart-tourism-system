@@ -82,11 +82,15 @@ def _fetch_osrm_matrix(coords: list[tuple[float, float]]) -> list[list[float]] |
         with httpx.Client(timeout=OSRM_TIMEOUT) as client:
             response = client.get(url)
             if response.status_code != 200:
-                logger.warning(f"[TSP] OSRM Table trả mã {response.status_code}: {response.text[:200]}")
+                logger.warning(
+                    f"[TSP] OSRM Table trả mã {response.status_code}: {response.text[:200]}"
+                )
                 return None
             data = response.json()
             if data.get("code") != "Ok":
-                logger.warning(f"[TSP] OSRM Table code lỗi: {data.get('code')} — {data.get('message', '')}")
+                logger.warning(
+                    f"[TSP] OSRM Table code lỗi: {data.get('code')} — {data.get('message', '')}"
+                )
                 return None
 
             # OSRM /table trả 'durations' (giây) theo mặc định
@@ -96,7 +100,10 @@ def _fetch_osrm_matrix(coords: list[tuple[float, float]]) -> list[list[float]] |
                 return None
 
             # Trả về duration matrix (giây) — dùng làm chi phí cho TSP
-            return [[float(cell) if cell is not None else 9999.0 for cell in row] for row in raw]
+            return [
+                [float(cell) if cell is not None else 9999.0 for cell in row]
+                for row in raw
+            ]
 
     except httpx.TimeoutException:
         logger.warning(f"[TSP] OSRM Table timeout sau {OSRM_TIMEOUT}s")
@@ -106,7 +113,9 @@ def _fetch_osrm_matrix(coords: list[tuple[float, float]]) -> list[list[float]] |
         return None
 
 
-def _fetch_osrm_route_geometry(ordered_coords: list[tuple[float, float]]) -> dict | None:
+def _fetch_osrm_route_geometry(
+    ordered_coords: list[tuple[float, float]],
+) -> dict | None:
     """
     Sau khi TSP tìm ra THỨ TỰ TỐI ƯU, gọi OSRM Route API để lấy đường
     đi THỰC TẾ uốn theo đường phố (không phải đường chim bay).
@@ -119,17 +128,23 @@ def _fetch_osrm_route_geometry(ordered_coords: list[tuple[float, float]]) -> dic
         return None
 
     coord_str = _build_osrm_coord_str(ordered_coords)
-    url = f"{OSRM_BASE_URL}/route/v1/driving/{coord_str}?overview=full&geometries=geojson"
+    url = (
+        f"{OSRM_BASE_URL}/route/v1/driving/{coord_str}?overview=full&geometries=geojson"
+    )
 
     try:
         with httpx.Client(timeout=OSRM_TIMEOUT) as client:
             response = client.get(url)
             if response.status_code != 200:
-                logger.warning(f"[TSP] OSRM Route trả mã {response.status_code}: {response.text[:200]}")
+                logger.warning(
+                    f"[TSP] OSRM Route trả mã {response.status_code}: {response.text[:200]}"
+                )
                 return None
             data = response.json()
             if data.get("code") != "Ok":
-                logger.warning(f"[TSP] OSRM Route code lỗi: {data.get('code')} — {data.get('message', '')}")
+                logger.warning(
+                    f"[TSP] OSRM Route code lỗi: {data.get('code')} — {data.get('message', '')}"
+                )
                 return None
 
             routes = data.get("routes", [])
@@ -141,7 +156,9 @@ def _fetch_osrm_route_geometry(ordered_coords: list[tuple[float, float]]) -> dic
             distance_m = route.get("distance", 0)
             duration_s = route.get("duration", 0)
 
-            logger.info(f"[TSP] OSRM Route thực tế: {distance_m/1000:.2f}km, {duration_s/60:.1f} phút")
+            logger.info(
+                f"[TSP] OSRM Route thực tế: {distance_m / 1000:.2f}km, {duration_s / 60:.1f} phút"
+            )
             return {
                 "geojson": geometry,
                 "distance_km": round(distance_m / 1000, 2),
@@ -156,14 +173,21 @@ def _fetch_osrm_route_geometry(ordered_coords: list[tuple[float, float]]) -> dic
         return None
 
 
-def _nearest_neighbor(matrix: list[list[float]], start: int = 0) -> list[int]:
+def _nearest_neighbor(matrix: list[list[float]], start: int = 0, has_anchor: bool = False) -> list[int]:
     """Greedy Nearest Neighbor — tìm lộ trình ban đầu."""
     n = len(matrix)
     visited = [False] * n
-    tour = [start]
-    visited[start] = True
 
-    for _ in range(n - 1):
+    if has_anchor and n > 1:
+        # Force the user -> anchor as the start of the tour
+        tour = [0, 1]
+        visited[0] = True
+        visited[1] = True
+    else:
+        tour = [start]
+        visited[start] = True
+
+    for _ in range(n - len(tour)):
         current = tour[-1]
         nearest = -1
         nearest_dist = float("inf")
@@ -179,7 +203,7 @@ def _nearest_neighbor(matrix: list[list[float]], start: int = 0) -> list[int]:
     return tour
 
 
-def _two_opt(tour: list[int], matrix: list[list[float]]) -> list[int]:
+def _two_opt(tour: list[int], matrix: list[list[float]], has_anchor: bool = False) -> list[int]:
     """2-Opt improvement — swap các đoạn đường cho tới khi không cải thiện được nữa."""
     n = len(tour)
     improved = True
@@ -192,12 +216,14 @@ def _two_opt(tour: list[int], matrix: list[list[float]]) -> list[int]:
 
     max_iterations = 100
     iteration = 0
+    start_i = 2 if has_anchor else 1
+
     while improved and iteration < max_iterations:
         improved = False
         iteration += 1
-        for i in range(1, n - 1):
+        for i in range(start_i, n - 1):
             for j in range(i + 1, n):
-                new_tour = best[:i] + best[i: j + 1][::-1] + best[j + 1:]
+                new_tour = best[:i] + best[i : j + 1][::-1] + best[j + 1 :]
                 new_cost = _tour_cost(new_tour)
                 if new_cost < best_cost:
                     best = new_tour
@@ -238,8 +264,10 @@ def calculate_total_metrics(
             c2 = shop.get("coords", {})
             if c1 and c2:
                 d = haversine(
-                    c1.get("lat", 0), c1.get("lng", 0),
-                    c2.get("lat", 0), c2.get("lng", 0),
+                    c1.get("lat", 0),
+                    c1.get("lng", 0),
+                    c2.get("lat", 0),
+                    c2.get("lng", 0),
                 )
                 total_distance_km += d
             previous_coords = c2
@@ -274,7 +302,11 @@ def run_tsp_pipeline(
         route_geometry: dict với 'geojson' (LineString) hoặc None
     """
     if not shops:
-        return [], {"total_price": 0, "total_distance_km": 0, "routing_fallback_used": False}, None
+        return (
+            [],
+            {"total_price": 0, "total_distance_km": 0, "routing_fallback_used": False},
+            None,
+        )
 
     # Xây danh sách tọa độ: user_location (index 0) + shops
     # Lưu dưới dạng (lat, lon) — hàm _build_osrm_coord_str sẽ đảo thành lon,lat
@@ -287,15 +319,20 @@ def run_tsp_pipeline(
     fallback_used = False
     matrix = _fetch_osrm_matrix(coords)
     if matrix is None:
-        logger.info("[TSP] OSRM Table không khả dụng → Haversine Fallback cho TSP ordering")
+        logger.info(
+            "[TSP] OSRM Table không khả dụng → Haversine Fallback cho TSP ordering"
+        )
         matrix = _build_haversine_matrix(coords)
         fallback_used = True
 
+    # === Bước 1b: Kiểm tra xem có anchor không ===
+    has_anchor = bool(shops and shops[0].get("is_anchor"))
+
     # === Bước 2: Nearest Neighbor (bắt đầu từ index 0 = user location) ===
-    tour = _nearest_neighbor(matrix, start=0)
+    tour = _nearest_neighbor(matrix, start=0, has_anchor=has_anchor)
 
     # === Bước 3: 2-Opt cải thiện ===
-    tour = _two_opt(tour, matrix)
+    tour = _two_opt(tour, matrix, has_anchor=has_anchor)
 
     # Bỏ index 0 (user location) ra khỏi tour, chỉ giữ shop indices
     shop_tour = [idx - 1 for idx in tour if idx > 0]
@@ -322,7 +359,9 @@ def run_tsp_pipeline(
         osrm_distance_km = None
         route_geometry = None
         fallback_used = True
-        logger.warning("[TSP] ⚠️ OSRM Route không khả dụng — đường chim bay được dùng làm fallback")
+        logger.warning(
+            "[TSP] ⚠️ OSRM Route không khả dụng — đường chim bay được dùng làm fallback"
+        )
 
     metrics = calculate_total_metrics(
         ordered_shops,
