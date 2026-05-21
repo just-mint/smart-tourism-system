@@ -57,6 +57,7 @@ class Product(Base):
         nullable=True,
     )
     # [v2] Thuộc tính sản phẩm — phục vụ lọc cá nhân hóa
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     size: Mapped[str | None] = mapped_column(String(20), nullable=True)
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)
     tags: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -65,9 +66,7 @@ class Product(Base):
         default=lambda: datetime.now(timezone.utc),
     )
 
-    __table_args__ = (
-        CheckConstraint("price >= 0", name="check_price_nonnegative"),
-    )
+    __table_args__ = (CheckConstraint("price >= 0", name="check_price_nonnegative"),)
 
 
 class Inventory(Base):
@@ -85,6 +84,7 @@ class Inventory(Base):
         UniqueConstraint("store_id", "product_id", name="uq_inventory_store_product"),
         CheckConstraint("stock >= 0", name="check_stock_nonnegative"),
         CheckConstraint("locked_stock >= 0", name="check_locked_stock_nonnegative"),
+        CheckConstraint("locked_stock <= stock", name="check_locked_not_exceed_stock"),
     )
 
 
@@ -93,10 +93,10 @@ class InventoryLock(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"))
-    store_id: Mapped[int | None] = mapped_column(
+    store_id: Mapped[int] = mapped_column(
         ForeignKey("stores.store_id"),
         index=True,
-        nullable=True,
+        nullable=False,
     )
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=True), index=True)
     quantity: Mapped[int] = mapped_column(Integer, default=1)
@@ -114,7 +114,9 @@ class InventoryLock(Base):
         Index(
             "idx_active_locks",
             expires_at,
-            postgresql_where=(text("status IN ('soft_locked', 'active', 'checkout_pending')")),
+            postgresql_where=(
+                text("status IN ('soft_locked', 'active', 'checkout_pending')")
+            ),
         ),
     )
 

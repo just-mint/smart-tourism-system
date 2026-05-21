@@ -6,15 +6,11 @@ import {
   CreditCard,
   Loader2,
   Lock,
-  MapPin,
   Package,
-  PackageOpen,
-  ScanLine,
-  Search,
   ShoppingCart,
-  Store,
   X,
   Zap,
+  ChevronRight,
 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import {
@@ -33,13 +29,10 @@ export const Route = createFileRoute("/_layout/inventory")({
 })
 
 const STORE_IMAGES = [
-  "https://images.unsplash.com/photo-1550650222-6b94dbba2211?q=80&w=800",
-  "https://images.unsplash.com/photo-1559592413-7ceecea18501?q=80&w=800",
-  "https://images.unsplash.com/photo-1555921015-5532091f6026?q=80&w=800",
+  "https://placehold.co/400x400/f4f6f8/a1a1aa?text=Store",
 ]
 const PRODUCT_IMAGES = [
-  "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=600",
-  "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=600",
+  "https://placehold.co/400x400/f4f6f8/a1a1aa?text=Product",
 ]
 
 const getApiErrorDetail = (error: unknown, fallback: string) => {
@@ -257,189 +250,311 @@ function Inventory() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 selection:bg-amber-500/30 font-sans pb-20">
-      {/* 1. STICKY HEADER & SEARCH */}
-      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5 shadow-2xl">
-        <div className="max-w-[1600px] mx-auto px-6 h-20 flex items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-zinc-950">
-              <PackageOpen className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-white hidden md:block">
-              O2O Market
-            </h1>
-          </div>
-
-          <div className="flex-1 max-w-2xl relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search hubs, brands, apparels..."
-              className="w-full bg-zinc-900/50 border-white/10 h-12 pl-12 rounded-2xl text-white placeholder:text-zinc-500 focus-visible:ring-amber-500/50 focus-visible:border-amber-500/50 transition-all text-base"
-            />
-            {isLoading && (
-              <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500 animate-spin" />
-            )}
-          </div>
-
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="relative p-3 rounded-xl hover:bg-zinc-800 transition-colors"
-          >
-            <ShoppingCart className="w-6 h-6 text-zinc-300 hover:text-white" />
-            {locks.length > 0 && (
-              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-bold flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.5)]">
-                {locks.length}
-              </span>
-            )}
-          </button>
-        </div>
-      </header>
+    <div className="relative min-h-screen bg-[#F4F6F8] text-zinc-900 selection:bg-teal-500/30 font-sans pb-20">
+      {/* Floating Cart Button for Light Theme */}
+      <button
+        onClick={() => setIsCartOpen(true)}
+        className="fixed top-20 right-6 z-40 p-3 rounded-full bg-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all border border-zinc-100 group"
+      >
+        <ShoppingCart className="w-6 h-6 text-zinc-600 group-hover:text-teal-600 transition-colors" />
+        {locks.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] font-bold flex items-center justify-center shadow-md animate-bounce">
+            {locks.length}
+          </span>
+        )}
+      </button>
 
       {/* NOTIFICATION */}
       {notification && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-white/10 rounded-full px-6 py-3 shadow-2xl flex items-center gap-2 animate-in slide-in-from-top-4">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-white border border-zinc-200 text-zinc-800 rounded-full px-6 py-3 shadow-2xl flex items-center gap-2 animate-in slide-in-from-top-4">
           <span className="text-sm font-medium">{notification}</span>
         </div>
       )}
 
-      <main className="max-w-[1600px] mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
-        {/* 2. LEFT COL: HUB LIST */}
-        <aside className="w-full lg:w-[350px] shrink-0 space-y-4">
-          <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-6">
-            <Store className="w-4 h-4" /> Nearby Hubs
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-            {stores.map((store, idx) => {
-              const isActive = activeStoreId === store.store_id
-              return (
-                <div
-                  key={store.store_id}
-                  onClick={() => handleStoreClick(store.store_id!)}
-                  className={`group flex items-center gap-4 p-3 rounded-2xl cursor-pointer transition-all duration-300 border bg-zinc-900/30 ${isActive ? "border-amber-500/50 bg-amber-500/5 shadow-[0_0_30px_rgba(245,158,11,0.1)]" : "border-white/5 hover:border-white/20 hover:bg-zinc-800/50"}`}
-                >
-                  <img
-                    src={STORE_IMAGES[idx % STORE_IMAGES.length]}
-                    alt={store.name}
-                    className="w-20 h-20 rounded-xl object-cover"
-                  />
-                  <div className="flex-1 overflow-hidden">
-                    <h3
-                      className={`font-bold text-base truncate transition-colors ${isActive ? "text-amber-400" : "text-white"}`}
-                    >
-                      {store.name}
-                    </h3>
-                    <p className="text-xs text-zinc-500 truncate flex items-center gap-1 mt-1">
-                      <MapPin className="w-3 h-3" />
-                      {store.address || "Location pending"}
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1 font-medium">
-                      ⭐ {store.rating || 4.5}{" "}
-                      <span className="text-zinc-600">
-                        ({Math.floor(Math.random() * 100 + 20)})
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
+      {/* ================= TOP SECTION (White Background) ================= */}
+      <div className="bg-white rounded-b-[3rem] shadow-sm pb-12 mb-8">
+        <main className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-8 flex flex-col gap-12">
+        
+        {/* ================= TOP SECTION (NEW UI) ================= */}
+        
+        {/* HERO BANNER */}
+        <section>
+          <div className="relative w-full h-[320px] md:h-[400px] rounded-[2rem] overflow-hidden bg-[#F2EDE4] flex items-center p-8 md:p-16 shadow-sm border border-[#E8E1D5]">
+            <div className="relative z-10 max-w-xl space-y-4">
+              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 leading-tight font-serif">KHÁM PHÁ THẾ GIỚI SANG TRỌNG</h2>
+              <p className="text-zinc-700 text-lg md:text-xl font-medium">Dịch vụ và sản phẩm O2O cao cấp dành cho bạn</p>
+              <button className="mt-4 bg-[#312E81] text-white px-8 py-3.5 rounded-full text-sm font-bold hover:bg-indigo-900 transition-colors shadow-lg flex items-center gap-2">
+                Khám Phá Ngay <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="absolute right-0 top-0 h-full w-2/3 pointer-events-none" style={{ background: 'linear-gradient(to right, #F2EDE4 0%, transparent 40%)', zIndex: 5 }}></div>
+            <img src="https://images.unsplash.com/photo-1555529771-835f59fc5efe?q=80&w=1200" className="absolute right-0 top-0 h-full w-2/3 object-cover object-left" alt="Banner" />
           </div>
-        </aside>
+        </section>
 
-        {/* 3. RIGHT COL: PRODUCT GRID */}
-        <section className="flex-1">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <ScanLine className="w-6 h-6 text-amber-500" />
-              {searchQuery ? "Search Results" : "Inventory Catalog"}
-            </h2>
-          </div>
-
+        {/* TOP PRODUCT GRID */}
+        <section>
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="h-80 bg-zinc-900/50 rounded-3xl animate-pulse"
-                />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="h-64 bg-zinc-100 rounded-3xl animate-pulse" />
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="h-80 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-3xl">
-              <Package className="w-12 h-12 text-zinc-700 mb-2" />
-              <p className="text-zinc-500">No products found.</p>
+            <div className="h-48 flex flex-col items-center justify-center border border-dashed border-zinc-300 rounded-3xl bg-white p-6 text-center">
+              <Package className="w-12 h-12 text-zinc-300 mb-4" />
+              <p className="text-zinc-500 font-medium">Hiện chưa có sản phẩm nào trong khu vực của bạn.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {products.map((p) => {
+                  const img = p.image_url || PRODUCT_IMAGES[(p.imageIndex || 0) % PRODUCT_IMAGES.length]
+                  const stock = p.stock ?? 0
+                  const isOut = stock === 0
+                  return (
+                    <div key={`top-${p.product_id}`} className={`group bg-white rounded-3xl overflow-hidden shadow-sm border border-zinc-100 hover:shadow-lg transition-all duration-300 flex flex-col ${isOut ? "opacity-60 grayscale" : ""}`}>
+                      <div className="relative h-40 overflow-hidden bg-zinc-50">
+                        <img 
+                          src={img} 
+                          alt={p.name} 
+                          onError={(e) => {
+                             if (e.currentTarget.src !== PRODUCT_IMAGES[0]) {
+                               e.currentTarget.src = PRODUCT_IMAGES[0]
+                             }
+                          }} 
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      </div>
+                      
+                      <div className="p-4 flex flex-col flex-1">
+                        <h3 className="text-sm font-bold text-zinc-800 line-clamp-1 mb-1">{p.name}</h3>
+                        <div className="text-sm font-extrabold text-zinc-900 mb-4">{p.price.toLocaleString("vi-VN")} đ</div>
+                        
+                        <div className="mt-auto flex items-center gap-3">
+                          <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${stock < 10 ? 'bg-red-500' : 'bg-[#D4AF37]'}`} style={{ width: `${Math.min(100, (stock / 500) * 100)}%` }}></div>
+                          </div>
+                          
+                          <button
+                            disabled={isOut || lockingId === p.product_id}
+                            onClick={() => handleReserveClick(p)}
+                            className="w-8 h-8 rounded-full bg-[#D4AF37] hover:bg-amber-500 text-white flex items-center justify-center transition-colors disabled:opacity-50 shrink-0 shadow-sm"
+                          >
+                            {lockingId === p.product_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="text-lg font-medium leading-none mb-0.5">+</span>}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="flex justify-center items-center gap-2 mt-10 text-sm font-bold">
+                <span className="text-zinc-500 mr-2">Trang</span>
+                <button className="w-8 h-8 rounded-full bg-zinc-900 text-white flex items-center justify-center shadow-md">1</button>
+                <button className="w-8 h-8 rounded-full hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors">2</button>
+                <button className="w-8 h-8 rounded-full hover:bg-zinc-100 text-zinc-600 flex items-center justify-center transition-colors">3</button>
+                <button className="px-4 h-8 rounded-full hover:bg-zinc-100 text-zinc-600 flex items-center justify-center ml-2 transition-colors">Tiếp</button>
+              </div>
+            </div>
+          )}
+        </section>
+        </main>
+      </div>
+
+      {/* ================= BOTTOM SECTION (Gray Background) ================= */}
+      
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 flex flex-col xl:flex-row gap-8">
+        {/* LEFT COL */}
+        <aside className="w-full xl:w-[320px] shrink-0 space-y-8">
+          
+          {/* Nearby Hubs Map Placeholder */}
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+              Nearby Hubs
+            </h2>
+            <div className="relative w-full h-48 bg-zinc-100 rounded-[2rem] overflow-hidden border border-zinc-200 shadow-sm">
+              <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800" alt="Map" className="w-full h-full object-cover opacity-60 mix-blend-luminosity grayscale" />
+              {/* Dynamic Map Pins */}
+              {stores.length > 0 && (
+                <div className="absolute top-8 left-8 w-max max-w-[140px] bg-white rounded-full p-1.5 flex items-center gap-2 shadow-lg text-[10px] font-bold border border-zinc-100">
+                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(stores[0].name)}&background=0D9488&color=fff`} className="w-5 h-5 rounded-full" />
+                  <span className="truncate pr-2 text-zinc-800">{stores[0].name}</span>
+                </div>
+              )}
+              {stores.length > 1 && (
+                <div className="absolute bottom-10 right-4 w-max max-w-[140px] bg-white rounded-full p-1.5 flex items-center gap-2 shadow-lg text-[10px] font-bold border border-zinc-100">
+                  <div className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center text-white text-[8px]">{stores[1].name.charAt(0)}</div>
+                  <span className="truncate pr-2 text-zinc-800">{stores[1].name}</span>
+                </div>
+              )}
+              {/* User location dot */}
+              <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-teal-600 rounded-full border-2 border-white shadow-xl -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute inset-0 bg-teal-600 rounded-full animate-ping opacity-50"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trending Now */}
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+              Trending Now
+            </h2>
+            {/* Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+              <button className="px-4 py-1.5 bg-teal-600 text-white text-xs font-bold rounded-full whitespace-nowrap shadow-sm">Siêu Sale</button>
+              <button className="px-4 py-1.5 bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 text-xs font-bold rounded-full whitespace-nowrap shadow-sm">Đồ Ăn Gần Đây</button>
+              <button className="px-4 py-1.5 bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 text-xs font-bold rounded-full whitespace-nowrap shadow-sm">Bán Chạy</button>
+            </div>
+
+            {/* List */}
+            <div className="flex flex-col gap-3">
+              {stores.slice(0, 4).map((store, idx) => {
+                const isActive = activeStoreId === store.store_id
+                // Use a stable dummy count based on store ID if rating is present, else standard
+                const reviewCount = store.store_id ? (store.store_id * 7 % 150) + 10 : 50
+                const storeImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(store.name)}&background=random&size=128`
+                return (
+                  <div
+                    key={store.store_id}
+                    onClick={() => handleStoreClick(store.store_id!)}
+                    className={`group flex items-center gap-4 p-3 rounded-[1.5rem] cursor-pointer transition-all duration-300 bg-white border ${isActive ? "border-teal-200 shadow-md ring-1 ring-teal-50" : "border-zinc-100 hover:border-zinc-300 hover:shadow-sm shadow-sm"}`}
+                  >
+                    <img
+                      src={storeImg}
+                      alt={store.name}
+                      onError={(e) => (e.currentTarget.src = STORE_IMAGES[idx % STORE_IMAGES.length])}
+                      className="w-16 h-16 rounded-[1rem] object-cover object-center shadow-sm"
+                    />
+                    <div className="flex-1 overflow-hidden">
+                      <h3
+                        className={`font-bold text-sm truncate transition-colors ${isActive ? "text-teal-700" : "text-zinc-900"}`}
+                      >
+                        {store.name}
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                        {store.address || "Đang cập nhật địa chỉ"}
+                      </p>
+                      <p className="text-[11px] text-zinc-600 mt-1 flex items-center gap-1 font-medium">
+                        <span className="text-teal-500">⭐</span> {store.rating || 5.0}{" "}
+                        <span className="text-zinc-400 font-normal">
+                          ({reviewCount})
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* RIGHT COL */}
+        <section className="flex-1 min-w-0 space-y-8">
+          
+          {/* Brand Spotlight Banner */}
+          <div className="relative w-full h-48 md:h-56 rounded-[2rem] overflow-hidden bg-[#F2EDE4] flex items-center p-8 md:p-12 shadow-sm border border-[#E8E1D5]">
+            <div className="relative z-10 max-w-md space-y-4">
+              <h4 className="text-sm font-bold text-zinc-600">Brand Spotlight</h4>
+              <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 leading-tight">KHÁM PHÁ PHONG CÁCH SỐNG ĐẲNG CẤP</h2>
+              <button className="bg-zinc-900 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-zinc-800 transition-colors shadow-md">
+                Xem Bộ Sưu Tập
+              </button>
+            </div>
+            {/* Background image fade trick */}
+            <div className="absolute right-0 top-0 h-full w-2/3 pointer-events-none" style={{ background: 'linear-gradient(to right, #F2EDE4 0%, transparent 40%)', zIndex: 5 }}></div>
+            <img src="https://images.unsplash.com/photo-1555529771-835f59fc5efe?q=80&w=1200" className="absolute right-0 top-0 h-full w-2/3 object-cover object-left" alt="Banner" />
+          </div>
+
+          {/* Merchant Selection */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-zinc-900">Merchant Selection</h2>
+              <div className="flex gap-2">
+                <button className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 bg-white shadow-sm"><ChevronRight className="w-4 h-4 rotate-180 text-zinc-400" /></button>
+                <button className="w-8 h-8 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 bg-white shadow-sm"><ChevronRight className="w-4 h-4 text-zinc-600" /></button>
+              </div>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+              {stores.map((store, idx) => {
+                const isActive = activeStoreId === store.store_id
+                const storeImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(store.name)}&background=random&size=128`
+                return (
+                  <div
+                    key={store.store_id}
+                    onClick={() => handleStoreClick(store.store_id!)}
+                    className={`flex items-center gap-3 p-2 pr-6 rounded-2xl cursor-pointer transition-all min-w-[200px] border bg-white ${isActive ? "border-teal-200 shadow-md ring-1 ring-teal-50" : "border-zinc-100 hover:border-zinc-300 shadow-sm"}`}
+                  >
+                    <img 
+                      src={storeImg} 
+                      onError={(e) => (e.currentTarget.src = STORE_IMAGES[idx % STORE_IMAGES.length])}
+                      className="w-12 h-12 rounded-xl object-cover object-center shadow-sm shrink-0" 
+                    />
+                    <div className="overflow-hidden">
+                      <h4 className={`font-bold text-xs truncate w-32 ${isActive ? "text-teal-700" : "text-zinc-900"}`}>{store.name}</h4>
+                      <div className="text-[10px] text-zinc-500 flex items-center gap-1 mt-0.5"><span className="text-teal-500">⭐</span> {store.rating || 5.0}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Product Grid */}
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-80 bg-zinc-100 rounded-3xl animate-pulse" />
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center border border-dashed border-zinc-300 rounded-3xl bg-white p-6 text-center">
+              <Package className="w-12 h-12 text-zinc-300 mb-4" />
+              <p className="text-zinc-500 font-medium">Hiện chưa có sản phẩm nào trong khu vực của bạn.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {products.map((p) => {
-                const img =
-                  p.image_url ||
-                  PRODUCT_IMAGES[(p.imageIndex || 0) % PRODUCT_IMAGES.length]
+                const img = p.image_url || PRODUCT_IMAGES[(p.imageIndex || 0) % PRODUCT_IMAGES.length]
                 const stock = p.stock ?? 0
                 const isOut = stock === 0
                 return (
-                  <div
-                    key={p.product_id}
-                    className={`group bg-zinc-900/40 rounded-3xl overflow-hidden border transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl flex flex-col ${isOut ? "border-zinc-800 opacity-60" : "border-white/5 hover:border-amber-500/30"}`}
-                  >
-                    {/* Image Box */}
-                    <div className="relative aspect-[4/5] overflow-hidden bg-zinc-950">
-                      <img
-                        src={img}
-                        alt={p.name}
-                        onError={(e) =>
-                          (e.currentTarget.src = PRODUCT_IMAGES[0])
-                        }
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        referrerPolicy="no-referrer"
+                  <div key={p.product_id} className={`group bg-white rounded-2xl overflow-hidden border border-zinc-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col ${isOut ? "opacity-60 grayscale" : ""}`}>
+                    <div className="relative aspect-square overflow-hidden flex items-center justify-center bg-zinc-50">
+                      <img 
+                        src={img} 
+                        alt={p.name} 
+                        onError={(e) => {
+                           if (e.currentTarget.src !== PRODUCT_IMAGES[0]) {
+                             e.currentTarget.src = PRODUCT_IMAGES[0]
+                           }
+                        }} 
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" 
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
-
-                      {/* Badges */}
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {stock > 0 && stock <= 5 && (
-                          <span className="bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider backdrop-blur-md">
-                            Almost Gone
-                          </span>
-                        )}
-                      </div>
                     </div>
-
-                    {/* Info */}
-                    <div className="p-5 flex flex-col flex-1 justify-between bg-gradient-to-b from-zinc-900/80 to-zinc-950">
-                      <div>
-                        <h3 className="text-sm font-bold text-white line-clamp-2 leading-snug mb-2 group-hover:text-amber-400 transition-colors">
-                          {p.name}
-                        </h3>
-                        <div className="text-lg font-mono font-bold text-zinc-100">
-                          {p.price.toLocaleString("vi-VN")} đ
+                    
+                    <div className="p-4 flex flex-col flex-1">
+                      <h3 className="text-xs font-bold text-zinc-700 line-clamp-2 leading-snug mb-1">{p.name}</h3>
+                      <div className="text-lg font-bold text-teal-700 mb-4">{p.price.toLocaleString("vi-VN")} đ</div>
+                      
+                      <div className="mt-auto">
+                        <div className="flex justify-between items-end mb-1.5">
+                          <span className="text-[10px] text-zinc-500 font-medium">Kho hàng</span>
+                          <span className="text-[10px] text-zinc-800 font-bold">Còn {stock}</span>
                         </div>
-                      </div>
-
-                      <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-1">
-                            Stock
-                          </span>
-                          <span
-                            className={`text-xs font-mono font-bold ${isOut ? "text-zinc-600" : "text-emerald-400"}`}
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${stock < 10 ? 'bg-red-500' : 'bg-teal-500'}`} style={{ width: `${Math.min(100, (stock / 500) * 100)}%` }}></div>
+                          </div>
+                          
+                          <button
+                            disabled={isOut || lockingId === p.product_id}
+                            onClick={() => handleReserveClick(p)}
+                            className="w-8 h-8 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors disabled:opacity-50 shrink-0 shadow-sm"
                           >
-                            {stock} left
-                          </span>
+                            {lockingId === p.product_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="text-lg font-medium leading-none mb-0.5">+</span>}
+                          </button>
                         </div>
-                        <button
-                          disabled={isOut || lockingId === p.product_id}
-                          onClick={() => handleReserveClick(p)}
-                          data-testid="reserve-button"
-                          className="bg-zinc-800 hover:bg-amber-500 text-zinc-300 hover:text-zinc-950 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-50"
-                        >
-                          {lockingId === p.product_id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Lock className="w-4 h-4" />
-                          )}
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -447,45 +562,89 @@ function Inventory() {
               })}
             </div>
           )}
+          {/* Bottom Product Grid */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-zinc-900">Sản Phẩm Từ Cửa Hàng</h2>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-64 bg-zinc-100/50 rounded-3xl animate-pulse border border-zinc-200/50" />
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="h-48 flex flex-col items-center justify-center border border-dashed border-zinc-300 rounded-3xl bg-transparent p-6 text-center">
+                <Package className="w-12 h-12 text-zinc-300 mb-4" />
+                <p className="text-zinc-500 font-medium">Hiện chưa có sản phẩm nào trong khu vực của bạn.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {products.map((p) => {
+                  const img = p.image_url || PRODUCT_IMAGES[(p.imageIndex || 0) % PRODUCT_IMAGES.length]
+                  const stock = p.stock ?? 0
+                  const isOut = stock === 0
+                  return (
+                    <div key={`bottom-${p.product_id}`} className={`group bg-white rounded-3xl overflow-hidden shadow-sm border border-zinc-100 hover:shadow-md transition-all duration-300 flex flex-col ${isOut ? "opacity-60 grayscale" : ""}`}>
+                      <div className="relative h-40 overflow-hidden bg-zinc-50">
+                        <img 
+                          src={img} 
+                          alt={p.name} 
+                          onError={(e) => {
+                             if (e.currentTarget.src !== PRODUCT_IMAGES[0]) {
+                               e.currentTarget.src = PRODUCT_IMAGES[0]
+                             }
+                          }} 
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      </div>
+                      
+                      <div className="p-4 flex flex-col flex-1">
+                        <h3 className="text-sm font-bold text-zinc-800 line-clamp-1 mb-1">{p.name}</h3>
+                        <div className="text-sm font-extrabold text-zinc-900 mb-4">{p.price.toLocaleString("vi-VN")} đ</div>
+                        
+                        <div className="mt-auto flex items-center gap-3">
+                          <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${stock < 10 ? 'bg-red-500' : 'bg-teal-500'}`} style={{ width: `${Math.min(100, (stock / 500) * 100)}%` }}></div>
+                          </div>
+                          
+                          <button
+                            disabled={isOut || lockingId === p.product_id}
+                            onClick={() => handleReserveClick(p)}
+                            className="w-8 h-8 rounded-full bg-teal-600 hover:bg-teal-700 text-white flex items-center justify-center transition-colors disabled:opacity-50 shrink-0 shadow-sm"
+                          >
+                            {lockingId === p.product_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="text-lg font-medium leading-none mb-0.5">+</span>}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </section>
       </main>
 
-      {/* 4. CHECKOUT OVERLAY (VietQR) */}
-      <Dialog
-        open={!!checkoutProduct}
-        onOpenChange={(open) => !open && closeCheckout()}
-      >
-        <DialogContent className="max-w-[900px] p-0 bg-zinc-950/90 backdrop-blur-2xl border-white/10 shadow-2xl overflow-hidden">
+      {/* CHECKOUT OVERLAY (Updated to Light Theme) */}
+      <Dialog open={!!checkoutProduct} onOpenChange={(open) => !open && closeCheckout()}>
+        <DialogContent className="max-w-[900px] p-0 bg-white border-zinc-200 shadow-2xl overflow-hidden rounded-[2rem]">
           {checkoutProduct && (
             <div className="flex flex-col md:flex-row h-full md:h-[600px]">
               {/* Left: Product Recap */}
-              <div className="w-full md:w-[400px] bg-zinc-900 p-8 flex flex-col justify-between border-r border-white/5">
+              <div className="w-full md:w-[400px] bg-zinc-50 p-8 flex flex-col justify-between border-r border-zinc-200">
                 <div>
-                  <h2 className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-6">
-                    Order Summary
-                  </h2>
+                  <h2 className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-6">Order Summary</h2>
                   <img
-                    src={
-                      checkoutProduct.image_url ||
-                      PRODUCT_IMAGES[(checkoutProduct.imageIndex || 0) % 2]
-                    }
+                    src={checkoutProduct.image_url || PRODUCT_IMAGES[(checkoutProduct.imageIndex || 0) % 2]}
                     onError={(e) => (e.currentTarget.src = PRODUCT_IMAGES[0])}
-                    className="w-full h-48 object-cover rounded-2xl mb-6 shadow-xl"
+                    className="w-full h-48 object-cover rounded-2xl mb-6 shadow-md"
                     referrerPolicy="no-referrer"
                   />
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    {checkoutProduct.name}
-                  </h3>
-                  <p className="text-3xl font-mono font-bold text-zinc-200 mb-6">
-                    {checkoutProduct.price.toLocaleString("vi-VN")} đ
-                  </p>
+                  <h3 className="text-lg font-bold text-zinc-900 mb-2">{checkoutProduct.name}</h3>
+                  <p className="text-3xl font-mono font-bold text-zinc-800 mb-6">{checkoutProduct.price.toLocaleString("vi-VN")} đ</p>
 
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                    <Clock className="w-5 h-5 text-amber-500" />
-                    <p className="text-sm text-amber-500/90 leading-relaxed font-medium">
-                      Item is locked for 15 minutes. Please complete your
-                      checkout.
-                    </p>
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800">
+                    <Clock className="w-5 h-5 shrink-0" />
+                    <p className="text-sm leading-relaxed font-medium">Item is locked for 15 minutes. Please complete your checkout.</p>
                   </div>
                 </div>
               </div>
@@ -495,114 +654,52 @@ function Inventory() {
                 {orderResult ? (
                   // SUCCESS & VIETQR
                   <div className="flex flex-col items-center text-center h-full justify-center animate-in zoom-in-95 duration-500">
-                    <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">
-                      Đơn đã tạo, chờ thanh toán
-                    </h2>
-                    <p className="text-zinc-400 mb-8 font-mono">
-                      Code:{" "}
-                      <span className="text-white font-bold">
-                        {orderResult.order_code}
-                      </span>
-                    </p>
+                    <h2 className="text-2xl font-bold text-zinc-900 mb-2">Đơn đã tạo, chờ thanh toán</h2>
+                    <p className="text-zinc-500 mb-8 font-mono">Code: <span className="text-zinc-900 font-bold">{orderResult.order_code}</span></p>
 
-                    <div className="p-4 bg-white rounded-2xl shadow-2xl mb-6">
-                      <img
-                        src={orderResult.vietqr_url}
-                        alt="VietQR"
-                        className="w-48 h-48 object-contain"
-                      />
+                    <div className="p-4 bg-white rounded-2xl shadow-xl border border-zinc-100 mb-6">
+                      <img src={orderResult.vietqr_url} alt="VietQR" className="w-48 h-48 object-contain" />
                     </div>
-                    <p className="text-sm text-zinc-500 max-w-xs">
-                      Quét mã bằng ứng dụng ngân hàng để thanh toán. Đơn chỉ
-                      chuyển sang xử lý sau khi webhook xác nhận đã nhận tiền.
-                    </p>
+                    <p className="text-sm text-zinc-500 max-w-xs">Quét mã bằng ứng dụng ngân hàng để thanh toán. Đơn chỉ chuyển sang xử lý sau khi webhook xác nhận đã nhận tiền.</p>
 
-                    <button
-                      onClick={closeCheckout}
-                      className="mt-8 px-8 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl font-bold text-white transition-colors"
-                    >
+                    <button onClick={closeCheckout} className="mt-8 px-8 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-full font-bold text-white transition-colors">
                       Continue Shopping
                     </button>
                   </div>
                 ) : (
                   // FORM
-                  <form
-                    onSubmit={handleFinalizeOrder}
-                    className="flex flex-col h-full"
-                  >
-                    <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-2">
-                      <CreditCard className="w-6 h-6 text-amber-500" /> Shipping
-                      Details
-                    </h2>
+                  <form onSubmit={handleFinalizeOrder} className="flex flex-col h-full">
+                    <h2 className="text-2xl font-bold text-zinc-900 mb-8 flex items-center gap-2"><CreditCard className="w-6 h-6 text-amber-500" /> Shipping Details</h2>
 
                     <div className="space-y-5 flex-1">
                       <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                          Full Name
-                        </label>
+                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Full Name</label>
                         <Input
-                          required
-                          value={orderForm.full_name}
-                          onChange={(e) =>
-                            setOrderForm({
-                              ...orderForm,
-                              full_name: e.target.value,
-                            })
-                          }
-                          className="bg-zinc-900/50 border-white/10 text-white h-12 rounded-xl"
-                          placeholder="John Doe"
+                          required value={orderForm.full_name} onChange={(e) => setOrderForm({ ...orderForm, full_name: e.target.value })}
+                          className="bg-white border-zinc-200 text-zinc-900 h-12 rounded-xl focus-visible:ring-purple-500" placeholder="John Doe"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                          Phone Number
-                        </label>
+                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Phone Number</label>
                         <Input
-                          required
-                          type="tel"
-                          value={orderForm.phone}
-                          onChange={(e) =>
-                            setOrderForm({
-                              ...orderForm,
-                              phone: e.target.value,
-                            })
-                          }
-                          className="bg-zinc-900/50 border-white/10 text-white h-12 rounded-xl"
-                          placeholder="0912345678"
+                          required type="tel" value={orderForm.phone} onChange={(e) => setOrderForm({ ...orderForm, phone: e.target.value })}
+                          className="bg-white border-zinc-200 text-zinc-900 h-12 rounded-xl focus-visible:ring-purple-500" placeholder="0912345678"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
-                          Delivery Address
-                        </label>
+                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Delivery Address</label>
                         <textarea
-                          required
-                          value={orderForm.address}
-                          onChange={(e) =>
-                            setOrderForm({
-                              ...orderForm,
-                              address: e.target.value,
-                            })
-                          }
-                          className="w-full bg-zinc-900/50 border border-white/10 text-white p-4 rounded-xl min-h-[100px] resize-none focus:outline-none focus:border-amber-500/50"
-                          placeholder="123 Main St..."
+                          required value={orderForm.address} onChange={(e) => setOrderForm({ ...orderForm, address: e.target.value })}
+                          className="w-full bg-white border border-zinc-200 text-zinc-900 p-4 rounded-xl min-h-[100px] resize-none focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="123 Main St..."
                         />
                       </div>
                     </div>
 
-                    <button
-                      disabled={isOrdering}
-                      type="submit"
-                      className="w-full mt-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold text-lg flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(245,158,11,0.3)] transition-all disabled:opacity-50"
-                    >
-                      {isOrdering ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Zap className="w-5 h-5" />
-                      )}
+                    <button disabled={isOrdering} type="submit" className="w-full mt-8 py-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-lg flex items-center justify-center gap-2 shadow-xl transition-all disabled:opacity-50">
+                      {isOrdering ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 text-amber-400" />}
                       {isOrdering ? "Đang tạo..." : "Tạo đơn chờ thanh toán"}
                     </button>
                   </form>
@@ -613,72 +710,38 @@ function Inventory() {
         </DialogContent>
       </Dialog>
 
-      {/* 5. SIDEBAR CART */}
+      {/* SIDEBAR CART (Updated to Light Theme) */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div
-            className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm"
-            onClick={() => setIsCartOpen(false)}
-          />
-          <div className="relative w-full max-w-md bg-zinc-900 border-l border-white/5 shadow-2xl flex flex-col animate-in slide-in-from-right">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-zinc-950">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-amber-500" /> Active Locks (
-                {locks.length})
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
+          <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right">
+            <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
+              <h2 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-teal-600" /> Active Locks ({locks.length})
               </h2>
-              <button
-                onClick={() => setIsCartOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-zinc-200 rounded-full text-zinc-500"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#F4F6F8]">
               {locks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-zinc-500">
+                <div className="flex flex-col items-center justify-center h-full text-zinc-400">
                   <ShoppingCart className="w-16 h-16 mb-4 opacity-50" />
                   <p>No active reservations.</p>
                 </div>
               ) : (
                 locks.map((lock) => (
-                  <div
-                    key={lock.id}
-                    className="p-4 rounded-2xl bg-zinc-950 border border-white/5"
-                  >
+                  <div key={lock.id} className="p-4 rounded-xl bg-white border border-zinc-100 shadow-sm">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <p className="text-white font-bold mb-1">
-                          {lock.product_name || `Product #${lock.product_id}`}
-                        </p>
-                        <p className="text-xs text-zinc-500 font-mono">
-                          {lock.store_name || `Store #${lock.store_id}`} • Qty:{" "}
-                          {lock.quantity} • Lock: {lock.id}
-                        </p>
-                        {lock.unit_price !== undefined && (
-                          <p className="text-xs text-amber-400 font-mono mt-1">
-                            {lock.unit_price.toLocaleString("vi-VN")} đ
-                          </p>
-                        )}
+                        <p className="text-zinc-900 font-bold mb-1">{lock.product_name || `Product #${lock.product_id}`}</p>
+                        <p className="text-[11px] text-zinc-500 font-mono">{lock.store_name || `Store #${lock.store_id}`} • Qty: {lock.quantity} • Lock: {lock.id}</p>
+                        {lock.unit_price !== undefined && <p className="text-xs text-teal-600 font-bold mt-1">{lock.unit_price.toLocaleString("vi-VN")} đ</p>}
                       </div>
-                      <CountdownTimer
-                        expiresAt={lock.expires_at}
-                        ttlSeconds={lock.ttl_seconds}
-                      />
+                      <CountdownTimer expiresAt={lock.expires_at} ttlSeconds={lock.ttl_seconds} />
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCheckoutLock(lock)}
-                        className="flex-1 rounded-xl bg-amber-500 px-3 py-2 text-xs font-bold text-zinc-950 hover:bg-amber-400"
-                      >
-                        Thanh toán
-                      </button>
-                      <button
-                        onClick={() => handleCancelLock(lock.id)}
-                        className="rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/10"
-                      >
-                        Hủy
-                      </button>
+                    <div className="flex gap-2 mt-4">
+                      <button onClick={() => handleCheckoutLock(lock)} className="flex-1 rounded-xl bg-teal-600 px-3 py-2 text-xs font-bold text-white hover:bg-teal-700 shadow-sm">Thanh toán</button>
+                      <button onClick={() => handleCancelLock(lock.id)} className="rounded-xl border border-zinc-200 px-4 py-2 text-xs text-zinc-600 hover:bg-zinc-50 bg-white shadow-sm">Hủy</button>
                     </div>
                   </div>
                 ))

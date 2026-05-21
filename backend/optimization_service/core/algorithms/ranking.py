@@ -79,8 +79,13 @@ def rank_items(
     if time_context is None:
         time_context = {"slot": "none", "rules": {}, "description": "No time context"}
     if weather_context is None:
-        weather_context = {"outdoor_penalty": 0.0, "indoor_boost": 0.0,
-                           "condition": "Unknown", "temperature": None, "reason": "No weather context"}
+        weather_context = {
+            "outdoor_penalty": 0.0,
+            "indoor_boost": 0.0,
+            "condition": "Unknown",
+            "temperature": None,
+            "reason": "No weather context",
+        }
 
     slot = time_context.get("slot", "none")
     weather_cond = weather_context.get("condition", "Unknown")
@@ -90,7 +95,7 @@ def rank_items(
 
     # ── Bước 1: Tính khoảng cách + context delta ──
     distances: list[float] = []
-    raw_ratings: list[float] = []       # Chưa adjust
+    raw_ratings: list[float] = []  # Chưa adjust
     adjusted_ratings: list[float] = []  # Sau khi cộng context delta
     prices: list[float] = []
     deltas: list[float] = []
@@ -116,12 +121,12 @@ def rank_items(
         adjusted_ratings.append(adj_r)
 
     # ── Bước 2: Min-Max chuẩn hóa ──
-    norm_rating = _minmax_normalize(adjusted_ratings)   # Cao = tốt
-    norm_price  = _minmax_normalize(prices)             # Thấp = tốt → đảo
-    norm_dist   = _minmax_normalize(distances)          # Gần = tốt → đảo
+    norm_rating = _minmax_normalize(adjusted_ratings)  # Cao = tốt
+    norm_price = _minmax_normalize(prices)  # Thấp = tốt → đảo
+    norm_dist = _minmax_normalize(distances)  # Gần = tốt → đảo
 
     norm_price_inv = [1.0 - v for v in norm_price]
-    norm_dist_inv  = [1.0 - v for v in norm_dist]
+    norm_dist_inv = [1.0 - v for v in norm_dist]
 
     # ── Bước 3: Weighted Sum ──
     w_r = weights.get("rating", 0.4)
@@ -136,21 +141,28 @@ def rank_items(
     scored = []
     for i, shop in enumerate(shops):
         final = w_r * norm_rating[i] + w_d * norm_dist_inv[i] + w_p * norm_price_inv[i]
-        scored.append({
-            **shop,
-            "final_score": round(final, 4),
-            "distance_km": round(distances[i], 2),
-            "raw_rating": round(raw_ratings[i], 2),
-            "context_delta": round(deltas[i], 2),
-            "adjusted_rating": round(adjusted_ratings[i], 2),
-        })
+        scored.append(
+            {
+                **shop,
+                "final_score": round(final, 4),
+                "distance_km": round(distances[i], 2),
+                "raw_rating": round(raw_ratings[i], 2),
+                "context_delta": round(deltas[i], 2),
+                "adjusted_rating": round(adjusted_ratings[i], 2),
+            }
+        )
 
     scored.sort(key=lambda x: x["final_score"], reverse=True)
+
+    # [v2] Bring anchor to the front regardless of score
+    anchors = [s for s in scored if s.get("is_anchor")]
+    others = [s for s in scored if not s.get("is_anchor")]
+    scored = anchors + others
 
     # Log top 3 để debug
     for item in scored[:3]:
         logger.info(
-            f"[Ranking] #{scored.index(item)+1} '{item['name']}' | "
+            f"[Ranking] #{scored.index(item) + 1} '{item['name']}' | "
             f"score={item['final_score']} | raw_rating={item['raw_rating']} | "
             f"ctx_delta={item['context_delta']:+.2f} | adj_rating={item['adjusted_rating']} | "
             f"dist={item['distance_km']}km"

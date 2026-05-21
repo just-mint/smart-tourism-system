@@ -25,6 +25,8 @@ import random
 import requests
 from datetime import datetime, timezone
 
+from geoalchemy2.elements import WKTElement
+
 # ── Setup Python path for project imports ────────────────────────────────
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
@@ -83,10 +85,10 @@ CATEGORY_KEYWORDS = {
 
 # ── Store category mapping for context-aware assignment ──────────────────
 STORE_CATEGORY_MAP = {
-    "TRADITIONAL": ["tourist", "other", "food"],          # Chợ, du lịch, ẩm thực
-    "MODERN_FASHION": ["shopping"],                        # Mall, cửa hàng thời trang
-    "ACCESSORIES": ["shopping"],                           # Mall, phụ kiện
-    "GENERAL": ["shopping", "other", "tourist", "food"],   # Fallback
+    "TRADITIONAL": ["food"],                               # Đặc sản → food stores
+    "MODERN_FASHION": ["store"],                           # Quần áo → store
+    "ACCESSORIES": ["store"],                              # Phụ kiện → store
+    "GENERAL": ["store", "food"],                          # Fallback
     "DACSAN_STORE": [],    # Sẽ gán trực tiếp từ file SQL
     "QUANAO_STORE": [],    # Sẽ gán trực tiếp từ file SQL
 }
@@ -316,9 +318,16 @@ def seed_data():
             
             # Determine category for the store based on source
             if s_data["source"] == "dacsan":
-                store_cat = "food"  # Đặc sản → food
+                store_cat = "food"   # Đặc sản → food
             else:
-                store_cat = "shopping"  # Quần áo → shopping
+                store_cat = "store"  # Quần áo → store
+            
+            # Build geom for PostGIS spatial queries
+            geom = None
+            if s_data["lat"] and s_data["lon"]:
+                geom = WKTElement(
+                    f"POINT({s_data['lon']} {s_data['lat']})", srid=4326
+                )
             
             new_store = Store(
                 store_id=sid,
@@ -327,7 +336,9 @@ def seed_data():
                 place_id=s_data["place_id"],
                 lat=s_data["lat"],
                 lon=s_data["lon"],
+                geom=geom,
                 category=store_cat,
+                rating=round(random.uniform(3.5, 5.0), 1),
             )
             db.merge(new_store)  # merge = INSERT or UPDATE
             ensured_store_ids.add(sid)
@@ -387,6 +398,8 @@ def seed_data():
             tags = ",".join(tags_list)
             
             # Queue product for insert
+            # Map source → store category for strict matching
+            product_cat = "food" if p_data["source"] == "dacsan" else "store"
             new_product = Product(
                 product_id=pid,
                 name=p_data["name"],
@@ -394,6 +407,7 @@ def seed_data():
                 price=p_data["price"],
                 original_price=int(p_data["price"] * 1.2) if p_data["price"] > 1000 else p_data["price"],
                 image_url=p_data["image_url"],
+                category=product_cat,
                 tags=tags,
                 created_at=datetime.now(timezone.utc),
             )

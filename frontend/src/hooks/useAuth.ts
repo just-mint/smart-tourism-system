@@ -61,8 +61,8 @@ const useAuth = () => {
   const logout = async () => {
     try {
       await LoginService.logout()
-    } catch (e) {
-      console.error("Logout failed", e)
+    } catch {
+      // Local session cleanup still runs even when the server logout request fails.
     }
     clearAuthSession()
     queryClient.clear()

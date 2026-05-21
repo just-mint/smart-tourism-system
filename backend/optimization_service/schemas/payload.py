@@ -19,7 +19,8 @@ class ShopItem(BaseModel):
     coords: ShopCoords
     price: float = 0
     rating: float = 0
-    category: str | None = None   # Cần cho context-aware ranking
+    category: str | None = None  # Cần cho context-aware ranking
+    is_anchor: bool = False
 
 
 class WeightConfig(BaseModel):
@@ -30,17 +31,19 @@ class WeightConfig(BaseModel):
 
 class TimeContext(BaseModel):
     """Ngữ cảnh thời gian — từ analyze_time_context()."""
-    slot: str = "none"                        # morning / lunch / afternoon / evening / night
+
+    slot: str = "none"  # morning / lunch / afternoon / evening / night
     hour: int = 12
-    rules: dict[str, float] = {}              # {category: delta}
+    rules: dict[str, float] = {}  # {category: delta}
     description: str = ""
 
 
 class WeatherContext(BaseModel):
     """Ngữ cảnh thời tiết — từ analyze_weather_context()."""
+
     outdoor_penalty: float = 0.0
     indoor_boost: float = 0.0
-    condition: str = "Unknown"                # Rainy / Clear / Cloudy / Storm
+    condition: str = "Unknown"  # Rainy / Clear / Cloudy / Storm
     temperature: float | None = None
     reason: str = ""
 
@@ -50,17 +53,19 @@ class OptimizeRequest(BaseModel):
     Request payload cho POST /api/v1/optimize.
     Cần có tọa độ user, danh sách shop thô, bộ trọng số, và dữ liệu ngữ cảnh thô.
     """
+
     user_lat: float
     user_lng: float
     weights: WeightConfig = WeightConfig()
     shops: list[ShopItem]
-    top_n: int = Field(default=5, ge=1, le=20, description="Số lượng shops tốt nhất sau khi rank")
+    top_n: int = Field(
+        default=5, ge=1, le=20, description="Số lượng shops tốt nhất sau khi rank"
+    )
 
     # [v2] Raw Context Fields — Đơn giản hóa cho caller
     local_hour: int | None = None
-    weather_condition: str | None = None   # Rainy, Clear, etc.
+    weather_condition: str | None = None  # Rainy, Clear, etc.
     weather_temp: float | None = None
-
 
 
 class MetricsResponse(BaseModel):
@@ -70,7 +75,7 @@ class MetricsResponse(BaseModel):
 
 
 class RouteGeometry(BaseModel):
-    geojson: dict[str, Any]          # GeoJSON LineString từ OSRM Route API
+    geojson: dict[str, Any]  # GeoJSON LineString từ OSRM Route API
     duration_minutes: float | None = None
 
 
@@ -84,5 +89,6 @@ class OptimizeResponse(BaseModel):
     """
     Response format chuẩn của Optimization Service.
     """
+
     status: str = "success"
     data: OptimizeResponseData

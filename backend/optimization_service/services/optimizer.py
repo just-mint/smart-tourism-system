@@ -38,14 +38,15 @@ def optimize_pipeline(request: OptimizeRequest) -> OptimizeResponse:
             "price": shop.price,
             "rating": shop.rating,
             "category": shop.category,
+            "is_anchor": shop.is_anchor,
         }
         for shop in request.shops
     ]
 
     weights = {
-        "rating":   request.weights.rating,
+        "rating": request.weights.rating,
         "distance": request.weights.distance,
-        "price":    request.weights.price,
+        "price": request.weights.price,
     }
 
     # 2. [v2] THỰC THI PHÂN TÍCH NGỮ CẢNH (Intelligence Layer)
@@ -56,11 +57,12 @@ def optimize_pipeline(request: OptimizeRequest) -> OptimizeResponse:
     weather_ctx = None
     if request.weather_condition:
         weather_ctx = analyze_weather_context(
-            request.weather_condition,
-            request.weather_temp
+            request.weather_condition, request.weather_temp
         )
 
-    logger.info(f"[Optimizer] Nhận {len(shops_raw)} shops. Context: Hour={request.local_hour}, Weather={request.weather_condition}")
+    logger.info(
+        f"[Optimizer] Nhận {len(shops_raw)} shops. Context: Hour={request.local_hour}, Weather={request.weather_condition}"
+    )
 
     # 3. Ranking MCDM + Context Adjustments
     ranked = rank_items(

@@ -16,6 +16,26 @@ from app.domains.inventory.model import Store
 
 logger = logging.getLogger(__name__)
 
+STORE_CATEGORY_ALIASES = {
+    "đặc sản": ["food"],
+    "dac san": ["food"],
+    "ẩm thực": ["food"],
+    "am thuc": ["food"],
+    "food": ["food"],
+    "quần áo lụa": ["clothing"],
+    "quan ao lua": ["clothing"],
+    "clothing": ["clothing"],
+    "fashion": ["clothing"],
+    "apparel": ["clothing"],
+    "đồ lưu niệm": ["souvenir"],
+    "do luu niem": ["souvenir"],
+    "souvenir": ["souvenir"],
+    "craft": ["souvenir"],
+    "supermarket": ["supermarket"],
+    "groceries": ["supermarket"],
+    "store": ["store", "clothing", "souvenir", "supermarket"],
+}
+
 
 def _haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     radius_m = 6_371_000.0
@@ -45,7 +65,9 @@ def _fallback_route_distance(
     return round(total, 2)
 
 
-def search_places_omnisearch(db: Session, query_text: str, user_lat: float = None, user_lon: float = None):
+def search_places_omnisearch(
+    db: Session, query_text: str, user_lat: float = None, user_lon: float = None
+):
     if not query_text or len(query_text) < 2:
         return []
 
@@ -56,30 +78,37 @@ def search_places_omnisearch(db: Session, query_text: str, user_lat: float = Non
     W_RATING = 0.2
     MAX_RADIUS = 50000  # 50km — không đề xuất xa hơn
 
-    similarity_col = func.similarity(Place.name, query_text).label('sim_score')
+    similarity_col = func.similarity(Place.name, query_text).label("sim_score")
 
     if user_lat is not None and user_lon is not None:
         # Có tọa độ người dùng → tính khoảng cách bằng PostGIS
         user_location = cast(
-            WKTElement(f'POINT({user_lon} {user_lat})', srid=4326),
-            Geography(srid=4326)
+            WKTElement(f"POINT({user_lon} {user_lat})", srid=4326), Geography(srid=4326)
         )
         distance_col = ST_Distance(
             Place.geom.cast(Geography(srid=4326)), user_location
-        ).label('distance_m')
+        ).label("distance_m")
 
-        query = db.query(Place, similarity_col, distance_col) \
-                  .filter(Place.name.ilike(f'%{query_text}%')) \
-                  .filter(ST_DWithin(Place.geom.cast(Geography(srid=4326)), user_location, MAX_RADIUS)) \
-                  .order_by(similarity_col.desc()) \
-                  .limit(20)
+        query = (
+            db.query(Place, similarity_col, distance_col)
+            .filter(Place.name.ilike(f"%{query_text}%"))
+            .filter(
+                ST_DWithin(
+                    Place.geom.cast(Geography(srid=4326)), user_location, MAX_RADIUS
+                )
+            )
+            .order_by(similarity_col.desc())
+            .limit(20)
+        )
         rows = query.all()
     else:
         # Không có tọa độ → chỉ dùng similarity
-        query = db.query(Place, similarity_col) \
-                  .filter(Place.name.ilike(f'%{query_text}%')) \
-                  .order_by(similarity_col.desc()) \
-                  .limit(10)
+        query = (
+            db.query(Place, similarity_col)
+            .filter(Place.name.ilike(f"%{query_text}%"))
+            .order_by(similarity_col.desc())
+            .limit(10)
+        )
         rows = [(p, sim, None) for p, sim in query.all()]
 
     if not rows:
@@ -107,28 +136,44 @@ def search_places_omnisearch(db: Session, query_text: str, user_lat: float = Non
         # Composite score (0-100)
         final = (W_SIMILARITY * s_sim + W_DISTANCE * s_dist + W_RATING * s_rating) * 100
 
-        scored.append({
-            "id": p.id,
-            "place_id": str(p.place_id) if p.place_id else None,
-            "name": p.name,
-            "category": p.category,
-            "address": p.address,
-            "lat": float(p.lat) if p.lat else None,
-            "lon": float(p.lon) if p.lon else None,
-            "distance_meters": round(float(dist), 1) if dist is not None else None,
-            "rating": float(p.rating) if p.rating else None,
-            "match_score": round(final, 1)
-        })
+        scored.append(
+            {
+                "id": p.id,
+                "place_id": str(p.place_id) if p.place_id else None,
+                "name": p.name,
+                "category": p.category,
+                "address": p.address,
+                "lat": float(p.lat) if p.lat else None,
+                "lon": float(p.lon) if p.lon else None,
+                "distance_meters": round(float(dist), 1) if dist is not None else None,
+                "rating": float(p.rating) if p.rating else None,
+                "match_score": round(final, 1),
+            }
+        )
 
     # Sắp xếp NGHIÊM NGẶT từ cao xuống thấp
-    scored.sort(key=lambda x: x['match_score'], reverse=True)
+    scored.sort(key=lambda x: x["match_score"], reverse=True)
     return scored[:10]
 
+
 def get_nearby_places(db: Session, lat: float, lon: float, radius_meters: int = 2000):
-    user_location = cast(WKTElement(f'POINT({lon} {lat})', srid=4326), Geography(srid=4326))
-    query = db.query(Place, ST_Distance(Place.geom.cast(Geography(srid=4326)), user_location).label('distance')) \
-            .filter(ST_DWithin(Place.geom.cast(Geography(srid=4326)), user_location, radius_meters)) \
-            .order_by(ST_Distance(Place.geom.cast(Geography(srid=4326)), user_location))
+    user_location = cast(
+        WKTElement(f"POINT({lon} {lat})", srid=4326), Geography(srid=4326)
+    )
+    query = (
+        db.query(
+            Place,
+            ST_Distance(Place.geom.cast(Geography(srid=4326)), user_location).label(
+                "distance"
+            ),
+        )
+        .filter(
+            ST_DWithin(
+                Place.geom.cast(Geography(srid=4326)), user_location, radius_meters
+            )
+        )
+        .order_by(ST_Distance(Place.geom.cast(Geography(srid=4326)), user_location))
+    )
     results = query.all()
     return [
         {
@@ -139,20 +184,41 @@ def get_nearby_places(db: Session, lat: float, lon: float, radius_meters: int = 
             "address": p.address,
             "lat": float(p.lat) if p.lat else None,
             "lon": float(p.lon) if p.lon else None,
-            "distance_meters": round(float(d), 2) if d else None
+            "distance_meters": round(float(d), 2) if d else None,
+            "rating": float(p.rating) if p.rating else None,
+            "image_url": p.image_url if p.image_url else None,
         }
         for p, d in results
     ]
 
-def get_nearby_stores(db: Session, lat: float, lon: float, radius_meters: int = 3000, category: str = None, min_rating: float = 0.0, order_by: str = "rating"):
-    user_location = cast(WKTElement(f'POINT({lon} {lat})', srid=4326), Geography(srid=4326))
 
-    distance_col = ST_Distance(Store.geom.cast(Geography(srid=4326)), user_location).label('distance')
-    query = db.query(Store, distance_col) \
-              .filter(ST_DWithin(Store.geom.cast(Geography(srid=4326)), user_location, radius_meters))
+def get_nearby_stores(
+    db: Session,
+    lat: float,
+    lon: float,
+    radius_meters: int = 3000,
+    category: str = None,
+    min_rating: float = 0.0,
+    order_by: str = "rating",
+):
+    user_location = cast(
+        WKTElement(f"POINT({lon} {lat})", srid=4326), Geography(srid=4326)
+    )
+
+    distance_col = ST_Distance(
+        Store.geom.cast(Geography(srid=4326)), user_location
+    ).label("distance")
+    query = db.query(Store, distance_col).filter(
+        ST_DWithin(Store.geom.cast(Geography(srid=4326)), user_location, radius_meters)
+    )
 
     if category:
-        query = query.filter(Store.category == category)
+        normalized_category = category.strip().casefold()
+        mapped_categories = STORE_CATEGORY_ALIASES.get(
+            normalized_category,
+            [normalized_category],
+        )
+        query = query.filter(Store.category.in_(mapped_categories))
 
     if min_rating > 0:
         query = query.filter(Store.rating >= min_rating)
@@ -173,7 +239,7 @@ def get_nearby_stores(db: Session, lat: float, lon: float, radius_meters: int = 
             "lat": float(s.lat) if s.lat else None,
             "lon": float(s.lon) if s.lon else None,
             "distance_m": round(float(d), 2) if d else None,
-            "address": s.address
+            "address": s.address,
         }
         for s, d in results
     ]
@@ -196,15 +262,22 @@ def cluster_stores_around_places(db: Session, place_ids: list[int]):
 
     # 2. Query stores trong bounding box (cực nhanh nhờ GIST index)
     # Dùng raw SQL để chắc chắn đúng cú pháp PostGIS
-    store_rows = db.execute(text("""
+    store_rows = db.execute(
+        text("""
         SELECT store_id, name, lat::float, lon::float, category, address
         FROM stores
         WHERE geom IS NOT NULL
           AND lat BETWEEN :lat_min AND :lat_max
         AND lon BETWEEN :lon_min AND :lon_max
 
-    """), {"lat_min": lat_min, "lat_max": lat_max,
-           "lon_min": lon_min, "lon_max": lon_max}).fetchall()
+    """),
+        {
+            "lat_min": lat_min,
+            "lat_max": lat_max,
+            "lon_min": lon_min,
+            "lon_max": lon_max,
+        },
+    ).fetchall()
 
     # 3. Gom dữ liệu cho KMeans
     points = []
@@ -212,31 +285,50 @@ def cluster_stores_around_places(db: Session, place_ids: list[int]):
     for p in places:
         if p.lat and p.lon:
             points.append([float(p.lat), float(p.lon)])
-            metadata.append(("place", {
-                "id": p.id,
-                "place_id": str(p.place_id) if p.place_id else None,
-                "name": p.name,
-                "category": p.category,
-                "address": p.address,
-                "lat": float(p.lat),
-                "lon": float(p.lon)
-            }))
+            metadata.append(
+                (
+                    "place",
+                    {
+                        "id": p.id,
+                        "place_id": str(p.place_id) if p.place_id else None,
+                        "name": p.name,
+                        "category": p.category,
+                        "address": p.address,
+                        "lat": float(p.lat),
+                        "lon": float(p.lon),
+                    },
+                )
+            )
 
     for s in store_rows:
         if s[2] and s[3]:
             points.append([s[2], s[3]])
-            metadata.append(("store", {
-                "store_id": s[0],
-                "place_id": None,
-                "name": s[1],
-                "category": s[4],
-                "address": s[5],
-                "lat": s[2],
-                "lon": s[3]
-            }))
+            metadata.append(
+                (
+                    "store",
+                    {
+                        "store_id": s[0],
+                        "place_id": None,
+                        "name": s[1],
+                        "category": s[4],
+                        "address": s[5],
+                        "lat": s[2],
+                        "lon": s[3],
+                    },
+                )
+            )
 
     if len(points) < 2:
-        return {"clusters": [{"cluster_id": 1, "center": {"lat": lats[0], "lon": lons[0]}, "places": [m[1] for m in metadata if m[0]=="place"], "stores": [m[1] for m in metadata if m[0]=="store"]}]}
+        return {
+            "clusters": [
+                {
+                    "cluster_id": 1,
+                    "center": {"lat": lats[0], "lon": lons[0]},
+                    "places": [m[1] for m in metadata if m[0] == "place"],
+                    "stores": [m[1] for m in metadata if m[0] == "store"],
+                }
+            ]
+        }
 
     # 4. KMeans — giới hạn 2-5 cụm tự động
     n_clusters = min(max(2, len(places)), 5, len(points))
@@ -255,15 +347,19 @@ def cluster_stores_around_places(db: Session, place_ids: list[int]):
                     c_places.append(obj)
                 else:
                     c_stores.append(obj)
-        clusters.append({
-            "cluster_id": i + 1,
-            "center": {"lat": round(centers[i][0], 6), "lon": round(centers[i][1], 6)},
-            "places": c_places,
-            "stores": c_stores
-        })
+        clusters.append(
+            {
+                "cluster_id": i + 1,
+                "center": {
+                    "lat": round(centers[i][0], 6),
+                    "lon": round(centers[i][1], 6),
+                },
+                "places": c_places,
+                "stores": c_stores,
+            }
+        )
 
     return {"clusters": clusters}
-
 
 
 async def fetch_real_weather(lat: float, lon: float):
@@ -289,13 +385,20 @@ async def fetch_real_weather(lat: float, lon: float):
         pass
     return {"temperature": 30, "condition": "Unknown", "code": -1}
 
-async def plan_route_osrm(db: Session, current_lat: float, current_lon: float, place_ids: list[int]):
+
+async def plan_route_osrm(
+    db: Session, current_lat: float, current_lon: float, place_ids: list[int]
+):
     places = db.query(Place).filter(Place.id.in_(place_ids)).all()
     if not places:
         raise ValueError("Không tìm thấy địa điểm nào khớp với place_ids cung cấp")
 
     weather = await fetch_real_weather(current_lat, current_lon)
-    place_dicts = [{"id": p.id, "lat": float(p.lat), "lon": float(p.lon), "name": p.name} for p in places if p.lat and p.lon]
+    place_dicts = [
+        {"id": p.id, "lat": float(p.lat), "lon": float(p.lon), "name": p.name}
+        for p in places
+        if p.lat and p.lon
+    ]
 
     if not place_dicts:
         raise ValueError("Các địa điểm được chọn không có tọa độ hợp lệ")
@@ -319,22 +422,25 @@ async def plan_route_osrm(db: Session, current_lat: float, current_lon: float, p
         if data.get("code") != "Ok":
             raise ValueError(f"OSRM No Route: {data.get('code')}")
 
-        trip = data['trips'][0]
+        trip = data["trips"][0]
 
         # 2. Extract TSP order from waypoints array (skipping source at index 0)
         ordered_places = []
-        for i, wp in enumerate(data['waypoints'][1:]):
-            ordered_places.append((wp['waypoint_index'], place_dicts[i]))
+        for i, wp in enumerate(data["waypoints"][1:]):
+            ordered_places.append((wp["waypoint_index"], place_dicts[i]))
 
         ordered_places.sort(key=lambda x: x[0])
-        optimized_order_ids = [p['id'] for _, p in ordered_places]
+        optimized_order_ids = [p["id"] for _, p in ordered_places]
 
-        osrm_waypoints = [{"lat": p['lat'], "lon": p['lon'], "name": p['name']} for _, p in ordered_places]
+        osrm_waypoints = [
+            {"lat": p["lat"], "lon": p["lon"], "name": p["name"]}
+            for _, p in ordered_places
+        ]
 
         return {
-            "total_distance_meters": trip['distance'],
+            "total_distance_meters": trip["distance"],
             "waypoints": osrm_waypoints,
-            "polyline": trip['geometry'],
+            "polyline": trip["geometry"],
             "optimized_order": optimized_order_ids,
             "weather_context": weather,
             "routing_fallback_used": False,
@@ -343,13 +449,19 @@ async def plan_route_osrm(db: Session, current_lat: float, current_lon: float, p
         logger.warning(f"[Route] OSRM Trip fallback: {e}")
         # Fallback
         return {
-            "total_distance_meters": _fallback_route_distance(current_lat, current_lon, place_dicts),
-            "waypoints": [{"lat": p["lat"], "lon": p["lon"], "name": p["name"]} for p in place_dicts],
+            "total_distance_meters": _fallback_route_distance(
+                current_lat, current_lon, place_dicts
+            ),
+            "waypoints": [
+                {"lat": p["lat"], "lon": p["lon"], "name": p["name"]}
+                for p in place_dicts
+            ],
             "polyline": None,
-            "optimized_order": [p['id'] for p in place_dicts],
+            "optimized_order": [p["id"] for p in place_dicts],
             "weather_context": weather,
             "routing_fallback_used": True,
         }
+
 
 def get_place_o2o_context(db: Session, place_id: str, radius: int = 2000):
     from sqlalchemy import func
@@ -367,50 +479,56 @@ def get_place_o2o_context(db: Session, place_id: str, radius: int = 2000):
         "category": place.category,
         "address": place.address,
         "lat": float(place.lat) if place.lat else 0.0,
-        "lon": float(place.lon) if place.lon else 0.0
+        "lon": float(place.lon) if place.lon else 0.0,
     }
 
     nearby_stores = []
     if place.lat and place.lon:
         point = f"SRID=4326;POINT({place.lon} {place.lat})"
         # Tìm stores trong bán kính radius
-        stores = db.query(Store).filter(
-            Store.category == 'shopping',
-            func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), radius)
-        ).all()
+        stores = (
+            db.query(Store)
+            .filter(
+                func.ST_DWithin(Store.geom, func.ST_GeogFromText(point), radius),
+            )
+            .all()
+        )
 
         if stores:
             store_ids = [s.store_id for s in stores]
             # Query tất cả inventory và product của các store này trong 1 câu lệnh (Tránh N+1)
-            results = db.query(Inventory, Product).join(
-                Product, Inventory.product_id == Product.product_id
-            ).filter(
-                Inventory.store_id.in_(store_ids)
-            ).all()
+            results = (
+                db.query(Inventory, Product)
+                .join(Product, Inventory.product_id == Product.product_id)
+                .filter(Inventory.store_id.in_(store_ids))
+                .all()
+            )
 
             from collections import defaultdict
+
             store_products = defaultdict(list)
             for inv, prod in results:
-                store_products[inv.store_id].append({
-                    "product_id": prod.product_id,
-                    "name": prod.name,
-                    "price": prod.price,
-                    "image_url": prod.image_url
-                })
+                store_products[inv.store_id].append(
+                    {
+                        "product_id": prod.product_id,
+                        "name": prod.name,
+                        "price": prod.price,
+                        "image_url": prod.image_url,
+                    }
+                )
 
             for s in stores:
-                nearby_stores.append({
-                    "store_id": s.store_id,
-                    "place_id": s.place_id,
-                    "name": s.name,
-                    "category": s.category,
-                    "address": s.address,
-                    "lat": float(s.lat) if s.lat else 0.0,
-                    "lon": float(s.lon) if s.lon else 0.0,
-                    "products": store_products.get(s.store_id, [])
-                })
+                nearby_stores.append(
+                    {
+                        "store_id": s.store_id,
+                        "place_id": s.place_id,
+                        "name": s.name,
+                        "category": s.category,
+                        "address": s.address,
+                        "lat": float(s.lat) if s.lat else 0.0,
+                        "lon": float(s.lon) if s.lon else 0.0,
+                        "products": store_products.get(s.store_id, []),
+                    }
+                )
 
-    return {
-        "place_info": place_info,
-        "nearby_stores": nearby_stores
-    }
+    return {"place_info": place_info, "nearby_stores": nearby_stores}

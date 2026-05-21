@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ProductResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     product_id: int
     name: str
     price: float
@@ -13,15 +15,16 @@ class ProductResponse(BaseModel):
     image_url: str | None = None
     stock: int | None = 0
     store_id: int | None = None
-    class Config:
-        from_attributes = True
 
 class LockRequest(BaseModel):
     product_id: int
     store_id: int
     quantity: int = Field(default=1, ge=1)
 
+
 class LockResponseItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     product_id: int
     store_id: int
@@ -33,10 +36,10 @@ class LockResponseItem(BaseModel):
     store_name: str | None = None
     unit_price: int | None = None
     image_url: str | None = None
-    class Config:
-        from_attributes = True
 
 class StoreResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     store_id: int
     place_id: str | None = None
     name: str
@@ -46,13 +49,12 @@ class StoreResponse(BaseModel):
     lon: float | None = None
     phone: str | None = None
     rating: float | None = None
-    class Config:
-        from_attributes = True
 
 # --- Search ---
 class SearchResult(BaseModel):
     stores: list[StoreResponse] = []
     products: list[ProductResponse] = []
+
 
 # --- Order / Checkout ---
 class OrderCreate(BaseModel):
@@ -79,15 +81,29 @@ class OrderCreate(BaseModel):
             raise ValueError("Trường này không được để trống")
         return v.strip()
 
+
 class OrderResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     order_id: int
     order_code: str
     status: str
     total_amount: int
     product_name: str
     vietqr_url: str
-    class Config:
-        from_attributes = True
+
+
+class OrderDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    order_id: int
+    order_code: str
+    status: str
+    total_amount: int
+    quantity: int
+    created_at: datetime
+    product_name: str | None = None
+    store_name: str | None = None
 
 
 class PaymentWebhook(BaseModel):

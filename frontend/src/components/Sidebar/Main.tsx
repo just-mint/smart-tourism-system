@@ -73,14 +73,14 @@ export function Main({ items }: MainProps) {
                       transition-all duration-300 ease-out
                       ${
                         isActive
-                          ? "bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                          : "text-zinc-400 hover:text-white hover:bg-white/5"
+                          ? "bg-teal-50 text-teal-700 shadow-sm"
+                          : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/50"
                       }
                     `}
                   >
                     {/* Active indicator bar */}
                     {isActive && (
-                      <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-cyan-400 to-purple-500" />
+                      <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-teal-600" />
                     )}
 
                     {/* Icon */}
@@ -89,8 +89,8 @@ export function Main({ items }: MainProps) {
                       relative flex h-5 w-5 items-center justify-center transition-all duration-300
                       ${
                         isActive
-                          ? "text-cyan-400 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]"
-                          : "text-zinc-500 group-hover:text-cyan-300"
+                          ? "text-teal-600 drop-shadow-[0_0_2px_rgba(13,148,136,0.3)]"
+                          : "text-zinc-400 group-hover:text-zinc-600"
                       }
                     `}
                     >

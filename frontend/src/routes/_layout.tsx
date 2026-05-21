@@ -71,7 +71,7 @@ const TypewriterLogo = () => {
   }, [])
 
   return (
-    <h1 className="text-lg font-bold tracking-widest text-zinc-200 hidden sm:block font-mono border-r-2 border-cyan-400 pr-1 animate-[pulse_1s_infinite]">
+    <h1 className="text-lg font-bold tracking-widest text-zinc-700 hidden sm:block font-mono border-r-2 border-teal-600 pr-1 animate-[pulse_1s_infinite]">
       {displayText}
     </h1>
   )
@@ -279,25 +279,16 @@ function Layout() {
   }
 
   return (
-    <div className="dark min-h-screen bg-black text-zinc-50 font-sans relative overflow-hidden z-0">
-      {/* 🌌 Atmospheric Breathing Background */}
-      <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-600/20 blur-[120px] rounded-full mix-blend-screen animate-[pulse_8s_ease-in-out_infinite]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/20 blur-[120px] rounded-full mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse]"></div>
-        <div className="absolute top-[40%] left-[30%] w-[40%] h-[40%] bg-emerald-600/10 blur-[120px] rounded-full mix-blend-screen animate-[pulse_12s_ease-in-out_infinite]"></div>
-
-        {/* Scanlines overlay */}
-        <div className="absolute inset-0 z-[-1] opacity-10 bg-[linear-gradient(rgba(0,0,0,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none"></div>
-      </div>
+    <div className="min-h-screen bg-zinc-50 text-zinc-800 font-sans relative overflow-hidden z-0">
 
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="bg-transparent flex flex-col h-screen overflow-hidden relative">
-          {/* 🌟 Glassmorphism Navbar */}
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/5 bg-white/5 backdrop-blur-xl px-4 sm:px-6 relative z-20 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+          {/* Light Navbar */}
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white/95 backdrop-blur-xl px-4 sm:px-6 relative z-20 shadow-sm">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="-ml-2 text-zinc-400 hover:text-cyan-400 transition-colors" />
-              <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
+              <SidebarTrigger className="-ml-2 text-zinc-500 hover:text-teal-600 transition-colors" />
+              <div className="h-4 w-px bg-zinc-200 hidden sm:block"></div>
               <TypewriterLogo />
             </div>
 
@@ -306,63 +297,63 @@ function Layout() {
                 onSubmit={handleGlobalSearch}
                 className="hidden md:flex relative group"
               >
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-cyan-400 transition-colors" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-teal-600 transition-colors" />
                 <input
                   type="text"
                   value={globalQuery}
                   onChange={(e) => setGlobalQuery(e.target.value)}
-                  placeholder="Hỏi AEGIS Agent..."
-                  className="w-64 pl-10 pr-12 py-1.5 bg-black/40 border border-white/10 rounded-full text-sm text-zinc-200 outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-all font-mono placeholder:text-zinc-600 shadow-inner"
+                  placeholder="Tìm kiếm..."
+                  className="w-64 pl-10 pr-12 py-1.5 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-800 outline-none focus:border-teal-500 focus:bg-white transition-all placeholder:text-zinc-400"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded bg-black/60 px-1.5 font-mono text-[10px] font-medium text-cyan-500/70 border border-white/10">
+                  <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded bg-zinc-100 px-1.5 font-mono text-[10px] font-medium text-zinc-500 border border-zinc-200">
                     ⌘K
                   </kbd>
                 </div>
               </form>
 
               <div className="flex items-center gap-3">
-                <button className="relative p-2 text-zinc-400 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/10">
+                <button className="relative p-2 text-zinc-500 hover:text-teal-600 transition-colors rounded-full hover:bg-zinc-100">
                   <Bell className="w-5 h-5" />
                 </button>
 
-                <div className="h-6 w-px bg-white/10 hidden sm:block"></div>
+                <div className="h-6 w-px bg-zinc-200 hidden sm:block"></div>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className="p-0.5 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 animate-[spin_4s_linear_infinite] hover:scale-110 transition-transform">
-                      <Avatar className="h-8 w-8 cursor-pointer border-2 border-black rounded-full animate-[spin_4s_linear_infinite_reverse]">
+                    <div className="p-0.5 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-500 hover:scale-110 transition-transform">
+                      <Avatar className="h-8 w-8 cursor-pointer border-2 border-white rounded-full">
                         <AvatarImage
                           src=""
                           alt={currentUser?.full_name || "User"}
                           className="rounded-full"
                         />
-                        <AvatarFallback className="bg-zinc-900 text-zinc-300 text-xs font-mono rounded-full">
+                        <AvatarFallback className="bg-white text-zinc-700 text-xs font-medium rounded-full">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
-                    className="w-56 bg-black/80 backdrop-blur-xl border border-white/10 text-zinc-200 mt-2"
+                    className="w-56 bg-white border border-zinc-200 text-zinc-700 mt-2 shadow-lg"
                     align="end"
                   >
-                    <DropdownMenuLabel className="font-mono text-cyan-400">
-                      {currentUser?.full_name || currentUser?.email || "Agent"}
+                    <DropdownMenuLabel className="font-medium text-zinc-800">
+                      {currentUser?.full_name || currentUser?.email || "User"}
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuSeparator className="bg-zinc-100" />
                     <RouterLink to="/settings">
-                      <DropdownMenuItem className="cursor-pointer hover:bg-white/10 hover:text-cyan-400 font-mono focus:bg-white/10 focus:text-cyan-400">
+                      <DropdownMenuItem className="cursor-pointer hover:bg-zinc-50 focus:bg-zinc-50">
                         <SettingsIcon className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
+                        <span>Cài đặt</span>
                       </DropdownMenuItem>
                     </RouterLink>
                     <DropdownMenuItem
-                      className="cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-red-300 font-mono focus:bg-red-500/10 focus:text-red-300"
+                      className="cursor-pointer text-red-600 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:text-red-700"
                       onClick={() => logout()}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>Log Out</span>
+                      <span>Đăng xuất</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

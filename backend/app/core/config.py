@@ -122,6 +122,7 @@ class Settings(BaseSettings):
     # Vision Upload: Kiểu file và dung lượng tối đa cho API /vision/scan
     ALLOWED_IMAGE_TYPES: list[str] = ["image/jpeg", "image/png", "image/webp"]
     MAX_UPLOAD_SIZE_MB: int = 10
+    VISION_TASK_TIMEOUT_SECONDS: int = 300
     UPLOAD_ROOT: str = "uploads"
 
     # Gemini AI
@@ -130,6 +131,10 @@ class Settings(BaseSettings):
     # Payment webhook guard. Production should set a stable HMAC secret.
     PAYMENT_PROVIDER: str = "vietqr_mock"
     PAYMENT_WEBHOOK_SECRET: str | None = None
+    VIETQR_BANK_ID: str = "970422"
+    VIETQR_ACCOUNT_NO: str = "0123456789"
+    VIETQR_ACCOUNT_NAME: str = "AEGIS O2O"
+    VIETQR_TEMPLATE: str = "compact2"
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
@@ -157,7 +162,9 @@ class Settings(BaseSettings):
             )
             origins = [str(origin) for origin in raw_origins]
             if "*" in origins:
-                raise ValueError("BACKEND_CORS_ORIGINS must not contain '*' in production")
+                raise ValueError(
+                    "BACKEND_CORS_ORIGINS must not contain '*' in production"
+                )
             if not self.PAYMENT_WEBHOOK_SECRET:
                 raise ValueError("PAYMENT_WEBHOOK_SECRET is required in production")
 

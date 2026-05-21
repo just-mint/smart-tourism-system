@@ -13,16 +13,16 @@ celery_app = Celery(
     broker=RABBITMQ_URL,
     backend=REDIS_URL,  # Dùng Redis làm result backend (tốt hơn RPC)
     include=[
-        'workers.ai_worker.vision_tasks',
-        'workers.ai_worker.inventory_tasks',  # Cronjob dọn dẹp locks
-    ]
+        "workers.ai_worker.vision_tasks",
+        "workers.ai_worker.inventory_tasks",  # Cronjob dọn dẹp locks
+    ],
 )
 
 celery_app.conf.update(
-    task_serializer='json',
-    accept_content=['json'],
-    result_serializer='json',
-    timezone='Asia/Ho_Chi_Minh',
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="Asia/Ho_Chi_Minh",
     enable_utc=True,
     worker_prefetch_multiplier=1,
     task_acks_late=True,

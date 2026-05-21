@@ -32,7 +32,9 @@ async def optimize_route(
         if expected_secret and x_internal_secret != expected_secret:
             raise HTTPException(status_code=403, detail="Invalid internal secret")
         if not request.shops:
-            raise HTTPException(status_code=400, detail="Danh sách shops không được rỗng")
+            raise HTTPException(
+                status_code=400, detail="Danh sách shops không được rỗng"
+            )
         if len(request.shops) > 50:
             raise HTTPException(status_code=413, detail="Tối đa 50 shops mỗi request")
 

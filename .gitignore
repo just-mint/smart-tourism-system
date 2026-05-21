@@ -9,6 +9,7 @@ backend/app/infrastructure/osrm_data/vietnam.osm.pbf
 .env
 .env.*
 !.env.example
+!.env.test
 __pycache__/
 *.pyc
 .venv/

@@ -7,6 +7,7 @@ import type { ApiResult } from './ApiResult';
 import { CancelablePromise } from './CancelablePromise';
 import type { OnCancel } from './CancelablePromise';
 import type { OpenAPIConfig } from './OpenAPI';
+import { handleUnauthorizedSession } from '../../lib/auth-session';
 
 export const isString = (value: unknown): value is string => {
 	return typeof value === 'string';
@@ -277,6 +278,9 @@ export const catchErrorCodes = (options: ApiRequestOptions, result: ApiResult): 
 
 	const error = errors[result.status];
 	if (error) {
+		if (result.status === 401) {
+			handleUnauthorizedSession();
+		}
 		throw new ApiError(options, result, error);
 	}
 

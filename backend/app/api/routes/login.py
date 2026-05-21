@@ -46,7 +46,7 @@ def login_access_token(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,  # Set to True if using HTTPS
+        secure=settings.ENVIRONMENT != "local",
         samesite="lax",
         max_age=int(access_token_expires.total_seconds()),
     )
@@ -61,7 +61,6 @@ def logout(response: Response) -> Message:
     """
     response.delete_cookie(key="access_token")
     return Message(message="Successfully logged out")
-
 
 
 @router.post("/login/test-token", response_model=UserPublic)

@@ -6,9 +6,11 @@ POST /api/v1/planner/generate — Endpoint chính tạo lộ trình tối ưu O2
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.domains.planner import schema, service
+from app.models import User
 
 router = APIRouter()
 
@@ -20,6 +22,7 @@ router = APIRouter()
 )
 async def generate_itinerary(
     request: schema.PlannerRequest,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """

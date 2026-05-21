@@ -8,9 +8,9 @@ from app.core.config import settings
 # Tạo engine SQLAlchemy thuần — đọc URI từ settings (được build từ .env)
 engine = create_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),
-    pool_pre_ping=True,       # Tự ping lại nếu kết nối bị ngắt
-    pool_size=10,             # Số connection tối đa trong pool
-    max_overflow=20,          # Cho phép mở thêm ngoài pool khi cao điểm
+    pool_pre_ping=True,  # Tự ping lại nếu kết nối bị ngắt
+    pool_size=10,  # Số connection tối đa trong pool
+    max_overflow=20,  # Cho phép mở thêm ngoài pool khi cao điểm
 )
 
 # Factory tạo Session — autocommit=False để kiểm soát transaction thủ công
