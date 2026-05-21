@@ -1,0 +1,41 @@
+\contentsline {section}{DANH MỤC TỪ VIẾT TẮT}{3}{section*.4}%
+\contentsline {section}{\numberline {1}Tổng quan đề tài và góc nhìn tư duy tính toán}{4}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Đặt vấn đề trong bối cảnh thực tiễn}{4}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Ánh xạ tư duy tính toán vào hệ thống}{5}{subsection.1.2}%
+\contentsline {section}{\numberline {2}Cơ sở công nghệ chọn lọc}{7}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Các nguyên tắc thiết kế rút ra}{8}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Nền tảng dữ liệu không gian và truy vấn theo bán kính}{8}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Cơ sở lập lịch trình thông minh}{9}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Kiểm soát tồn kho O2O trong môi trường đồng thời}{9}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Tìm kiếm vector và mô hình CLIP}{9}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Tác vụ nền và xử lý bất đồng bộ}{10}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}Kiến trúc ứng dụng web trang đơn và giao tiếp REST}{10}{subsection.2.7}%
+\contentsline {subsection}{\numberline {2.8}Bảo mật ứng dụng và phân quyền}{11}{subsection.2.8}%
+\contentsline {subsection}{\numberline {2.9}Đóng gói, cấu hình môi trường và tái lập kết quả}{11}{subsection.2.9}%
+\contentsline {section}{\numberline {3}Phân tích và thiết kế hệ thống}{12}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Phân tích yêu cầu hệ thống}{12}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Thiết kế kiến trúc tổng thể}{13}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Thiết kế cơ sở dữ liệu}{14}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Mô hình luồng dữ liệu nghiệp vụ cốt lõi}{15}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Chi tiết cài đặt các phân hệ và thuật toán}{19}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Phân hệ không gian}{19}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Phân hệ tồn kho và cơ chế khóa kép}{19}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Phân hệ lập lịch trình thông minh}{22}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Phân hệ trợ lý ảo và cơ chế gọi công cụ}{24}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Chuẩn hóa dữ liệu hình ảnh sản phẩm}{25}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Phân hệ thị giác máy tính}{26}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.7}Kiến trúc giao diện người dùng}{28}{subsection.4.7}%
+\contentsline {section}{\numberline {5}Các phân tích và đánh giá chuyên sâu}{29}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Phân tích độ phức tạp thuật toán}{29}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Cơ chế bảo mật và phân quyền}{30}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Kịch bản chịu lỗi và dự phòng}{30}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Đánh giá hiệu năng và khả năng mở rộng}{31}{subsection.5.4}%
+\contentsline {section}{\numberline {6}Triển khai, kiểm thử và đánh giá thực tế}{33}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Kiến trúc triển khai đóng gói}{33}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Kịch bản kiểm thử và đo lường hệ thống}{35}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Demo hệ thống và kết quả trải nghiệm người dùng}{38}{subsection.6.3}%
+\contentsline {section}{\numberline {7}Kết luận và hướng phát triển hệ thống}{41}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Kết quả trọng tâm đã đạt được}{41}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Những hạn chế tồn đọng}{41}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Lộ trình phát triển mở rộng}{42}{subsection.7.3}%
+\contentsline {section}{TÀI LIỆU THAM KHẢO}{44}{section*.28}%

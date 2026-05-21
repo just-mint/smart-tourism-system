@@ -1,0 +1,166 @@
+import io
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from PIL import Image, UnidentifiedImageError
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user
+from app.core.config import settings
+from app.core.rate_limit import rate_limit
+from app.db.session import get_db
+from app.domains.vision import schema, service
+from app.models import User
+
+router = APIRouter()
+
+ALLOWED_TYPES = settings.ALLOWED_IMAGE_TYPES
+MAX_SIZE_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
+
+Image.MAX_IMAGE_PIXELS = 20_000_000
+
+
+def validate_and_save(file: UploadFile, folder: str) -> str:
+    """Kiểm tra MIME type + dung lượng file trước khi lưu với tên UUID4 chống ghi đè."""
+    # 1. Kiểm tra MIME type
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Chỉ chấp nhận ảnh JPEG/PNG/WebP. Bạn đã gửi: {file.content_type}",
+        )
+
+    # 2. Đọc toàn bộ vào memory để kiểm tra kích thước (an toàn với file nhỏ)
+    contents = file.file.read()
+    if len(contents) > MAX_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File vượt giới hạn {settings.MAX_UPLOAD_SIZE_MB}MB. Kích thước thực: {len(contents) // 1024 // 1024}MB",
+        )
+
+    try:
+        image = Image.open(io.BytesIO(contents))
+        image.verify()
+    except (UnidentifiedImageError, OSError):
+        raise HTTPException(status_code=415, detail="File không phải ảnh hợp lệ.")
+
+    extension_by_type = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+    }
+    ext = extension_by_type[file.content_type]
+
+    # 3. Tạo thư mục và lưu file an toàn
+    upload_root = Path(settings.UPLOAD_ROOT)
+    folder_path = upload_root / folder
+    folder_path.mkdir(parents=True, exist_ok=True)
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = folder_path / safe_filename
+    with file_path.open("wb") as buffer:
+        buffer.write(contents)
+
+    return str(file_path)
+
+
+@router.post(
+    "/scan",
+    response_model=schema.VisionUploadResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(rate_limit(limit=10, window_seconds=60))],
+)
+def upload_and_scan(
+    file: UploadFile = File(...),
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload ảnh để AI scan sản phẩm (non-blocking, trả task_id ngay)"""
+    file_path = validate_and_save(file, "scans")
+    task = service.create_vision_task(db=db, image_path=file_path)
+    return {
+        "task_id": task.task_id,
+        "message": "Ảnh đang được AI xử lý. Dùng task_id để polling kết quả.",
+    }
+
+
+@router.get("/tasks/{task_id}", response_model=schema.TaskStatus)
+def check_task_status(
+    task_id: str,
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    task = service.get_vision_task(db=db, task_id=task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task không tồn tại")
+
+    if task.status == "processing":
+        delta = (datetime.now(timezone.utc) - task.created_at).total_seconds()
+        if delta > settings.VISION_TASK_TIMEOUT_SECONDS:
+            task.status = "failed"
+            task.detected_objects = {"error": "AI Worker Timeout"}
+            db.commit()
+
+    return task
+
+
+@router.post("/closet", response_model=schema.ClosetItemResponse)
+def add_virtual_closet(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload trang phục cá nhân vào Tủ Đồ Ảo (lưu Vector Embedding 512D qua pgvector)"""
+    file_path = validate_and_save(file, "closet")
+    item = service.add_to_closet(db=db, user_id=current_user.id, image_path=file_path)
+    return item
+
+
+@router.get("/closet", response_model=list[schema.ClosetItemResponse])
+def my_closet(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    return service.get_user_closet(db=db, user_id=current_user.id)
+
+
+@router.get("/closet/{item_id}/matches", response_model=schema.MixMatchResponse)
+def get_mix_match(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    AI Mix & Match: Tìm sản phẩm trong catalog có visual similarity cao nhất
+    so với một item trong tủ đồ ảo. Dùng pgvector cosine_distance trên CLIP 512D embeddings.
+    """
+    matches, error = service.find_similar_products_for_closet(
+        db=db, closet_item_id=item_id, user_id=current_user.id, top_n=5
+    )
+    if matches is None:
+        raise HTTPException(status_code=404, detail=error)
+    return schema.MixMatchResponse(
+        closet_item_id=item_id,
+        matches=matches,
+        total_matches=len(matches),
+    )
+
+
+@router.get(
+    "/products/{product_id}/matches", response_model=schema.ProductMatchResponse
+)
+def get_product_matches(
+    product_id: int,
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    matches, error = service.find_similar_products_for_product(
+        db=db, product_id=product_id, top_n=5
+    )
+    if matches is None:
+        raise HTTPException(status_code=404, detail=error)
+    return schema.ProductMatchResponse(
+        product_id=product_id,
+        matches=matches,
+        total_matches=len(matches),
+    )

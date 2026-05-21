@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Craft shop">
+  <rect width="800" height="600" fill="#fff7ed"/>
+  <circle cx="660" cy="120" r="70" fill="#fed7aa"/>
+  <rect x="140" y="190" width="520" height="280" rx="28" fill="#ffffff" stroke="#fdba74" stroke-width="8"/>
+  <path d="M180 190h440l-54-92H234z" fill="#be123c"/>
+  <rect x="215" y="285" width="160" height="185" rx="14" fill="#fef3c7"/>
+  <rect x="430" y="285" width="150" height="95" rx="14" fill="#ccfbf1"/>
+</svg>

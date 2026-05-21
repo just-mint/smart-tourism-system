@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Shopping street">
+  <rect width="800" height="600" fill="#f8fafc"/>
+  <path d="M0 430h800v170H0z" fill="#d1fae5"/>
+  <rect x="80" y="190" width="220" height="240" rx="20" fill="#ffffff" stroke="#99f6e4" stroke-width="8"/>
+  <rect x="330" y="150" width="180" height="280" rx="20" fill="#ffffff" stroke="#fed7aa" stroke-width="8"/>
+  <rect x="540" y="220" width="180" height="210" rx="20" fill="#ffffff" stroke="#bfdbfe" stroke-width="8"/>
+  <path d="M115 250h150M365 220h110M575 280h110" stroke="#0f766e" stroke-width="16" stroke-linecap="round"/>
+</svg>
